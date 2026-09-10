@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0C0A09" />
+  <title>SKIFF RUN 0.1.0 — Palm homage</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="top">
+      <div class="brand">
+        <strong>SKIFF RUN</strong>
+        <span>0.1.0 · Palm homage</span>
+      </div>
+      <button type="button" id="btn-reset" class="ghost">New</button>
+    </header>
+    <p class="disclaimer">Original systems & goods. Not an official Space Trader remake.</p>
+
+    <section class="card status">
+      <div><label>System</label><div id="sys-name">—</div></div>
+      <div><label>Credits</label><div id="credits">—</div></div>
+      <div><label>Fuel</label><div id="fuel">—</div></div>
+      <div><label>Cargo</label><div id="cargo">—</div></div>
+      <div><label>Net</label><div id="net">—</div></div>
+    </section>
+
+    <section class="card">
+      <h2>Market</h2>
+      <div id="market" class="market"></div>
+    </section>
+
+    <section class="card">
+      <h2>Travel</h2>
+      <div id="routes" class="routes"></div>
+      <button type="button" id="btn-refuel" class="btn">Refuel</button>
+    </section>
+
+    <section class="card">
+      <h2>Retire</h2>
+      <p class="hint">Reach ₩120,000 net and dock at Quiet Moon.</p>
+      <button type="button" id="btn-retire" class="btn ember" disabled>Retire on Quiet Moon</button>
+    </section>
+
+    <p id="log" class="log">Welcome, captain.</p>
+  </div>
+  <dialog id="encounter">
+    <h3 id="enc-title">Encounter</h3>
+    <p id="enc-body"></p>
+    <div class="enc-actions">
+      <button type="button" id="enc-a" class="btn">A</button>
+      <button type="button" id="enc-b" class="btn ghost">B</button>
+    </div>
+  </dialog>
+  <script src="game.js"></script>
+</body>
+</html>
