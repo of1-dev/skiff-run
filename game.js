@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.5.0";
+  const VERSION = "0.6.0";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const THEMES = ["cobalt", "coffee", "lcars"];
@@ -277,6 +277,7 @@
       epoch: 1,
       chart,
       visited: { ember: true },
+      pilot: "human",
       log: "Skiff-7 cleared Ember Reach. New chart this run — same systems, new lanes.",
     };
   }
@@ -337,6 +338,7 @@
         if (st.system) st.visited[st.system] = true;
         else st.visited.ember = true;
       }
+      if (st.pilot !== "human" && st.pilot !== "agent") st.pilot = "human";
       const h = ship(st.shipId) || SHIPS[0];
       st.shipId = h.id;
       st.crew = Math.min(st.crew, h.crewMax);
@@ -423,6 +425,35 @@
     try { t = localStorage.getItem(THEME_KEY) || "cobalt"; } catch (e) {}
     applyTheme(t, false);
   }
+
+  function currentPilot() {
+    return state.pilot === "agent" ? "agent" : "human";
+  }
+
+  function applyPilot(who, announce) {
+    const p = who === "agent" ? "agent" : "human";
+    state.pilot = p;
+    const shell = el("app");
+    if (shell) shell.classList.toggle("is-agent-pilot", p === "agent");
+    const banner = el("pilot-banner");
+    if (banner) banner.hidden = p !== "agent";
+    const btxt = el("pilot-banner-text");
+    if (btxt) btxt.textContent = "Agent has the stick — watching until you take over.";
+    document.querySelectorAll("[data-pilot-pick]").forEach((b) => {
+      b.classList.toggle("active", b.dataset.pilotPick === p);
+    });
+    const hint = el("pilot-hint");
+    if (hint) {
+      hint.textContent = p === "agent"
+        ? "Agent seat armed. MCP can fly this save when connected; Take stick anytime."
+        : "You have the stick. Hand to Agent when you want the LLM to fly.";
+    }
+    if (announce) {
+      log(p === "agent" ? "Agent has the stick." : "Captain took the stick.");
+    }
+    save(state);
+  }
+
 
 
   const qtyMap = Object.fromEntries(GOODS.map((g) => [g.id, 1]));
@@ -742,6 +773,14 @@
     el("net").textContent = "₩" + netWorth(state).toLocaleString();
     el("log").textContent = state.log;
     el("ver").textContent = VERSION;
+    // keep pilot chrome in sync without re-logging
+    const shell = el("app");
+    if (shell) shell.classList.toggle("is-agent-pilot", currentPilot() === "agent");
+    const banner = el("pilot-banner");
+    if (banner) banner.hidden = currentPilot() !== "agent";
+    document.querySelectorAll("[data-pilot-pick]").forEach((b) => {
+      b.classList.toggle("active", b.dataset.pilotPick === currentPilot());
+    });
 
     const market = el("market");
     market.innerHTML = "";
@@ -862,7 +901,7 @@
     log("Arrived " + sys(toId).name + " (−" + cost + " fuel).");
     showTab("dock");
     render();
-    maybeEncounter();
+    maybeEncounter(toId);
   }
 
   function doRefuel() {
@@ -917,31 +956,54 @@
     render();
   }
 
-  function maybeEncounter() {
-    const roll = Math.random();
-    if (roll < 0.16) openEncounter("warden");
-    else if (roll < 0.3) openEncounter("corsair");
+  // Thin encounters: chance scales with destination police/pirate; small hulls quieter.
+  function maybeEncounter(toId) {
+    const dest = sys(toId) || sys(state.system);
+    const police = dest.police | 0;
+    const pirate = dest.pirate | 0;
+    const quietHull = hull().cargo <= 20 && !hull().weapons;
+    const scale = quietHull ? 0.62 : 1;
+    const pCorsair = (pirate / 7) * 0.48 * scale;
+    const pWarden = (police / 7) * 0.36 * scale;
+    const pTrader = ((7 - pirate) / 7) * 0.14 * scale;
+    const r = Math.random();
+    if (r < pCorsair) openEncounter("corsair", dest);
+    else if (r < pCorsair + pWarden) openEncounter("warden", dest);
+    else if (r < pCorsair + pWarden + pTrader) openEncounter("trader", dest);
   }
 
   const dlg = el("encounter");
   let encKind = null;
+  let encDest = null;
 
-  function openEncounter(kind) {
+  function openEncounter(kind, dest) {
     encKind = kind;
+    encDest = dest || sys(state.system);
     const armed = hull().weapons && state.crew > 0;
+    const pir = activityLabel(encDest.pirate);
+    const pol = activityLabel(encDest.police);
     if (kind === "warden") {
       el("enc-title").textContent = "Ledger Wardens";
-      el("enc-body").textContent = "A patrol lock. They want a ₩400 inspection fine — or you can try to talk past them.";
+      el("enc-body").textContent =
+        "Patrol lock inbound (" + encDest.name + " · police " + pol + "). Inspection fine ₩400 — or bluff.";
       el("enc-a").textContent = "Pay fine";
       el("enc-b").textContent = "Bluff";
+    } else if (kind === "trader") {
+      el("enc-title").textContent = "Lane trader";
+      el("enc-body").textContent =
+        "A free hauler pings you near " + encDest.name + ". Hail for a quick deal, or wave them off.";
+      el("enc-a").textContent = "Hail";
+      el("enc-b").textContent = "Wave off";
     } else {
       el("enc-title").textContent = "Ash Corsairs";
       if (armed) {
-        el("enc-body").textContent = "Raiders on the lane. Your cutter is crewed and armed — fight, dump cargo, or burn fuel fleeing.";
+        el("enc-body").textContent =
+          "Raiders on the lane to " + encDest.name + " (pirates " + pir + "). Fight or burn fuel fleeing.";
         el("enc-a").textContent = "Fight";
         el("enc-b").textContent = "Flee (−fuel)";
       } else {
-        el("enc-body").textContent = "Raiders on the lane. Unarmed hold — dump 2 cargo, or burn fuel fleeing.";
+        el("enc-body").textContent =
+          "Raiders on the lane to " + encDest.name + " (pirates " + pir + "). Dump cargo or flee.";
         el("enc-a").textContent = "Dump cargo";
         el("enc-b").textContent = "Flee (−fuel)";
       }
@@ -964,19 +1026,47 @@
         state.credits -= fine;
         log("Bluff failed. Fine ₩" + fine + ".");
       }
+    } else if (encKind === "trader") {
+      if (choice === "b") {
+        log("Waved the trader off.");
+      } else {
+        const held = GOODS.map((g) => g.id).filter((id) => (state.cargo[id] || 0) > 0);
+        if (held.length && Math.random() < 0.55) {
+          const id = held[Math.floor(Math.random() * held.length)];
+          const p = Math.round((state.prices[id] || GOODS.find((g) => g.id === id).base) * 1.12);
+          state.cargo[id] -= 1;
+          state.credits += p;
+          log("Trader bought 1 " + GOODS.find((g) => g.id === id).name + " for ₩" + p + ".");
+        } else {
+          const g = GOODS[Math.floor(Math.random() * GOODS.length)];
+          const room = hull().cargo - cargoUsed(state);
+          const p = Math.round((state.prices[g.id] || g.base) * 0.88);
+          if (room >= 1 && state.credits >= p) {
+            state.credits -= p;
+            state.cargo[g.id] = (state.cargo[g.id] || 0) + 1;
+            log("Bought 1 " + g.name + " off a trader for ₩" + p + ".");
+          } else {
+            log("Trader had nothing you could take. Fair skies.");
+          }
+        }
+      }
     } else if (armed && choice === "a") {
-      if (Math.random() < 0.7 + state.crew * 0.05) {
-        const prize = 400 + state.crew * 150;
+      const pir = (encDest && encDest.pirate) || 3;
+      const odds = 0.55 + state.crew * 0.06 - pir * 0.03;
+      if (Math.random() < odds) {
+        const prize = 350 + state.crew * 150 + pir * 40;
         state.credits += prize;
         log("Corsairs broke off. Salvage ₩" + prize + ".");
       } else {
-        state.credits = Math.max(0, state.credits - 500);
-        log("Fight went bad. −₩500 repairs.");
+        const loss = 400 + pir * 50;
+        state.credits = Math.max(0, state.credits - loss);
+        log("Fight went bad. −₩" + loss + " repairs.");
       }
     } else if (choice === "a") {
       let dumped = 0;
       const ids = GOODS.map((g) => g.id);
-      while (dumped < 2) {
+      const take = Math.min(3, 1 + Math.floor(((encDest && encDest.pirate) || 3) / 3));
+      while (dumped < take) {
         const held = ids.filter((id) => state.cargo[id] > 0);
         if (!held.length) break;
         const id = held[Math.floor(Math.random() * held.length)];
@@ -995,6 +1085,7 @@
       }
     }
     encKind = null;
+    encDest = null;
     render();
   }
 
@@ -1016,6 +1107,7 @@
     state = fresh();
     ui.targetId = null;
     rollMarket(state);
+    applyPilot("human", false);
     showTab("dock");
     render();
   };
@@ -1053,7 +1145,13 @@
   document.querySelectorAll("[data-theme-pick]").forEach((b) => {
     b.onclick = () => applyTheme(b.dataset.themePick, true);
   });
+  document.querySelectorAll("[data-pilot-pick]").forEach((b) => {
+    b.onclick = () => applyPilot(b.dataset.pilotPick, true);
+  });
+  const takeStick = el("btn-take-stick");
+  if (takeStick) takeStick.onclick = () => applyPilot("human", true);
   loadTheme();
+  applyPilot(state.pilot || "human", false);
 
   showTab("dock");
   render();
