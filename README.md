@@ -1,4 +1,4 @@
-# SKIFF RUN 0.1.1
+# SKIFF RUN 0.2.0
 
 Palm-era trade loop homage. Original systems, goods, and ships. **Not** official Space Trader. **Not** a Paramount product.
 
@@ -9,9 +9,11 @@ Open `index.html` locally or enable GitHub Pages on `main` / root.
 ## How to play
 
 1. Buy low / sell high across systems. Use **+/−** qty, then Buy/Sell.
-2. Travel burns fuel — refuel at stations.
-3. Encounters: **Ledger Wardens** (fines) or **Ash Corsairs** (theft / fight flee).
-4. Reach **₩35,000** net worth and retire on **Quiet Moon**.
+2. Check the **chart** and **Travel** peeks — neighbor prices + fuel cost by distance.
+3. Refuel at each stop. Jump range depends on your hull.
+4. Yards at Ember Reach / Ash Meridian / Knot Harbor: trade up to Hold Barge or armed Ember Cutter. Hire crew for bunks.
+5. Encounters: **Ledger Wardens** or **Ash Corsairs** (armed+crewed can fight).
+6. Reach **₩35,000** net and retire on **Quiet Moon**.
 
 Save is automatic (`localStorage`).
 
