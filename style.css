@@ -1,4 +1,37 @@
-:root {
+/* Theme packs: data-theme on <html> — cobalt (default) | coffee | lcars */
+:root,
+[data-theme="cobalt"] {
+  --wall: #060A14;
+  --raised: #0C1424;
+  --line: #1E3A5F;
+  --type: #D6E4F5;
+  --dim: #8FA6C4;
+  --mute: #5A7394;
+  --ember: #2F6FED; /* accent (kept name for less churn) */
+  --sage: #2FA4A0;
+  --accent-soft: rgba(47, 111, 237, 0.22);
+  --map-bg: #04070F;
+  --map-here: #2F6FED;
+  --map-sel: #D6E4F5;
+  --map-reach: #9BB4D4;
+  --map-far: #33445C;
+  --map-label: #D6E4F5;
+  --map-mute: #5A7394;
+  --map-grid: rgba(30, 58, 95, 0.65);
+  --map-ring: rgba(47, 111, 237, 0.55);
+  --map-link: rgba(47, 164, 160, 0.55);
+  --map-link-dim: rgba(30, 58, 95, 0.4);
+  --radius: 0px;
+  --font: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --h2-track: 0.12em;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --tab-h: 56px;
+}
+
+[data-theme="coffee"] {
   --wall: #0C0A09;
   --raised: #1C1917;
   --line: #3F3A36;
@@ -7,18 +40,55 @@
   --mute: #78716C;
   --ember: #D97757;
   --sage: #6B8F7A;
-  --safe-t: env(safe-area-inset-top, 0px);
-  --safe-b: env(safe-area-inset-bottom, 0px);
-  --safe-l: env(safe-area-inset-left, 0px);
-  --safe-r: env(safe-area-inset-right, 0px);
-  --tab-h: 56px;
+  --accent-soft: rgba(217, 119, 87, 0.2);
+  --map-bg: #0C0A09;
+  --map-here: #D97757;
+  --map-sel: #E7E0D6;
+  --map-reach: #C4B9AC;
+  --map-far: #57534E;
+  --map-label: #E7E0D6;
+  --map-mute: #78716C;
+  --map-grid: rgba(63, 58, 54, 0.55);
+  --map-ring: rgba(217, 119, 87, 0.45);
+  --map-link: rgba(107, 143, 122, 0.55);
+  --map-link-dim: rgba(63, 58, 54, 0.35);
+  --radius: 0px;
+  --font: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --h2-track: 0.12em;
 }
+
+[data-theme="lcars"] {
+  --wall: #000000;
+  --raised: #0A0A0A;
+  --line: #FF9900;
+  --type: #FFCC99;
+  --dim: #FF9966;
+  --mute: #CC6666;
+  --ember: #FF9900;
+  --sage: #9999FF;
+  --accent-soft: rgba(255, 153, 0, 0.25);
+  --map-bg: #000000;
+  --map-here: #FF9900;
+  --map-sel: #FFCC99;
+  --map-reach: #9999FF;
+  --map-far: #444466;
+  --map-label: #FFCC99;
+  --map-mute: #CC6666;
+  --map-grid: rgba(255, 153, 0, 0.25);
+  --map-ring: rgba(255, 153, 0, 0.55);
+  --map-link: rgba(153, 153, 255, 0.55);
+  --map-link-dim: rgba(68, 68, 102, 0.4);
+  --radius: 18px;
+  --font: "Helvetica Neue", Helvetica, Arial, ui-sans-serif, sans-serif;
+  --h2-track: 0.18em;
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
   height: 100%;
   background: var(--wall);
   color: var(--type);
-  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-family: var(--font);
   line-height: 1.35;
   overflow: hidden;
 }
@@ -86,7 +156,7 @@ html, body {
 .panel[hidden] { display: none !important; }
 .panel h2 {
   font-size: 13px;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--h2-track);
   text-transform: uppercase;
   color: var(--ember);
   margin-bottom: 8px;
@@ -165,9 +235,10 @@ html, body {
   width: 100%;
   aspect-ratio: 1 / 1;
   max-height: min(52dvh, 520px);
-  background: #0C0A09;
+  background: var(--map-bg);
   border: 1px solid var(--line);
   margin-bottom: 8px;
+  border-radius: var(--radius);
 }
 #map {
   width: 100%;
@@ -221,7 +292,7 @@ html, body {
   text-transform: uppercase;
 }
 .tab.active {
-  background: rgba(217, 119, 87, 0.2);
+  background: var(--accent-soft);
   border-color: var(--ember);
   color: var(--ember);
 }
@@ -277,3 +348,28 @@ dialog::backdrop { background: rgba(0,0,0,.72); }
   margin-bottom: 0.5rem;
 }
 .panel-head h2 { margin: 0; }
+
+/* theme surface radius */
+.status-strip, .log, .row, .yard-row, .target-card, .card-block, .btn, .chip, .tab, dialog {
+  border-radius: var(--radius);
+}
+.theme-packs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0 16px;
+}
+.theme-packs .seg { width: 100%; }
+.theme-packs .seg-btn { flex: 1; }
+[data-theme="lcars"] .brand strong {
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+[data-theme="lcars"] .tabbar {
+  border-top-width: 3px;
+  border-top-color: var(--ember);
+}
+[data-theme="lcars"] .status-strip {
+  border-width: 2px;
+  border-color: var(--ember);
+}

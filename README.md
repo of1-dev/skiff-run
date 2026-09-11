@@ -1,4 +1,4 @@
-# SKIFF RUN 0.3.3
+# SKIFF RUN 0.4.0
 
 Browser trade-run through the Ember chart. Original systems, goods, and ships.
 
@@ -26,3 +26,7 @@ Settings → Pages → Deploy from branch `main` / `/ (root)`.
 Expected URL pattern: `https://<user>.github.io/skiff-run/`
 
 <!-- pages-build: nudge -->
+
+## Theme packs
+
+Captain tab: **Cobalt** (default), **Coffee**, **LCARS**. Preference is saved separately from the run.

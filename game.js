@@ -1,7 +1,9 @@
 (() => {
   "use strict";
-  const VERSION = "0.3.3";
+  const VERSION = "0.4.0";
   const SAVE_KEY = "skiff-run-v1";
+  const THEME_KEY = "skiff-run-theme";
+  const THEMES = ["cobalt", "coffee", "lcars"];
   const RETIRE_NET = 35000;
   const FUEL_PRICE = 45;
   const CREW_HIRE = 800;
@@ -288,6 +290,64 @@
   const el = (id) => document.getElementById(id);
   const log = (msg) => { state.log = msg; el("log").textContent = msg; };
 
+  function cssVar(name, fallback) {
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || fallback;
+  }
+
+  function themeColors() {
+    return {
+      bg: cssVar("--map-bg", "#04070F"),
+      here: cssVar("--map-here", "#2F6FED"),
+      sel: cssVar("--map-sel", "#D6E4F5"),
+      reach: cssVar("--map-reach", "#9BB4D4"),
+      far: cssVar("--map-far", "#33445C"),
+      label: cssVar("--map-label", "#D6E4F5"),
+      mute: cssVar("--map-mute", "#5A7394"),
+      grid: cssVar("--map-grid", "rgba(30,58,95,0.65)"),
+      ring: cssVar("--map-ring", "rgba(47,111,237,0.55)"),
+      link: cssVar("--map-link", "rgba(47,164,160,0.55)"),
+      linkDim: cssVar("--map-link-dim", "rgba(30,58,95,0.4)"),
+    };
+  }
+
+  function currentTheme() {
+    const t = document.documentElement.getAttribute("data-theme") || "cobalt";
+    return THEMES.includes(t) ? t : "cobalt";
+  }
+
+  function applyTheme(name, persist) {
+    const t = THEMES.includes(name) ? name : "cobalt";
+    document.documentElement.setAttribute("data-theme", t);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", cssVar("--wall", "#060A14"));
+    document.querySelectorAll("[data-theme-pick]").forEach((b) => {
+      b.classList.toggle("active", b.dataset.themePick === t);
+    });
+    const hint = el("theme-hint");
+    if (hint) {
+      hint.textContent = t === "cobalt"
+        ? "Cobalt — dark navy hull console."
+        : t === "coffee"
+          ? "Coffee — the earlier stone and clay look."
+          : "LCARS — orange console homage (fan aesthetic pack).";
+    }
+    if (persist !== false) {
+      try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
+    }
+    if (typeof ui !== "undefined" && ui && ui.tab === "chart") {
+      sizeMap();
+      drawMap();
+    }
+  }
+
+  function loadTheme() {
+    let t = "cobalt";
+    try { t = localStorage.getItem(THEME_KEY) || "cobalt"; } catch (e) {}
+    applyTheme(t, false);
+  }
+
+
   const qtyMap = Object.fromEntries(GOODS.map((g) => [g.id, 1]));
   function qtyFor(id) { return qtyMap[id] || 1; }
   function setQty(id, n) {
@@ -356,8 +416,9 @@
     const h = canvas.height / dpr;
     ctx.save();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const tc = themeColors();
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = "#0C0A09";
+    ctx.fillStyle = tc.bg;
     ctx.fillRect(0, 0, w, h);
 
     const here = sys(state.system);
@@ -365,7 +426,7 @@
     const local = ui.chartMode === "local";
 
     // soft grid
-    ctx.strokeStyle = "rgba(63,58,54,0.55)";
+    ctx.strokeStyle = tc.grid;
     ctx.lineWidth = 1;
     for (let i = 1; i < 4; i++) {
       const x = (w * i) / 4;
@@ -377,7 +438,7 @@
     // range ring (always from here; in sector also show it)
     ctx.beginPath();
     ctx.arc((here.x / 100) * w, (here.y / 100) * h, (range / 100) * Math.min(w, h), 0, Math.PI * 2);
-    ctx.strokeStyle = "rgba(217,119,87,0.45)";
+    ctx.strokeStyle = tc.ring;
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
@@ -389,7 +450,7 @@
       ctx.beginPath();
       ctx.moveTo((here.x / 100) * w, (here.y / 100) * h);
       ctx.lineTo((s.x / 100) * w, (s.y / 100) * h);
-      ctx.strokeStyle = reach ? "rgba(107,143,122,0.55)" : "rgba(63,58,54,0.35)";
+      ctx.strokeStyle = reach ? tc.link : tc.linkDim;
       ctx.stroke();
     });
 
@@ -402,20 +463,20 @@
       const r = s.id === here.id ? 7 : selected ? 6 : 4.5;
       ctx.beginPath();
       ctx.arc(px, py, r, 0, Math.PI * 2);
-      ctx.fillStyle = s.id === here.id ? "#D97757" : selected ? "#E7E0D6" : reach ? "#C4B9AC" : "#57534E";
+      ctx.fillStyle = s.id === here.id ? tc.here : selected ? tc.sel : reach ? tc.reach : tc.far;
       ctx.fill();
       if (selected) {
         ctx.beginPath();
         ctx.arc(px, py, r + 4, 0, Math.PI * 2);
-        ctx.strokeStyle = "#D97757";
+        ctx.strokeStyle = tc.here;
         ctx.stroke();
       }
-      ctx.fillStyle = reach || s.id === here.id ? "#E7E0D6" : "#78716C";
+      ctx.fillStyle = reach || s.id === here.id ? tc.label : tc.mute;
       ctx.font = "600 12px ui-sans-serif, system-ui, sans-serif";
       ctx.fillText(s.name, px + 9, py + 4);
       if (reach && s.id !== here.id) {
         const cost = fuelCost(here.id, s.id);
-        ctx.fillStyle = "#A8A29E";
+        ctx.fillStyle = tc.mute;
         ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
         ctx.fillText(cost + "f", px + 9, py + 16);
       }
@@ -836,6 +897,11 @@
     sizeMap();
     drawMap();
   });
+
+  document.querySelectorAll("[data-theme-pick]").forEach((b) => {
+    b.onclick = () => applyTheme(b.dataset.themePick, true);
+  });
+  loadTheme();
 
   showTab("dock");
   render();

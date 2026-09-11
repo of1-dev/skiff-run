@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="cobalt">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#0C0A09" />
+  <meta name="theme-color" content="#060A14" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>SKIFF RUN</title>
   <link rel="stylesheet" href="style.css" />
@@ -84,6 +84,15 @@
       <section id="tab-captain" class="panel" data-tab="captain" hidden>
         <h2>Captain</h2>
         <p class="hint">Save is automatic. New reshuffles the chart — same systems, new lanes.</p>
+        <h3 class="sub">Theme</h3>
+        <div class="theme-packs">
+          <div class="seg" role="group" aria-label="Theme pack">
+            <button type="button" class="seg-btn" data-theme-pick="cobalt">Cobalt</button>
+            <button type="button" class="seg-btn" data-theme-pick="coffee">Coffee</button>
+            <button type="button" class="seg-btn" data-theme-pick="lcars">LCARS</button>
+          </div>
+          <p class="hint" id="theme-hint">Cobalt is the default hull console look.</p>
+        </div>
         <button type="button" id="btn-reset" class="btn ghost">New game</button>
         <p class="disclaimer">Ember chart · original systems, goods, and hulls.</p>
       </section>
