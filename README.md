@@ -1,4 +1,4 @@
-# SKIFF RUN 0.6.0
+# SKIFF RUN 0.7.0
 
 Browser trade-run through the Ember chart. Original systems, goods, and ships.
 
@@ -39,7 +39,7 @@ Yard shows original class silhouettes (`assets/hulls/`). Common classes for all 
 
 Systems have tech / gov / size / police / pirate activity. Chart node color = pirate risk; teal reward ring = expected trade edge from here. Target card shows dossier + margin stub.
 
-## Pilot handoff (0.6.0)
+## Pilot handoff (0.7.0)
 
 Captain tab: **You** / **Agent**. Same single-player save; hand the stick back and forth. MCP agent seat TBD — see `docs/mcp-agent-seat.md`.
 

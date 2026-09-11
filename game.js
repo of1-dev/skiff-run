@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.6.0";
+  const VERSION = "0.7.0";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const THEMES = ["cobalt", "coffee", "lcars"];
