@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.4.0";
+  const VERSION = "0.4.1";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const THEMES = ["cobalt", "coffee", "lcars"];
@@ -39,6 +39,17 @@
   function sys(id) { return SYSTEMS.find((s) => s.id === id); }
   function ship(id) { return SHIPS.find((s) => s.id === id); }
   function hull() { return ship(state.shipId) || SHIPS[0]; }
+
+  // Shared hull art — original silhouettes; inline so themes tint via currentColor.
+  const HULL_SVG = {"glass-dart": "<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <path fill=\"currentColor\" d=\"M16 40 L130 30 L150 40 L130 50 Z\"/>\n  <path fill=\"currentColor\" opacity=\".45\" d=\"M50 40 L90 34 L90 46 Z\"/>\n</svg>\n", "knot-hauler": "<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <rect x=\"24\" y=\"28\" width=\"110\" height=\"30\" rx=\"4\" fill=\"currentColor\"/>\n  <rect x=\"40\" y=\"18\" width=\"50\" height=\"14\" rx=\"2\" fill=\"currentColor\" opacity=\".65\"/>\n  <circle cx=\"36\" cy=\"56\" r=\"6\" fill=\"currentColor\" opacity=\".5\"/>\n  <circle cx=\"120\" cy=\"56\" r=\"6\" fill=\"currentColor\" opacity=\".5\"/>\n</svg>\n", "skiff-7": "<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <!-- starter light freighter: slim wedge + single pod -->\n  <path fill=\"currentColor\" d=\"M18 42 L92 28 L138 40 L92 52 Z\"/>\n  <path fill=\"currentColor\" opacity=\".55\" d=\"M40 40 L70 34 L70 46 Z\"/>\n  <rect x=\"12\" y=\"36\" width=\"14\" height=\"12\" rx=\"2\" fill=\"currentColor\" opacity=\".85\"/>\n  <circle cx=\"118\" cy=\"40\" r=\"4\" fill=\"currentColor\" opacity=\".4\"/>\n</svg>\n", "quiet-ark": "<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <rect x=\"30\" y=\"26\" width=\"100\" height=\"32\" rx=\"16\" fill=\"currentColor\"/>\n  <rect x=\"50\" y=\"34\" width=\"60\" height=\"16\" rx=\"4\" fill=\"currentColor\" opacity=\".35\"/>\n  <circle cx=\"40\" cy=\"42\" r=\"5\" fill=\"currentColor\" opacity=\".7\"/>\n</svg>\n", "hold-barge": "<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <!-- fat cargo hauler: blocky body + twin holds -->\n  <rect x=\"28\" y=\"30\" width=\"100\" height=\"28\" rx=\"3\" fill=\"currentColor\"/>\n  <rect x=\"36\" y=\"22\" width=\"36\" height=\"12\" rx=\"2\" fill=\"currentColor\" opacity=\".7\"/>\n  <rect x=\"80\" y=\"22\" width=\"36\" height=\"12\" rx=\"2\" fill=\"currentColor\" opacity=\".7\"/>\n  <rect x=\"14\" y=\"36\" width=\"16\" height=\"16\" rx=\"2\" fill=\"currentColor\" opacity=\".9\"/>\n  <rect x=\"128\" y=\"34\" width=\"18\" height=\"20\" rx=\"2\" fill=\"currentColor\" opacity=\".55\"/>\n</svg>\n", "ember-cutter": "<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <!-- armed cutter: forward spike + wing guns -->\n  <path fill=\"currentColor\" d=\"M20 40 L100 24 L148 40 L100 56 Z\"/>\n  <path fill=\"currentColor\" opacity=\".5\" d=\"M48 40 L78 32 L78 48 Z\"/>\n  <path stroke=\"currentColor\" stroke-width=\"3\" d=\"M70 22 L88 16 M70 58 L88 64\"/>\n  <rect x=\"96\" y=\"36\" width=\"10\" height=\"8\" fill=\"currentColor\" opacity=\".85\"/>\n  <circle cx=\"132\" cy=\"40\" r=\"3\" fill=\"currentColor\"/>\n</svg>\n", "mite": "<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <path fill=\"currentColor\" d=\"M36 40 L90 32 L120 40 L90 48 Z\"/>\n  <circle cx=\"48\" cy=\"40\" r=\"7\" fill=\"currentColor\" opacity=\".75\"/>\n</svg>\n", "wasp-prime": "<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <path fill=\"currentColor\" d=\"M14 40 L100 20 L156 40 L100 60 Z\"/>\n  <path stroke=\"currentColor\" stroke-width=\"3\" d=\"M55 22 L70 8 M55 58 L70 72\"/>\n  <path stroke=\"currentColor\" stroke-width=\"3\" d=\"M78 26 L92 12 M78 54 L92 68\"/>\n  <rect x=\"108\" y=\"34\" width=\"16\" height=\"12\" fill=\"currentColor\"/>\n</svg>\n", "ash-lance": "<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <path fill=\"currentColor\" d=\"M18 40 L110 26 L152 40 L110 54 Z\"/>\n  <path stroke=\"currentColor\" stroke-width=\"2.5\" d=\"M60 24 L78 14 M60 56 L78 66\"/>\n  <rect x=\"100\" y=\"34\" width=\"14\" height=\"12\" fill=\"currentColor\" opacity=\".8\"/>\n</svg>\n", "tide-runner": "<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <path fill=\"currentColor\" d=\"M22 44 C50 18, 110 18, 142 40 C110 62, 50 62, 22 36 Z\"/>\n  <ellipse cx=\"70\" cy=\"40\" rx=\"18\" ry=\"10\" fill=\"currentColor\" opacity=\".35\"/>\n</svg>\n"};
+
+  function makeHullArt(id, cls) {
+    const wrap = document.createElement("div");
+    wrap.className = cls || "hull-art";
+    wrap.setAttribute("aria-hidden", "true");
+    wrap.innerHTML = HULL_SVG[id] || HULL_SVG["skiff-7"] || "";
+    return wrap;
+  }
 
   function mulberry32(a) {
     return function () {
@@ -534,6 +545,11 @@
     el("ship-meta").textContent =
       "hold " + h.cargo + " · tanks " + h.fuelMax + " · range " + h.range +
       " · crew " + state.crew + "/" + h.crewMax;
+    const ownedArt = el("ship-art");
+    if (ownedArt) {
+      ownedArt.innerHTML = "";
+      ownedArt.appendChild(makeHullArt(h.id, "hull-art hull-art--owned"));
+    }
     const yard = el("yard");
     yard.innerHTML = "";
     const atYard = !!sys(state.system).yard;
@@ -546,12 +562,18 @@
         row.className = "yard-row";
         const ownedTrade = Math.floor((hull().price || 0) * 0.55);
         const due = Math.max(0, s.price - ownedTrade);
-        row.innerHTML =
-          "<div><strong>" + s.name + "</strong><div class=\"have\">" +
+        const info = document.createElement("div");
+        info.className = "yard-info";
+        info.appendChild(makeHullArt(s.id, "hull-art hull-art--thumb"));
+        const text = document.createElement("div");
+        text.innerHTML =
+          "<strong>" + s.name + "</strong><div class=\"have\">" +
           "hold " + s.cargo + " · fuel " + s.fuelMax + " · range " + s.range +
           (s.weapons ? " · weapons" : " · no guns") +
           " · crew max " + s.crewMax +
-          "</div><div class=\"hint\">Trade-in due ₩" + due.toLocaleString() + "</div></div>";
+          "</div><div class=\"hint\">Trade-in due ₩" + due.toLocaleString() + "</div>";
+        info.appendChild(text);
+        row.appendChild(info);
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "chip";

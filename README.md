@@ -1,4 +1,4 @@
-# SKIFF RUN 0.4.0
+# SKIFF RUN 0.4.1
 
 Browser trade-run through the Ember chart. Original systems, goods, and ships.
 
@@ -30,3 +30,7 @@ Expected URL pattern: `https://<user>.github.io/skiff-run/`
 ## Theme packs
 
 Captain tab: **Cobalt** (default), **Coffee**, **LCARS**. Preference is saved separately from the run.
+
+## Hull SVGs
+
+Yard shows original class silhouettes (`assets/hulls/`). Common classes for all captains; faction exclusives optional later. See `docs/hull-roster.md`.

@@ -373,3 +373,30 @@ dialog::backdrop { background: rgba(0,0,0,.72); }
   border-width: 2px;
   border-color: var(--ember);
 }
+
+.ship-art { margin: 0 0 8px; color: var(--ember); }
+.hull-art {
+  color: var(--ember);
+  line-height: 0;
+}
+.hull-art .hull-svg {
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  display: block;
+  color: inherit;
+}
+.hull-art--owned .hull-svg { max-width: 260px; }
+.hull-art--thumb .hull-svg { max-width: 120px; }
+.yard-row {
+  grid-template-columns: 1fr auto;
+}
+.yard-info {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+@media (max-width: 420px) {
+  .yard-info { grid-template-columns: 1fr; }
+}
