@@ -1,8 +1,8 @@
 (() => {
   "use strict";
-  const VERSION = "0.1.0";
+  const VERSION = "0.1.1";
   const SAVE_KEY = "skiff-run-v1";
-  const RETIRE_NET = 120000;
+  const RETIRE_NET = 35000;
   const FUEL_PRICE = 45;
 
   const GOODS = [
@@ -36,7 +36,7 @@
     return {
       v: VERSION,
       system: "ember",
-      credits: 2500,
+      credits: 3200,
       fuel: HULL.fuelMax,
       cargo: Object.fromEntries(GOODS.map((g) => [g.id, 0])),
       prices: {},
@@ -68,7 +68,8 @@
       const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return null;
       const st = JSON.parse(raw);
-      if (!st || st.v !== VERSION) return null;
+      if (!st || !st.v) return null;
+      st.v = VERSION;
       return st;
     } catch (_) { return null; }
   }
@@ -97,17 +98,40 @@
     GOODS.forEach((g) => {
       const p = state.prices[g.id];
       const have = state.cargo[g.id] || 0;
+      const qty = qtyFor(g.id);
       const row = document.createElement("div");
       row.className = "row";
-      row.innerHTML = "<div><strong>" + g.name + "</strong><div class=\"meta\">have " + have + " · ₩" + p + "</div></div>";
+      const info = document.createElement("div");
+      info.className = "good";
+      info.innerHTML = "<strong>" + g.name + "</strong><div class=\"have\">have " + have + " · ₩" + p + "</div>";
+      const steppers = document.createElement("div");
+      steppers.className = "qty";
+      const minus = document.createElement("button");
+      minus.type = "button";
+      minus.className = "chip ghost qty-btn";
+      minus.textContent = "−";
+      minus.onclick = () => setQty(g.id, qty - 1);
+      const qlab = document.createElement("span");
+      qlab.className = "qty-val";
+      qlab.textContent = String(qty);
+      const plus = document.createElement("button");
+      plus.type = "button";
+      plus.className = "chip ghost qty-btn";
+      plus.textContent = "+";
+      plus.onclick = () => setQty(g.id, qty + 1);
+      steppers.appendChild(minus);
+      steppers.appendChild(qlab);
+      steppers.appendChild(plus);
       const buy = document.createElement("button");
       buy.className = "chip";
       buy.textContent = "Buy";
-      buy.onclick = () => doBuy(g.id);
+      buy.onclick = () => doBuy(g.id, qty);
       const sell = document.createElement("button");
       sell.className = "chip ghost";
       sell.textContent = "Sell";
-      sell.onclick = () => doSell(g.id);
+      sell.onclick = () => doSell(g.id, qty);
+      row.appendChild(info);
+      row.appendChild(steppers);
       row.appendChild(buy);
       row.appendChild(sell);
       market.appendChild(row);
@@ -132,22 +156,36 @@
     save(state);
   }
 
-  function doBuy(id) {
-    const p = state.prices[id];
-    if (state.credits < p) return log("Not enough credits.");
-    if (cargoUsed(state) >= HULL.cargo) return log("Hold full.");
-    state.credits -= p;
-    state.cargo[id] += 1;
-    log("Bought 1 " + GOODS.find((g) => g.id === id).name + " for ₩" + p + ".");
+  const qtyMap = Object.fromEntries(GOODS.map((g) => [g.id, 1]));
+  function qtyFor(id) { return qtyMap[id] || 1; }
+  function setQty(id, n) {
+    qtyMap[id] = Math.max(1, Math.min(HULL.cargo, n | 0));
     render();
   }
 
-  function doSell(id) {
-    if ((state.cargo[id] || 0) < 1) return log("Nothing to sell.");
+  function doBuy(id, qty) {
+    qty = Math.max(1, qty | 0);
     const p = state.prices[id];
-    state.cargo[id] -= 1;
-    state.credits += p;
-    log("Sold 1 " + GOODS.find((g) => g.id === id).name + " for ₩" + p + ".");
+    const room = HULL.cargo - cargoUsed(state);
+    if (room <= 0) return log("Hold full.");
+    const canPay = Math.floor(state.credits / p);
+    const n = Math.min(qty, room, canPay);
+    if (n < 1) return log("Not enough credits.");
+    state.credits -= p * n;
+    state.cargo[id] += n;
+    log("Bought " + n + " " + GOODS.find((g) => g.id === id).name + " for ₩" + (p * n) + ".");
+    render();
+  }
+
+  function doSell(id, qty) {
+    qty = Math.max(1, qty | 0);
+    const have = state.cargo[id] || 0;
+    if (have < 1) return log("Nothing to sell.");
+    const n = Math.min(qty, have);
+    const p = state.prices[id];
+    state.cargo[id] -= n;
+    state.credits += p * n;
+    log("Sold " + n + " " + GOODS.find((g) => g.id === id).name + " for ₩" + (p * n) + ".");
     render();
   }
 
