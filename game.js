@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.3.2";
+  const VERSION = "0.3.3";
   const SAVE_KEY = "skiff-run-v1";
   const RETIRE_NET = 35000;
   const FUEL_PRICE = 45;
@@ -357,7 +357,7 @@
     ctx.save();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = "#070B12";
+    ctx.fillStyle = "#0C0A09";
     ctx.fillRect(0, 0, w, h);
 
     const here = sys(state.system);
@@ -365,7 +365,7 @@
     const local = ui.chartMode === "local";
 
     // soft grid
-    ctx.strokeStyle = "rgba(36,48,68,0.7)";
+    ctx.strokeStyle = "rgba(63,58,54,0.55)";
     ctx.lineWidth = 1;
     for (let i = 1; i < 4; i++) {
       const x = (w * i) / 4;
@@ -377,7 +377,7 @@
     // range ring (always from here; in sector also show it)
     ctx.beginPath();
     ctx.arc((here.x / 100) * w, (here.y / 100) * h, (range / 100) * Math.min(w, h), 0, Math.PI * 2);
-    ctx.strokeStyle = "rgba(91,159,212,0.55)";
+    ctx.strokeStyle = "rgba(217,119,87,0.45)";
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
@@ -389,7 +389,7 @@
       ctx.beginPath();
       ctx.moveTo((here.x / 100) * w, (here.y / 100) * h);
       ctx.lineTo((s.x / 100) * w, (s.y / 100) * h);
-      ctx.strokeStyle = reach ? "rgba(61,155,143,0.55)" : "rgba(36,48,68,0.4)";
+      ctx.strokeStyle = reach ? "rgba(107,143,122,0.55)" : "rgba(63,58,54,0.35)";
       ctx.stroke();
     });
 
@@ -402,20 +402,20 @@
       const r = s.id === here.id ? 7 : selected ? 6 : 4.5;
       ctx.beginPath();
       ctx.arc(px, py, r, 0, Math.PI * 2);
-      ctx.fillStyle = s.id === here.id ? "#5B9FD4" : selected ? "#D7E2F0" : reach ? "#A8B8CC" : "#3A465A";
+      ctx.fillStyle = s.id === here.id ? "#D97757" : selected ? "#E7E0D6" : reach ? "#C4B9AC" : "#57534E";
       ctx.fill();
       if (selected) {
         ctx.beginPath();
         ctx.arc(px, py, r + 4, 0, Math.PI * 2);
-        ctx.strokeStyle = "#5B9FD4";
+        ctx.strokeStyle = "#D97757";
         ctx.stroke();
       }
-      ctx.fillStyle = reach || s.id === here.id ? "#D7E2F0" : "#5C6B80";
+      ctx.fillStyle = reach || s.id === here.id ? "#E7E0D6" : "#78716C";
       ctx.font = "600 12px ui-sans-serif, system-ui, sans-serif";
       ctx.fillText(s.name, px + 9, py + 4);
       if (reach && s.id !== here.id) {
         const cost = fuelCost(here.id, s.id);
-        ctx.fillStyle = "#8B9BB0";
+        ctx.fillStyle = "#A8A29E";
         ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
         ctx.fillText(cost + "f", px + 9, py + 16);
       }
