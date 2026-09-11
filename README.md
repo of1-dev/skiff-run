@@ -1,4 +1,4 @@
-# SKIFF RUN 0.4.1
+# SKIFF RUN 0.5.0
 
 Browser trade-run through the Ember chart. Original systems, goods, and ships.
 
@@ -34,3 +34,7 @@ Captain tab: **Cobalt** (default), **Coffee**, **LCARS**. Preference is saved se
 ## Hull SVGs
 
 Yard shows original class silhouettes (`assets/hulls/`). Common classes for all captains; faction exclusives optional later. See `docs/hull-roster.md`.
+
+## Chart depth (0.5)
+
+Systems have tech / gov / size / police / pirate activity. Chart node color = pirate risk; teal reward ring = expected trade edge from here. Target card shows dossier + margin stub.

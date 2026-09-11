@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.4.1";
+  const VERSION = "0.5.0";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const THEMES = ["cobalt", "coffee", "lcars"];
@@ -20,13 +20,24 @@
 
   // x/y are map coords (0–100). Links kept for lore; jump range is distance + hull.range.
   // Named roster is fixed; x/y are filled per New-game chart seed.
+  // tech 0–7, size 0–4, police/pirate 0–7 (Absent…Swarms). Original gov labels.
+  const ACTIVITY = ["Absent", "Minimal", "Few", "Some", "Moderate", "Many", "Abundant", "Swarms"];
+  const TECH_NAME = ["Pre-ag", "Ag", "Low", "Craft", "Early-ind", "Industrial", "Post-ind", "Hi-tech"];
+  const SIZE_NAME = ["Tiny", "Small", "Medium", "Large", "Huge"];
+
   const SYSTEM_DEFS = [
-    { id: "ember", name: "Ember Reach", mods: { ore: 0.7, optics: 1.3, meds: 1.1 }, yard: true },
-    { id: "glass", name: "Glass Orchard", mods: { grain: 0.65, spice: 1.25, scrap: 1.1 } },
-    { id: "tide", name: "Tide Spur", mods: { meds: 0.75, ore: 1.2, optics: 1.15 } },
-    { id: "ash", name: "Ash Meridian", mods: { scrap: 0.6, spice: 0.9, grain: 1.2 }, yard: true },
-    { id: "knot", name: "Knot Harbor", mods: { optics: 0.8, meds: 1.3, ore: 1.1 }, yard: true },
-    { id: "quiet", name: "Quiet Moon", mods: { grain: 1.1, spice: 1.1, scrap: 1.15 }, retire: true },
+    { id: "ember", name: "Ember Reach", mods: { ore: 0.7, optics: 1.3, meds: 1.1 }, yard: true,
+      tech: 5, size: 3, gov: "Compact Hub", police: 4, pirate: 2 },
+    { id: "glass", name: "Glass Orchard", mods: { grain: 0.65, spice: 1.25, scrap: 1.1 },
+      tech: 3, size: 2, gov: "Orchard Freehold", police: 2, pirate: 3 },
+    { id: "tide", name: "Tide Spur", mods: { meds: 0.75, ore: 1.2, optics: 1.15 },
+      tech: 4, size: 2, gov: "Spur League", police: 3, pirate: 4 },
+    { id: "ash", name: "Ash Meridian", mods: { scrap: 0.6, spice: 0.9, grain: 1.2 }, yard: true,
+      tech: 4, size: 2, gov: "Fringe Compact", police: 1, pirate: 6 },
+    { id: "knot", name: "Knot Harbor", mods: { optics: 0.8, meds: 1.3, ore: 1.1 }, yard: true,
+      tech: 6, size: 3, gov: "Harbor Syndicate", police: 5, pirate: 2 },
+    { id: "quiet", name: "Quiet Moon", mods: { grain: 1.1, spice: 1.1, scrap: 1.15 }, retire: true,
+      tech: 2, size: 1, gov: "Quiet Protectorate", police: 3, pirate: 1 },
   ];
   let SYSTEMS = SYSTEM_DEFS.map((s) => Object.assign({ x: 50, y: 50 }, s));
 
@@ -177,10 +188,59 @@
   // Stable prices so remote peek matches arrival.
   function priceFor(system, good) {
     const m = system.mods[good.id] || 1;
-    // Stable per system so travel peeks match the dock you land on.
+    const size = system.size == null ? 2 : system.size;
+    // Larger docks lean slightly cheaper (ST-style size pressure).
+    const sizeMul = (100 - size * 3) / 100;
     const h = hash32(system.id + ":" + good.id);
     const jitter = 0.92 + ((h % 160) / 1000);
-    return Math.max(8, Math.round(good.base * m * jitter));
+    return Math.max(8, Math.round(good.base * m * sizeMul * jitter));
+  }
+
+  function activityLabel(n) {
+    const i = Math.max(0, Math.min(ACTIVITY.length - 1, n | 0));
+    return ACTIVITY[i];
+  }
+
+  function isVisited(id) {
+    return !!(state.visited && state.visited[id]);
+  }
+
+  function markVisited(id) {
+    if (!state.visited) state.visited = {};
+    state.visited[id] = true;
+  }
+
+  // Semantic chart colors (readable across themes).
+  function riskFill(pirate) {
+    const p = pirate | 0;
+    if (p <= 1) return "#2FA4A0";
+    if (p <= 3) return "#C4A35A";
+    if (p <= 5) return "#D97757";
+    return "#C44C4C";
+  }
+
+  function bestLaneEdge(herePrices, therePrices) {
+    let best = null;
+    GOODS.forEach((g) => {
+      const edge = therePrices[g.id] - herePrices[g.id];
+      if (!best || edge > best.edge) best = { id: g.id, name: g.name, edge };
+    });
+    return best;
+  }
+
+  // Expected credit delta if you sell current hold at target vs here.
+  function cargoMarginAt(toId) {
+    const here = state.prices;
+    const there = peekPrices(toId);
+    let total = 0;
+    let units = 0;
+    GOODS.forEach((g) => {
+      const n = state.cargo[g.id] || 0;
+      if (n < 1) return;
+      total += n * ((there[g.id] || 0) - (here[g.id] || 0));
+      units += n;
+    });
+    return { total, units };
   }
 
   function dist(a, b) {
@@ -216,6 +276,7 @@
       crew: 0,
       epoch: 1,
       chart,
+      visited: { ember: true },
       log: "Skiff-7 cleared Ember Reach. New chart this run — same systems, new lanes.",
     };
   }
@@ -271,6 +332,11 @@
       if (!st.shipId) st.shipId = "skiff-7";
       if (st.crew == null) st.crew = 0;
       if (!st.epoch) st.epoch = 1;
+      if (!st.visited) {
+        st.visited = {};
+        if (st.system) st.visited[st.system] = true;
+        else st.visited.ember = true;
+      }
       const h = ship(st.shipId) || SHIPS[0];
       st.shipId = h.id;
       st.crew = Math.min(st.crew, h.crewMax);
@@ -471,25 +537,49 @@
       const px = (s.x / 100) * w;
       const py = (s.y / 100) * h;
       const selected = ui.targetId === s.id;
+      const visited = isVisited(s.id) || s.id === here.id;
       const r = s.id === here.id ? 7 : selected ? 6 : 4.5;
+      const fill = s.id === here.id ? tc.here : riskFill(s.pirate);
       ctx.beginPath();
       ctx.arc(px, py, r, 0, Math.PI * 2);
-      ctx.fillStyle = s.id === here.id ? tc.here : selected ? tc.sel : reach ? tc.reach : tc.far;
-      ctx.fill();
-      if (selected) {
-        ctx.beginPath();
-        ctx.arc(px, py, r + 4, 0, Math.PI * 2);
-        ctx.strokeStyle = tc.here;
+      if (visited) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+      } else {
+        ctx.fillStyle = tc.bg;
+        ctx.fill();
+        ctx.strokeStyle = fill;
+        ctx.lineWidth = 2;
         ctx.stroke();
       }
-      ctx.fillStyle = reach || s.id === here.id ? tc.label : tc.mute;
+      // Reward ring: expected lane edge from current dock buys
+      if (s.id !== here.id && reach) {
+        const edge = bestLaneEdge(state.prices, peekPrices(s.id));
+        if (edge && edge.edge >= 4) {
+          const ring = Math.min(10, 4 + edge.edge / 4);
+          ctx.beginPath();
+          ctx.arc(px, py, r + 3, 0, Math.PI * 2);
+          ctx.strokeStyle = edge.edge >= 12 ? "rgba(47,164,160,0.9)" : "rgba(47,164,160,0.45)";
+          ctx.lineWidth = edge.edge >= 12 ? 2.5 : 1.5;
+          ctx.stroke();
+          void ring;
+        }
+      }
+      if (selected) {
+        ctx.beginPath();
+        ctx.arc(px, py, r + 5, 0, Math.PI * 2);
+        ctx.strokeStyle = tc.here;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+      ctx.fillStyle = visited ? tc.label : tc.mute;
       ctx.font = "600 12px ui-sans-serif, system-ui, sans-serif";
       ctx.fillText(s.name, px + 9, py + 4);
       if (reach && s.id !== here.id) {
         const cost = fuelCost(here.id, s.id);
         ctx.fillStyle = tc.mute;
         ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
-        ctx.fillText(cost + "f", px + 9, py + 16);
+        ctx.fillText(cost + "f · P" + activityLabel(s.pirate).slice(0, 3), px + 9, py + 16);
       }
     });
     ctx.restore();
@@ -515,11 +605,25 @@
     const title = el("target-title");
     const meta = el("target-meta");
     const peekEl = el("target-peek");
+    const dossier = el("target-dossier");
+    const marginEl = el("target-margin");
     const warp = el("btn-warp");
     const id = ui.targetId;
+    const clearExtra = () => {
+      if (dossier) { dossier.hidden = true; dossier.textContent = ""; }
+      if (marginEl) { marginEl.hidden = true; marginEl.textContent = ""; marginEl.className = "margin-line"; }
+    };
     if (!id || id === state.system) {
-      title.textContent = sys(state.system).name + " (here)";
+      const here = sys(state.system);
+      title.textContent = here.name + " (here)";
       meta.textContent = "Pick another system to jump.";
+      if (dossier) {
+        dossier.hidden = false;
+        dossier.textContent =
+          SIZE_NAME[here.size|0] + " · " + TECH_NAME[here.tech|0] + " · " + (here.gov || "—") +
+          "\nPolice " + activityLabel(here.police) + " · Pirates " + activityLabel(here.pirate);
+      }
+      if (marginEl) marginEl.hidden = true;
       peekEl.textContent = "";
       warp.disabled = true;
       warp.textContent = "Jump";
@@ -530,10 +634,35 @@
     const cost = fuelCost(state.system, id);
     const peek = peekPrices(id);
     const hint = bestDealHint(state.prices, peek);
-    title.textContent = t.name;
+    const visited = isVisited(id);
+    title.textContent = t.name + (visited ? "" : " · unvisited");
     meta.textContent = reach
       ? (cost + " fuel · " + hint + (t.yard ? " · yard" : "") + (t.retire ? " · retire dock" : ""))
       : ("Out of range (" + Math.ceil(dist(sys(state.system), t)) + " units · your range " + hull().range + ")");
+    if (dossier) {
+      dossier.hidden = false;
+      dossier.textContent =
+        SIZE_NAME[t.size|0] + " · " + TECH_NAME[t.tech|0] + " · " + (t.gov || "—") +
+        "\nPolice " + activityLabel(t.police) + " · Pirates " + activityLabel(t.pirate) +
+        (visited ? "" : "\n(Resources still fogged — first dock reveals more later.)");
+    }
+    if (marginEl) {
+      const hold = cargoMarginAt(id);
+      const lane = bestLaneEdge(state.prices, peek);
+      marginEl.hidden = false;
+      if (hold.units > 0) {
+        const sign = hold.total >= 0 ? "+" : "";
+        marginEl.textContent = "Hold vs here: " + sign + "₩" + hold.total.toLocaleString() + " if sold there";
+        marginEl.className = "margin-line " + (hold.total > 0 ? "good" : hold.total < 0 ? "bad" : "");
+      } else if (lane) {
+        const sign = lane.edge >= 0 ? "+" : "";
+        marginEl.textContent = "Lane stub: buy " + lane.name + " here → " + sign + lane.edge + "₩/u there";
+        marginEl.className = "margin-line " + (lane.edge >= 4 ? "good" : lane.edge < 0 ? "bad" : "");
+      } else {
+        marginEl.textContent = "Lane stub: flat";
+        marginEl.className = "margin-line";
+      }
+    }
     peekEl.textContent = GOODS.map((g) => g.name.split(" ").pop() + " ₩" + peek[g.id]).join(" · ");
     warp.disabled = !reach || state.fuel < cost;
     warp.textContent = reach ? ("Jump −" + cost + " fuel") : "Out of range";
@@ -727,6 +856,7 @@
     if (state.fuel < cost) return log("Need " + cost + " fuel.");
     state.fuel -= cost;
     state.system = toId;
+    markVisited(toId);
     ui.targetId = null;
     rollMarket(state);
     log("Arrived " + sys(toId).name + " (−" + cost + " fuel).");
