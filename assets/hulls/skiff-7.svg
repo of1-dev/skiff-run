@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" fill="none" aria-hidden="true">
+  <!-- starter light freighter: slim wedge + single pod -->
+  <path fill="currentColor" d="M18 42 L92 28 L138 40 L92 52 Z"/>
+  <path fill="currentColor" opacity=".55" d="M40 40 L70 34 L70 46 Z"/>
+  <rect x="12" y="36" width="14" height="12" rx="2" fill="currentColor" opacity=".85"/>
+  <circle cx="118" cy="40" r="4" fill="currentColor" opacity=".4"/>
+</svg>
