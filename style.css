@@ -45,12 +45,33 @@ body {
 .market, .routes { display: flex; flex-direction: column; gap: 8px; }
 .row {
   display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 8px;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 6px;
   align-items: center;
   font-size: 13px;
 }
-.row .meta { color: var(--dim); font-size: 11px; }
+.row .good strong { font-size: 14px; }
+.row .have {
+  color: var(--type);
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.qty {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.qty-val {
+  min-width: 1.4em;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+.qty-btn {
+  padding: 6px 8px;
+  min-width: 32px;
+}
 .btn, .chip {
   font: inherit; font-size: 13px; font-weight: 600;
   background: var(--type); color: var(--wall);
