@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.2.0";
+  const VERSION = "0.2.1";
   const SAVE_KEY = "skiff-run-v1";
   const RETIRE_NET = 35000;
   const FUEL_PRICE = 45;
@@ -17,14 +17,16 @@
   ];
 
   // x/y are map coords (0–100). Links kept for lore; jump range is distance + hull.range.
-  const SYSTEMS = [
-    { id: "ember", name: "Ember Reach", x: 18, y: 62, mods: { ore: 0.7, optics: 1.3, meds: 1.1 }, yard: true },
-    { id: "glass", name: "Glass Orchard", x: 38, y: 28, mods: { grain: 0.65, spice: 1.25, scrap: 1.1 } },
-    { id: "tide", name: "Tide Spur", x: 42, y: 78, mods: { meds: 0.75, ore: 1.2, optics: 1.15 } },
-    { id: "ash", name: "Ash Meridian", x: 62, y: 48, mods: { scrap: 0.6, spice: 0.9, grain: 1.2 }, yard: true },
-    { id: "knot", name: "Knot Harbor", x: 78, y: 72, mods: { optics: 0.8, meds: 1.3, ore: 1.1 }, yard: true },
-    { id: "quiet", name: "Quiet Moon", x: 88, y: 22, mods: { grain: 1.1, spice: 1.1, scrap: 1.15 }, retire: true },
+  // Named roster is fixed; x/y are filled per New-game chart seed.
+  const SYSTEM_DEFS = [
+    { id: "ember", name: "Ember Reach", mods: { ore: 0.7, optics: 1.3, meds: 1.1 }, yard: true },
+    { id: "glass", name: "Glass Orchard", mods: { grain: 0.65, spice: 1.25, scrap: 1.1 } },
+    { id: "tide", name: "Tide Spur", mods: { meds: 0.75, ore: 1.2, optics: 1.15 } },
+    { id: "ash", name: "Ash Meridian", mods: { scrap: 0.6, spice: 0.9, grain: 1.2 }, yard: true },
+    { id: "knot", name: "Knot Harbor", mods: { optics: 0.8, meds: 1.3, ore: 1.1 }, yard: true },
+    { id: "quiet", name: "Quiet Moon", mods: { grain: 1.1, spice: 1.1, scrap: 1.15 }, retire: true },
   ];
+  let SYSTEMS = SYSTEM_DEFS.map((s) => Object.assign({ x: 50, y: 50 }, s));
 
   const SHIPS = [
     { id: "skiff-7", name: "Skiff-7", cargo: 20, fuelMax: 14, range: 28, weapons: false, crewMax: 1, price: 0 },
@@ -35,6 +37,120 @@
   function sys(id) { return SYSTEMS.find((s) => s.id === id); }
   function ship(id) { return SHIPS.find((s) => s.id === id); }
   function hull() { return ship(state.shipId) || SHIPS[0]; }
+
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function applyChart(chart) {
+    if (!chart || !chart.pos) return;
+    SYSTEMS = SYSTEM_DEFS.map((s) => {
+      const p = chart.pos[s.id] || { x: 50, y: 50 };
+      return Object.assign({}, s, { x: p.x, y: p.y });
+    });
+  }
+
+  // Same names every run; positions reshuffle. Keep the graph skiff-reachable.
+  function buildChart(seed) {
+    seed = (seed >>> 0) || (Math.floor(Math.random() * 0xffffffff) || 1);
+    const rand = mulberry32(seed);
+    const minD = 16;
+    const pad = 10;
+    const pos = {};
+
+    function placeOne(id, prefer) {
+      for (let attempt = 0; attempt < 80; attempt++) {
+        let x, y;
+        if (prefer && attempt < 20) {
+          x = prefer.x + (rand() - 0.5) * 24;
+          y = prefer.y + (rand() - 0.5) * 24;
+        } else if (attempt < 40) {
+          // bias into quadrants in roster order
+          const qi = SYSTEM_DEFS.findIndex((s) => s.id === id) % 4;
+          const qx = qi % 2 === 0 ? pad + 8 : 55;
+          const qy = qi < 2 ? pad + 8 : 55;
+          x = qx + rand() * 32;
+          y = qy + rand() * 32;
+        } else {
+          x = pad + rand() * (100 - pad * 2);
+          y = pad + rand() * (100 - pad * 2);
+        }
+        x = Math.max(pad, Math.min(100 - pad, x));
+        y = Math.max(pad, Math.min(100 - pad, y));
+        let ok = true;
+        for (const other of Object.values(pos)) {
+          const dx = other.x - x;
+          const dy = other.y - y;
+          if (Math.sqrt(dx * dx + dy * dy) < minD) { ok = false; break; }
+        }
+        if (ok) {
+          pos[id] = { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
+          return;
+        }
+      }
+      pos[id] = { x: pad + rand() * (100 - pad * 2), y: pad + rand() * (100 - pad * 2) };
+    }
+
+    // Ember near-ish center-left so early jumps exist; others fill out.
+    placeOne("ember", { x: 28, y: 55 });
+    SYSTEM_DEFS.forEach((s) => {
+      if (s.id === "ember") return;
+      placeOne(s.id, null);
+    });
+
+    // Connectivity repair: if any system is unreachable from ember within max ship range hops, nudge.
+    applyChart({ seed, pos });
+    const maxRange = Math.max.apply(null, SHIPS.map((s) => s.range));
+    function connected() {
+      const seen = new Set(["ember"]);
+      const q = ["ember"];
+      while (q.length) {
+        const cur = q.pop();
+        SYSTEMS.forEach((s) => {
+          if (seen.has(s.id)) return;
+          if (dist(sys(cur), s) <= maxRange + 0.01) {
+            seen.add(s.id);
+            q.push(s.id);
+          }
+        });
+      }
+      return seen.size === SYSTEMS.length;
+    }
+    let guard = 0;
+    while (!connected() && guard++ < 40) {
+      // pull a random non-ember system closer to a random visited neighbor
+      const orphan = SYSTEMS.find((s) => {
+        const seen = new Set(["ember"]);
+        const q = ["ember"];
+        while (q.length) {
+          const cur = q.pop();
+          SYSTEMS.forEach((o) => {
+            if (seen.has(o.id)) return;
+            if (dist(sys(cur), o) <= maxRange + 0.01) {
+              seen.add(o.id);
+              q.push(o.id);
+            }
+          });
+        }
+        return !seen.has(s.id);
+      });
+      if (!orphan) break;
+      const anchor = SYSTEMS[Math.floor(rand() * SYSTEMS.length)];
+      const ang = rand() * Math.PI * 2;
+      const rad = maxRange * (0.55 + rand() * 0.35);
+      orphan.x = Math.max(pad, Math.min(100 - pad, anchor.x + Math.cos(ang) * rad));
+      orphan.y = Math.max(pad, Math.min(100 - pad, anchor.y + Math.sin(ang) * rad));
+      pos[orphan.id] = { x: Math.round(orphan.x * 10) / 10, y: Math.round(orphan.y * 10) / 10 };
+      applyChart({ seed, pos });
+    }
+
+    return { seed, pos };
+  }
 
   function hash32(str) {
     let h = 2166136261 >>> 0;
@@ -74,6 +190,8 @@
   }
 
   function fresh() {
+    const chart = buildChart();
+    applyChart(chart);
     return {
       v: VERSION,
       system: "ember",
@@ -84,7 +202,8 @@
       shipId: "skiff-7",
       crew: 0,
       epoch: 1,
-      log: "Skiff-7 cleared Ember Reach. Check the map — buy low where neighbors pay high.",
+      chart,
+      log: "Skiff-7 cleared Ember Reach. New chart this run — same systems, new lanes.",
     };
   }
 
@@ -153,6 +272,8 @@
           }
         }
       }
+      if (!st.chart || !st.chart.pos) st.chart = buildChart(hash32("legacy:" + (st.system || "ember")));
+      applyChart(st.chart);
       return st;
     } catch (_) { return null; }
   }
