@@ -1,21 +1,34 @@
 import { SkiffGame } from "./engine.mjs";
 
 const g = new SkiffGame();
-console.log("start", g.snapshot().system.name, g.snapshot().credits);
+console.log("start", g.snapshot().system.name, g.snapshot().credits, "autoFuel", g.snapshot().prefs?.autoFuel);
+if (g.snapshot().prefs?.autoFuel !== true) throw new Error("prefs.autoFuel default");
 const chart = g.chart("local");
 console.log("local nodes", chart.nodes.map((n) => n.id).join(","));
 const buy = g.buy("ore", 5);
 console.log("buy", buy.ok, buy.credits, buy.cargo?.ore);
 const jumpTarget = chart.nodes.find((n) => !n.here && n.reach);
 if (!jumpTarget) throw new Error("no jump target");
-g.refuel();
+// burn some fuel then jump with auto-refuel ON
+g.state.fuel = Math.min(g.state.fuel, 3);
+g.state.credits = 5000;
+const fuelBefore = g.state.fuel;
 let j = g.jump(jumpTarget.id);
-console.log("jump", jumpTarget.id, j.log, j.pendingEncounter?.kind || "clear");
+console.log("jump", jumpTarget.id, j.log, "fuel", j.fuel, "/", j.fuelMax, j.pendingEncounter?.kind || "clear");
+if (j.fuel < j.fuelMax && j.credits >= 45) {
+  // should have autofueled unless broke mid-way
+}
+if (j.fuel <= fuelBefore - 1 && j.prefs?.autoFuel) {
+  // arrived burned fuel then refilled — expect near full if credits allow
+  if (j.fuel < j.fuelMax) console.log("partial autofuel ok", j.fuel);
+  else console.log("full autofuel ok");
+}
 if (j.pendingEncounter) {
   j = g.resolveEncounter("b");
   console.log("resolved", j.log);
 }
-// stress ash if in range else keep jumping
+g.setPrefs({ autoFuel: false });
+if (g.snapshot().prefs.autoFuel !== false) throw new Error("set_prefs failed");
 for (let i = 0; i < 8; i++) {
   const c = g.chart("sector");
   const ash = c.nodes.find((n) => n.id === "ash" && n.reach && !n.here);

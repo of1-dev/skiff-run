@@ -1,8 +1,12 @@
 (() => {
   "use strict";
-  const VERSION = "0.7.0";
+  const VERSION = "0.8.0";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
+  const bridgeOn = (() => {
+    try { return new URLSearchParams(location.search).get("bridge") === "1"; }
+    catch (_) { return false; }
+  })();
   const THEMES = ["cobalt", "coffee", "lcars"];
   const RETIRE_NET = 35000;
   const FUEL_PRICE = 45;
@@ -278,6 +282,7 @@
       chart,
       visited: { ember: true },
       pilot: "human",
+      prefs: { autoFuel: true },
       log: "Skiff-7 cleared Ember Reach. New chart this run — same systems, new lanes.",
     };
   }
@@ -339,6 +344,8 @@
         else st.visited.ember = true;
       }
       if (st.pilot !== "human" && st.pilot !== "agent") st.pilot = "human";
+      st.prefs = st.prefs || { autoFuel: true };
+      if (st.prefs.autoFuel == null) st.prefs.autoFuel = true;
       const h = ship(st.shipId) || SHIPS[0];
       st.shipId = h.id;
       st.crew = Math.min(st.crew, h.crewMax);
@@ -360,10 +367,13 @@
   }
 
   function save(st) {
+    if (bridgeOn) return; // shared seat owns persistence via /api/act
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   }
 
   let state = load() || fresh();
+  state.prefs = state.prefs || { autoFuel: true };
+  if (state.prefs.autoFuel == null) state.prefs.autoFuel = true;
   if (!state.prices || !Object.keys(state.prices).length) rollMarket(state);
 
   const el = (id) => document.getElementById(id);
@@ -489,8 +499,8 @@
     el("mode-local").classList.toggle("active", mode === "local");
     el("mode-sector").classList.toggle("active", mode === "sector");
     el("chart-hint").textContent = mode === "local"
-      ? "Local: systems in jump range. Tap to target, then Jump."
-      : "Sector: full Ember chart. Dim systems are out of range from here.";
+      ? "Local: systems inside your hull jump circle (range ≠ fuel). Tap to target, then Jump."
+      : "Sector: full Ember chart. Dim systems are outside hull jump range from here.";
     if (mode === "local" && ui.targetId && !inRange(state.system, ui.targetId) && ui.targetId !== state.system) {
       ui.targetId = null;
     }
@@ -847,6 +857,10 @@
   }
 
   function doBuy(id, qty) {
+    if (bridgeOn) {
+      if (currentPilot() === "agent") return log("Agent has the stick.");
+      return void bridgeAct({ op: "buy", good: id, qty: Math.max(1, qty | 0) });
+    }
     qty = Math.max(1, qty | 0);
     const p = state.prices[id];
     const room = hull().cargo - cargoUsed(state);
@@ -861,6 +875,10 @@
   }
 
   function doSell(id, qty) {
+    if (bridgeOn) {
+      if (currentPilot() === "agent") return log("Agent has the stick.");
+      return void bridgeAct({ op: "sell", good: id, qty: Math.max(1, qty | 0) });
+    }
     qty = Math.max(1, qty | 0);
     const have = state.cargo[id] || 0;
     if (have < 1) return log("Nothing to sell.");
@@ -873,6 +891,10 @@
   }
 
   function doSellAll() {
+    if (bridgeOn) {
+      if (currentPilot() === "agent") return log("Agent has the stick.");
+      return void bridgeAct({ op: "sell_all" });
+    }
     let total = 0;
     let units = 0;
     GOODS.forEach((g) => {
@@ -889,7 +911,39 @@
     render();
   }
 
+  function applyRefuelInternal(prefix) {
+    const need = hull().fuelMax - state.fuel;
+    if (need <= 0) return false;
+    const cost = need * FUEL_PRICE;
+    if (state.credits < cost) {
+      const can = Math.floor(state.credits / FUEL_PRICE);
+      if (can <= 0) {
+        if (!prefix) log("Can't afford fuel.");
+        return false;
+      }
+      state.fuel += can;
+      state.credits -= can * FUEL_PRICE;
+      log((prefix || "Partial refuel") + " +" + can + " for ₩" + (can * FUEL_PRICE) + ".");
+    } else {
+      state.fuel = hull().fuelMax;
+      state.credits -= cost;
+      if (prefix) log(prefix + " full for ₩" + cost + ".");
+      else log("Refueled for ₩" + cost + ".");
+    }
+    return true;
+  }
+
+  function maybeAutoRefuel() {
+    state.prefs = state.prefs || { autoFuel: true };
+    if (!state.prefs.autoFuel) return;
+    applyRefuelInternal("Auto-refuel");
+  }
+
   function doTravel(toId) {
+    if (bridgeOn) {
+      if (currentPilot() === "agent") return log("Agent has the stick.");
+      return void bridgeAct({ op: "jump", system: toId });
+    }
     if (!inRange(state.system, toId)) return log("Out of jump range.");
     const cost = fuelCost(state.system, toId);
     if (state.fuel < cost) return log("Need " + cost + " fuel.");
@@ -899,30 +953,29 @@
     ui.targetId = null;
     rollMarket(state);
     log("Arrived " + sys(toId).name + " (−" + cost + " fuel).");
+    maybeAutoRefuel();
     showTab("dock");
     render();
     maybeEncounter(toId);
   }
 
   function doRefuel() {
+    if (bridgeOn) {
+      if (currentPilot() === "agent") return log("Agent has the stick.");
+      return void bridgeAct({ op: "refuel" });
+    }
     const need = hull().fuelMax - state.fuel;
     if (need <= 0) return log("Tanks full.");
-    const cost = need * FUEL_PRICE;
-    if (state.credits < cost) {
-      const can = Math.floor(state.credits / FUEL_PRICE);
-      if (can <= 0) return log("Can't afford fuel.");
-      state.fuel += can;
-      state.credits -= can * FUEL_PRICE;
-      log("Partial refuel +" + can + " for ₩" + (can * FUEL_PRICE) + ".");
-    } else {
-      state.fuel = hull().fuelMax;
-      state.credits -= cost;
-      log("Refueled for ₩" + cost + ".");
-    }
+    if (!applyRefuelInternal(null)) return;
+    // rewrite last log for manual (non-auto) wording when full/partial already logged
     render();
   }
 
   function doBuyShip(id) {
+    if (bridgeOn) {
+      if (currentPilot() === "agent") return log("Agent has the stick.");
+      return void bridgeAct({ op: "buy_ship", ship: id });
+    }
     const next = ship(id);
     if (!next) return;
     if (!sys(state.system).yard) return log("No yard at this dock.");
@@ -939,6 +992,10 @@
   }
 
   function doHireCrew() {
+    if (bridgeOn) {
+      if (currentPilot() === "agent") return log("Agent has the stick.");
+      return void bridgeAct({ op: "hire_crew" });
+    }
     const h = hull();
     if (state.crew >= h.crewMax) return log("No bunks left.");
     if (state.credits < CREW_HIRE) return log("Can't afford crew.");
@@ -949,6 +1006,10 @@
   }
 
   function doFireCrew() {
+    if (bridgeOn) {
+      if (currentPilot() === "agent") return log("Agent has the stick.");
+      return void bridgeAct({ op: "fire_crew" });
+    }
     if (state.crew < 1) return log("No crew to dismiss.");
     state.crew -= 1;
     state.credits += CREW_FIRE_REFUND;
@@ -1153,6 +1214,110 @@
   loadTheme();
   applyPilot(state.pilot || "human", false);
 
+  function syncPrefsUi() {
+    const box = el("pref-autofuel");
+    if (!box) return;
+    state.prefs = state.prefs || { autoFuel: true };
+    box.checked = !!state.prefs.autoFuel;
+  }
+
+  function applyBridgePayload(data) {
+    if (!data || !data.state) return;
+    state = data.state;
+    state.prefs = state.prefs || { autoFuel: true };
+    if (state.prefs.autoFuel == null) state.prefs.autoFuel = true;
+    if (state.chart) applyChart(state.chart);
+    if (!state.prices || !Object.keys(state.prices).length) rollMarket(state);
+    applyPilot(state.pilot || "human", false);
+    syncPrefsUi();
+    ui.targetId = null;
+    render();
+    // Surface pending encounter from shared seat (once)
+    if (data.pendingEncounter && currentPilot() === "human" && !encKind) {
+      const pe = data.pendingEncounter;
+      const dest = sys(pe.systemId) || sys(state.system);
+      if (pe.kind && dest) openEncounter(pe.kind, dest);
+    } else if (!data.pendingEncounter && encKind && dlg && dlg.open) {
+      /* keep local dialog until resolved via act */
+    }
+  }
+
+  async function bridgeAct(body) {
+    try {
+      const r = await fetch("/api/act", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body || {}),
+      });
+      const data = await r.json();
+      applyBridgePayload(data);
+      if (data.result && data.result.ok === false && data.result.error) {
+        log(String(data.result.error) + (data.result.hint ? (" — " + data.result.hint) : ""));
+      }
+      return data;
+    } catch (e) {
+      log("Bridge act failed: " + e);
+      return null;
+    }
+  }
+
+  async function bridgePoll() {
+    try {
+      const r = await fetch("/api/state", { cache: "no-store" });
+      const data = await r.json();
+      applyBridgePayload(data);
+    } catch (e) {
+      /* bridge down — keep last frame */
+    }
+  }
+
+  const prefBox = el("pref-autofuel");
+  if (prefBox) {
+    syncPrefsUi();
+    prefBox.onchange = () => {
+      state.prefs = state.prefs || { autoFuel: true };
+      state.prefs.autoFuel = !!prefBox.checked;
+      if (bridgeOn) {
+        bridgeAct({ op: "set_prefs", autoFuel: state.prefs.autoFuel });
+      } else {
+        log(state.prefs.autoFuel ? "Auto-refuel on arrive: ON." : "Auto-refuel on arrive: OFF.");
+        save(state);
+        render();
+      }
+    };
+  }
+
+  // Bridge mode: Take stick / pilot picks go through /api/act
+  if (bridgeOn) {
+    document.querySelectorAll("[data-pilot-pick]").forEach((b) => {
+      b.onclick = () => {
+        const who = b.dataset.pilotPick;
+        if (who === "human") bridgeAct({ op: "take_stick" });
+        else bridgeAct({ op: "claim" });
+      };
+    });
+    const takeStickBtn = el("btn-take-stick");
+    if (takeStickBtn) takeStickBtn.onclick = () => bridgeAct({ op: "take_stick" });
+    // Wrap common market/yard actions when human has stick
+    const wrapHuman = (fn, bodyFn) => function () {
+      if (currentPilot() === "agent") return log("Agent has the stick.");
+      return void bridgeAct(bodyFn.apply(null, arguments));
+    };
+    el("btn-sell-all").onclick = wrapHuman(null, () => ({ op: "sell_all" }));
+    el("btn-retire").onclick = wrapHuman(null, () => ({ op: "retire" }));
+    el("btn-reset").onclick = () => {
+      if (!confirm("Wipe save and start fresh on the shared seat?")) return;
+      bridgeAct({ op: "new_game" });
+    };
+    // Encounter choices via bridge
+    el("enc-a").onclick = () => bridgeAct({ op: "encounter", choice: "a" });
+    el("enc-b").onclick = () => bridgeAct({ op: "encounter", choice: "b" });
+    document.body.classList.add("bridge-mode");
+    bridgePoll();
+    setInterval(bridgePoll, 500);
+  }
+
   showTab("dock");
   render();
+  syncPrefsUi();
 })();
