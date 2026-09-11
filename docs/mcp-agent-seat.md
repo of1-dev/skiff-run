@@ -8,51 +8,63 @@ dest: of1
 blockers: []
 ---
 
-# MCP agent seat — single-player + AI experiment
+# MCP agent seat — single-player + AI handoff
 
 ## Intent
 
-- **Human play** stays single-player (local save, Fold UI). Not an MMO.
-- Optional **agent seat**: an LLM connects via MCP and plays *the same rules* through tools, without browsing GitHub / Pages source.
+- **One captain, one save** — still single-player, not an MMO.
+- Human and an LLM can **hand the stick back and forth** on the same run.
+- Agent plays through MCP (observe / act) without reading GitHub or play-page source.
 
-Why: eval / fun — can a model trade well from observations only?
+## Handoff model
+
+```
+save.pilot = "human" | "agent"
+```
+
+- **human** — Fold UI fully interactive; MCP mutations rejected (or queued) with `pilot_locked`.
+- **agent** — MCP may act; Fold UI is spectator + **Take stick** (instant reclaim).
+- Either side can flip pilot; flip is logged (`"Captain took the stick"` / `"Agent has the stick"`).
+- Same `localStorage` save (v1) or synced session later — never two divergent galaxies.
+
+### UX
+
+- Captain tab: **Pilot: You | Agent**
+- When `pilot === "agent"`: status banner + disabled trade/jump (except Take stick / theme / New game confirm)
+- Optional later: live action feed of agent tool calls
 
 ## Non-goals
 
-- No multiplayer economy, no shared galaxy server required for v1.
-- No “read the HTML/JS” tool. Observation is structured game state only.
-- Agents do not get privileged debug (no peek at RNG seed unless we expose a fair “chart seed” later).
+- No multiplayer economy / shared galaxy across players.
+- No “read the HTML/JS” MCP tool.
+- No privileged debug (RNG seed) unless we expose a fair public field.
 
-## v1 shape
-
-Headless (or shared) **session** on a small Node/worker:
+## MCP tools (v1)
 
 | Tool | Purpose |
 |------|---------|
-| `skiff_new_game` | Start run; returns public briefing |
-| `skiff_state` | Dock snapshot: system, credits, fuel, cargo, prices, hull, crew, visited |
-| `skiff_chart` | Local/sector nodes with risk labels + margins (same intel UI shows) |
-| `skiff_market_buy` / `skiff_market_sell` / `skiff_sell_all` | Trade |
-| `skiff_jump` | Travel to system id (encounters resolve server-side) |
-| `skiff_refuel` / `skiff_yard_*` / `skiff_crew_*` | Ship ops |
+| `skiff_state` | Snapshot + `pilot` + version |
+| `skiff_claim` / `skiff_release` | Agent requests / releases stick (human always wins on Take stick) |
+| `skiff_chart` | Local/sector intel (same as UI) |
+| `skiff_market_buy` / `sell` / `sell_all` | Trade |
+| `skiff_jump` | Travel (encounters server-side) |
+| `skiff_refuel` / yard / crew | Ship ops |
 | `skiff_retire` | Win check |
+| `skiff_new_game` | Wipe run (confirm) |
 
-Returns: structured JSON + short log line. Never ship source files over MCP.
+## Fairness experiment
 
-## Fairness for the “no web lookup” experiment
-
-- Publish MCP schema only (tool names + field defs).
-- Agent prompt: forbidden to fetch `of1-dev/skiff-run` or play URL HTML.
-- Optional: hash of ruleset version in `skiff_state` so evals pin a build.
+- Schema-only docs for agents; prompt bans fetching `of1-dev/skiff-run` or Pages HTML.
+- Ruleset version hash in `skiff_state`.
 
 ## Implementation path
 
-1. Extract pure game logic from `game.js` into a shared module (or duplicate thin headless mirror).
-2. MCP server wraps one session per connection.
-3. Human UI can keep using browser save; agent uses server session (separate).
-4. Later: optional “spectator” view that streams agent actions into the Fold UI.
+1. ~~UI pilot flag + banner + Take stick~~ (0.5.1 stub)
+2. Extract headless rules from `game.js`
+3. MCP server on shared session
+4. Thin encounters so agent routes have real teeth
+5. Optional spectator stream of agent actions in Fold UI
 
-## Relation to depth roadmap
+## Depth note
 
-Ship **thin encounters (Slice 3)** in the human game first so the agent seat has real risk. MCP can land in parallel as a stub once core actions exist.
-
+Encounters still matter: handoff is more fun when Ash can eat the agent’s hold.

@@ -420,3 +420,35 @@ dialog::backdrop { background: rgba(0,0,0,.72); }
 .margin-line.good { color: var(--sage); }
 .margin-line.bad { color: #C44C4C; }
 .chart-legend { margin: 0 0 8px; }
+
+.pilot-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  margin: 0 0 6px;
+  background: var(--accent-soft);
+  border: 1px solid var(--ember);
+  border-radius: var(--radius);
+  color: var(--type);
+  font-size: 13px;
+  font-weight: 600;
+}
+.pilot-banner[hidden] { display: none !important; }
+.shell.is-agent-pilot .tabbar .tab:not([data-tab="captain"]),
+.shell.is-agent-pilot #tab-market,
+.shell.is-agent-pilot #tab-chart .target-actions,
+.shell.is-agent-pilot #tab-yard .crew-actions,
+.shell.is-agent-pilot #tab-yard .yard-row .chip,
+.shell.is-agent-pilot #tab-dock .dock-actions {
+  pointer-events: none;
+  opacity: 0.55;
+}
+.shell.is-agent-pilot #btn-take-stick,
+.shell.is-agent-pilot [data-pilot-pick],
+.shell.is-agent-pilot [data-theme-pick],
+.shell.is-agent-pilot #btn-reset {
+  pointer-events: auto;
+  opacity: 1;
+}

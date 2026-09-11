@@ -10,6 +10,10 @@
 </head>
 <body>
   <div id="app" class="shell">
+    <div id="pilot-banner" class="pilot-banner" hidden>
+      <span id="pilot-banner-text">Agent has the stick.</span>
+      <button type="button" id="btn-take-stick" class="btn ember">Take stick</button>
+    </div>
     <header class="topbar">
       <div class="brand">
         <strong>SKIFF RUN</strong>
@@ -88,6 +92,14 @@
       <section id="tab-captain" class="panel" data-tab="captain" hidden>
         <h2>Captain</h2>
         <p class="hint">Save is automatic. New reshuffles the chart — same systems, new lanes.</p>
+        <h3 class="sub">Pilot</h3>
+        <div class="theme-packs">
+          <div class="seg" role="group" aria-label="Who has the stick">
+            <button type="button" class="seg-btn" data-pilot-pick="human">You</button>
+            <button type="button" class="seg-btn" data-pilot-pick="agent">Agent</button>
+          </div>
+          <p class="hint" id="pilot-hint">You have the stick. Hand to Agent when MCP can fly this save.</p>
+        </div>
         <h3 class="sub">Theme</h3>
         <div class="theme-packs">
           <div class="seg" role="group" aria-label="Theme pack">
