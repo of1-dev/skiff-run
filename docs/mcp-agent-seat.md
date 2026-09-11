@@ -3,7 +3,7 @@ title: Skiff Run MCP agent seat (experiment)
 created: 2026-09-11
 updated: 2026-09-11
 type: design
-status: draft
+status: active
 dest: of1
 blockers: []
 ---
@@ -59,11 +59,24 @@ save.pilot = "human" | "agent"
 
 ## Implementation path
 
-1. ~~UI pilot flag + banner + Take stick~~ (0.5.1 stub)
-2. Extract headless rules from `game.js`
-3. MCP server on shared session
-4. Thin encounters so agent routes have real teeth
+1. ~~UI pilot flag + banner + Take stick~~ (0.6 stub)
+2. ~~Headless engine + stdio MCP~~ (`mcp/` — 0.7.0)
+3. Connect MCP to Grok Bot / Cursor for agent play + debugging
+4. Optional: sync browser save ↔ MCP session (still one captain)
 5. Optional spectator stream of agent actions in Fold UI
+
+## Run locally
+
+```bash
+cd mcp && npm install && npm start
+```
+
+Stdio MCP command for connectors:
+
+- command: `node`
+- args: `/absolute/path/to/skiff-run/mcp/server.mjs`
+
+Working directory should be the `mcp/` folder (or use absolute server path; Node resolves `./engine.mjs` relative to the server file).
 
 ## Depth note
 

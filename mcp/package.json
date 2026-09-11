@@ -1,0 +1,17 @@
+{
+  "name": "skiff-run-mcp",
+  "version": "0.7.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "skiff-run-mcp": "./server.mjs"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "smoke": "node smoke.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.0",
+    "zod": "^3.25.0"
+  }
+}
