@@ -61,3 +61,7 @@ Travel ticks: pirate / patrol / trader; Fight/Flee/Submit stubs; small hull quie
 - Hull SVGs + common class roster stubs (0.4.1)
 - Hulls are **common** (ST had no named factions — politics + encounter roles)
 
+
+## Reputation vibe
+
+See `docs/reputation-vibe.md` — dual Ledger/Ember axes (Firefly/Guardians tonal homage). Batch with next deep systems chunk.
