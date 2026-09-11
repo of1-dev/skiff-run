@@ -1,6 +1,6 @@
-# SKIFF RUN 0.2.1
+# SKIFF RUN 0.2.2
 
-Palm-era trade loop homage. Original systems, goods, and ships. **Not** official Space Trader. **Not** a Paramount product.
+Browser trade-run through the Ember chart. Original systems, goods, and ships.
 
 Sibling to [Hex Wake](https://github.com/of1-dev/hex-wake) — related night palette, different rules.
 

@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.2.1";
+  const VERSION = "0.2.2";
   const SAVE_KEY = "skiff-run-v1";
   const RETIRE_NET = 35000;
   const FUEL_PRICE = 45;
@@ -402,7 +402,7 @@
     el("cargo").textContent = cargoUsed(state) + " / " + h.cargo;
     el("net").textContent = "₩" + netWorth(state).toLocaleString();
     el("log").textContent = state.log;
-    el("ver").textContent = VERSION + " · Palm homage";
+    el("ver").textContent = VERSION;
 
     const market = el("market");
     market.innerHTML = "";
