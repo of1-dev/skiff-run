@@ -1,6 +1,6 @@
 /** Headless Skiff Run engine — mechanical parity with play UI for MCP / tests. */
-export const VERSION = "0.8.0";
-export const RULESET = "skiff-headless-0.8.0";
+export const VERSION = "0.8.1";
+export const RULESET = "skiff-headless-0.8.1";
 const RETIRE_NET = 35000;
 const FUEL_PRICE = 45;
 const CREW_HIRE = 800;

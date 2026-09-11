@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.8.0";
+  const VERSION = "0.8.1";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const bridgeOn = (() => {
@@ -736,12 +736,21 @@
         info.className = "yard-info";
         info.appendChild(makeHullArt(s.id, "hull-art hull-art--thumb"));
         const text = document.createElement("div");
+        const listPrice = s.price === 0
+          ? "List free (starter)"
+          : ("List ₩" + s.price.toLocaleString());
+        const tradeHint = s.price === 0
+          ? "Take this hull"
+          : (ownedTrade > 0
+            ? ("You pay ₩" + due.toLocaleString() + " after ₩" + ownedTrade.toLocaleString() + " trade-in")
+            : ("You pay ₩" + due.toLocaleString() + " (no trade-in on current hull)"));
         text.innerHTML =
           "<strong>" + s.name + "</strong><div class=\"have\">" +
           "hold " + s.cargo + " · fuel " + s.fuelMax + " · range " + s.range +
           (s.weapons ? " · weapons" : " · no guns") +
           " · crew max " + s.crewMax +
-          "</div><div class=\"hint\">Trade-in due ₩" + due.toLocaleString() + "</div>";
+          "</div><div class=\"have\">" + listPrice + "</div>" +
+          "<div class=\"hint\">" + tradeHint + "</div>";
         info.appendChild(text);
         row.appendChild(info);
         const btn = document.createElement("button");
