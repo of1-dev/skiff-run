@@ -4,63 +4,97 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0C0A09" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>SKIFF RUN</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="app">
-    <header class="top">
+  <div id="app" class="shell">
+    <header class="topbar">
       <div class="brand">
         <strong>SKIFF RUN</strong>
-        <span id="ver">0.2.2</span>
+        <span id="ver">0.3.0</span>
       </div>
-      <button type="button" id="btn-reset" class="ghost">New</button>
+      <div class="status-strip" aria-label="Status">
+        <div><label>Sys</label><span id="sys-name">—</span></div>
+        <div><label>₩</label><span id="credits">—</span></div>
+        <div><label>Fuel</label><span id="fuel">—</span></div>
+        <div><label>Hold</label><span id="cargo">—</span></div>
+        <div><label>Net</label><span id="net">—</span></div>
+      </div>
     </header>
-    <p class="disclaimer">Ember chart · original systems, goods, and hulls.</p>
 
-    <section class="card status">
-      <div><label>System</label><div id="sys-name">—</div></div>
-      <div><label>Credits</label><div id="credits">—</div></div>
-      <div><label>Fuel</label><div id="fuel">—</div></div>
-      <div><label>Cargo</label><div id="cargo">—</div></div>
-      <div><label>Net</label><div id="net">—</div></div>
-    </section>
+    <main class="panels">
+      <section id="tab-dock" class="panel active" data-tab="dock">
+        <h2>Dock</h2>
+        <p class="hint" id="dock-blurb">You are docked. Trade, chart a jump, or visit the yard.</p>
+        <p id="log" class="log">Welcome, captain.</p>
+        <div class="dock-actions">
+          <button type="button" class="btn" data-goto="market">Open market</button>
+          <button type="button" class="btn ghost" data-goto="chart">Open chart</button>
+          <button type="button" class="btn ghost" data-goto="yard">Ship yard</button>
+        </div>
+        <div class="card-block">
+          <h3 class="sub">Retire</h3>
+          <p class="hint">Reach ₩35,000 net and dock at Quiet Moon.</p>
+          <button type="button" id="btn-retire" class="btn ember" disabled>Retire on Quiet Moon</button>
+        </div>
+      </section>
 
-    <section class="card">
-      <h2>Chart</h2>
-      <p class="hint">Ring = your jump range. Dim dots are out of reach.</p>
-      <canvas id="map" width="392" height="220" aria-label="System chart"></canvas>
-    </section>
+      <section id="tab-market" class="panel" data-tab="market" hidden>
+        <h2>Market</h2>
+        <div id="market" class="market"></div>
+      </section>
 
-    <section class="card">
-      <h2>Market</h2>
-      <div id="market" class="market"></div>
-    </section>
+      <section id="tab-chart" class="panel" data-tab="chart" hidden>
+        <div class="chart-toolbar">
+          <h2>Chart</h2>
+          <div class="seg" role="tablist" aria-label="Chart mode">
+            <button type="button" id="mode-local" class="seg-btn active">Local</button>
+            <button type="button" id="mode-sector" class="seg-btn">Sector</button>
+          </div>
+        </div>
+        <p class="hint" id="chart-hint">Tap a system in range to target it, then jump.</p>
+        <div class="map-wrap">
+          <canvas id="map" width="720" height="720" aria-label="System chart"></canvas>
+        </div>
+        <div id="target-card" class="target-card">
+          <div id="target-title" class="target-title">No target</div>
+          <div id="target-meta" class="hint">Select a system on the chart.</div>
+          <div id="target-peek" class="peek"></div>
+          <div class="target-actions">
+            <button type="button" id="btn-warp" class="btn ember" disabled>Jump</button>
+            <button type="button" id="btn-refuel" class="btn ghost">Refuel</button>
+          </div>
+        </div>
+      </section>
 
-    <section class="card">
-      <h2>Travel</h2>
-      <p class="hint">Peek shows neighbor prices before you burn fuel.</p>
-      <div id="routes" class="routes"></div>
-      <button type="button" id="btn-refuel" class="btn">Refuel</button>
-    </section>
+      <section id="tab-yard" class="panel" data-tab="yard" hidden>
+        <h2>Yard</h2>
+        <div id="ship-name" class="ship-name">—</div>
+        <div id="ship-meta" class="have">—</div>
+        <div id="crew-actions" class="crew-actions"></div>
+        <h3 class="sub">Hulls</h3>
+        <div id="yard"></div>
+      </section>
 
-    <section class="card">
-      <h2>Ship</h2>
-      <div id="ship-name" class="ship-name">—</div>
-      <div id="ship-meta" class="have">—</div>
-      <div id="crew-actions" class="crew-actions"></div>
-      <h3 class="sub">Yard</h3>
-      <div id="yard"></div>
-    </section>
+      <section id="tab-captain" class="panel" data-tab="captain" hidden>
+        <h2>Captain</h2>
+        <p class="hint">Save is automatic. New reshuffles the chart — same systems, new lanes.</p>
+        <button type="button" id="btn-reset" class="btn ghost">New game</button>
+        <p class="disclaimer">Ember chart · original systems, goods, and hulls.</p>
+      </section>
+    </main>
 
-    <section class="card">
-      <h2>Retire</h2>
-      <p class="hint">Reach ₩35,000 net and dock at Quiet Moon.</p>
-      <button type="button" id="btn-retire" class="btn ember" disabled>Retire on Quiet Moon</button>
-    </section>
-
-    <p id="log" class="log">Welcome, captain.</p>
+    <nav class="tabbar" aria-label="Main">
+      <button type="button" class="tab active" data-tab="dock">Dock</button>
+      <button type="button" class="tab" data-tab="market">Market</button>
+      <button type="button" class="tab" data-tab="chart">Chart</button>
+      <button type="button" class="tab" data-tab="yard">Yard</button>
+      <button type="button" class="tab" data-tab="captain">Captain</button>
+    </nav>
   </div>
+
   <dialog id="encounter">
     <h3 id="enc-title">Encounter</h3>
     <p id="enc-body"></p>

@@ -1,4 +1,4 @@
-# SKIFF RUN 0.2.2
+# SKIFF RUN 0.3.0
 
 Browser trade-run through the Ember chart. Original systems, goods, and ships.
 
@@ -7,6 +7,9 @@ Sibling to [Hex Wake](https://github.com/of1-dev/hex-wake) — related night pal
 Open `index.html` locally or enable GitHub Pages on `main` / root.
 
 ## How to play
+
+Fold-friendly **tabs**: Dock · Market · Chart (Local / Sector) · Yard · Captain. Warp from the chart.
+
 
 1. Buy low / sell high across systems. Use **+/−** qty, then Buy/Sell.
 2. Check the **chart** and **Travel** peeks — neighbor prices + fuel cost by distance. **New** reshuffles the same named systems into a new layout.
