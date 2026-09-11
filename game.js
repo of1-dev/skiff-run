@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.2.2";
+  const VERSION = "0.3.0";
   const SAVE_KEY = "skiff-run-v1";
   const RETIRE_NET = 35000;
   const FUEL_PRICE = 45;
@@ -295,49 +295,176 @@
     render();
   }
 
+  const ui = {
+    tab: "dock",
+    chartMode: "local", // local | sector
+    targetId: null,
+  };
+
+  function showTab(name) {
+    ui.tab = name;
+    document.querySelectorAll(".panel").forEach((p) => {
+      const on = p.dataset.tab === name;
+      p.hidden = !on;
+      p.classList.toggle("active", on);
+    });
+    document.querySelectorAll(".tabbar .tab").forEach((b) => {
+      b.classList.toggle("active", b.dataset.tab === name);
+    });
+    if (name === "chart") {
+      requestAnimationFrame(() => { sizeMap(); drawMap(); });
+    }
+  }
+
+  function setChartMode(mode) {
+    ui.chartMode = mode;
+    el("mode-local").classList.toggle("active", mode === "local");
+    el("mode-sector").classList.toggle("active", mode === "sector");
+    el("chart-hint").textContent = mode === "local"
+      ? "Local: systems in jump range. Tap to target, then Jump."
+      : "Sector: full Ember chart. Dim systems are out of range from here.";
+    if (mode === "local" && ui.targetId && !inRange(state.system, ui.targetId) && ui.targetId !== state.system) {
+      ui.targetId = null;
+    }
+    drawMap();
+    renderTarget();
+  }
+
+  function sizeMap() {
+    const canvas = el("map");
+    const wrap = canvas && canvas.parentElement;
+    if (!canvas || !wrap) return;
+    const rect = wrap.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(200, Math.floor(rect.width));
+    const h = Math.max(200, Math.floor(rect.height));
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+    canvas.style.width = w + "px";
+    canvas.style.height = h + "px";
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
   function drawMap() {
     const canvas = el("map");
     if (!canvas) return;
+    if (!canvas.width) sizeMap();
     const ctx = canvas.getContext("2d");
-    const w = canvas.width;
-    const h = canvas.height;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = canvas.width / dpr;
+    const h = canvas.height / dpr;
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = "#0C0A09";
     ctx.fillRect(0, 0, w, h);
 
     const here = sys(state.system);
     const range = hull().range;
+    const local = ui.chartMode === "local";
 
-    // range ring
-    ctx.beginPath();
-    ctx.arc((here.x / 100) * w, (here.y / 100) * h, (range / 100) * w, 0, Math.PI * 2);
-    ctx.strokeStyle = "rgba(217,119,87,0.35)";
+    // soft grid
+    ctx.strokeStyle = "rgba(63,58,54,0.55)";
     ctx.lineWidth = 1;
+    for (let i = 1; i < 4; i++) {
+      const x = (w * i) / 4;
+      const y = (h * i) / 4;
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+
+    // range ring (always from here; in sector also show it)
+    ctx.beginPath();
+    ctx.arc((here.x / 100) * w, (here.y / 100) * h, (range / 100) * Math.min(w, h), 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(217,119,87,0.45)";
+    ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // links in range
     SYSTEMS.forEach((s) => {
       if (s.id === here.id) return;
-      if (!inRange(here.id, s.id)) return;
+      const reach = inRange(here.id, s.id);
+      if (local && !reach) return;
+      if (!reach && local) return;
       ctx.beginPath();
       ctx.moveTo((here.x / 100) * w, (here.y / 100) * h);
       ctx.lineTo((s.x / 100) * w, (s.y / 100) * h);
-      ctx.strokeStyle = "rgba(107,143,122,0.45)";
+      ctx.strokeStyle = reach ? "rgba(107,143,122,0.55)" : "rgba(63,58,54,0.35)";
       ctx.stroke();
     });
 
     SYSTEMS.forEach((s) => {
+      const reach = s.id === here.id || inRange(here.id, s.id);
+      if (local && !reach) return;
       const px = (s.x / 100) * w;
       const py = (s.y / 100) * h;
-      const reach = s.id === here.id || inRange(here.id, s.id);
+      const selected = ui.targetId === s.id;
+      const r = s.id === here.id ? 7 : selected ? 6 : 4.5;
       ctx.beginPath();
-      ctx.arc(px, py, s.id === here.id ? 6 : 4, 0, Math.PI * 2);
-      ctx.fillStyle = s.id === here.id ? "#D97757" : reach ? "#E7E0D6" : "#57534E";
+      ctx.arc(px, py, r, 0, Math.PI * 2);
+      ctx.fillStyle = s.id === here.id ? "#D97757" : selected ? "#E7E0D6" : reach ? "#C4B9AC" : "#57534E";
       ctx.fill();
-      ctx.fillStyle = reach ? "#E7E0D6" : "#78716C";
-      ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
-      ctx.fillText(s.name, px + 8, py + 4);
+      if (selected) {
+        ctx.beginPath();
+        ctx.arc(px, py, r + 4, 0, Math.PI * 2);
+        ctx.strokeStyle = "#D97757";
+        ctx.stroke();
+      }
+      ctx.fillStyle = reach || s.id === here.id ? "#E7E0D6" : "#78716C";
+      ctx.font = "600 12px ui-sans-serif, system-ui, sans-serif";
+      ctx.fillText(s.name, px + 9, py + 4);
+      if (reach && s.id !== here.id) {
+        const cost = fuelCost(here.id, s.id);
+        ctx.fillStyle = "#A8A29E";
+        ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
+        ctx.fillText(cost + "f", px + 9, py + 16);
+      }
     });
+    ctx.restore();
+  }
+
+  function pickSystemAt(clientX, clientY) {
+    const canvas = el("map");
+    const rect = canvas.getBoundingClientRect();
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+    let best = null;
+    let bestD = 9;
+    SYSTEMS.forEach((s) => {
+      const reach = s.id === state.system || inRange(state.system, s.id);
+      if (ui.chartMode === "local" && !reach) return;
+      const d = Math.hypot(s.x - x, s.y - y);
+      if (d < bestD) { bestD = d; best = s; }
+    });
+    return best;
+  }
+
+  function renderTarget() {
+    const title = el("target-title");
+    const meta = el("target-meta");
+    const peekEl = el("target-peek");
+    const warp = el("btn-warp");
+    const id = ui.targetId;
+    if (!id || id === state.system) {
+      title.textContent = sys(state.system).name + " (here)";
+      meta.textContent = "Pick another system to jump.";
+      peekEl.textContent = "";
+      warp.disabled = true;
+      warp.textContent = "Jump";
+      return;
+    }
+    const t = sys(id);
+    const reach = inRange(state.system, id);
+    const cost = fuelCost(state.system, id);
+    const peek = peekPrices(id);
+    const hint = bestDealHint(state.prices, peek);
+    title.textContent = t.name;
+    meta.textContent = reach
+      ? (cost + " fuel · " + hint + (t.yard ? " · yard" : "") + (t.retire ? " · retire dock" : ""))
+      : ("Out of range (" + Math.ceil(dist(sys(state.system), t)) + " units · your range " + hull().range + ")");
+    peekEl.textContent = GOODS.map((g) => g.name.split(" ").pop() + " ₩" + peek[g.id]).join(" · ");
+    warp.disabled = !reach || state.fuel < cost;
+    warp.textContent = reach ? ("Jump −" + cost + " fuel") : "Out of range";
   }
 
   function renderShipPanel() {
@@ -448,36 +575,18 @@
       market.appendChild(row);
     });
 
-    const routes = el("routes");
-    routes.innerHTML = "";
-    const herePrices = state.prices;
-    reachableFrom(state.system).forEach((t) => {
-      const cost = fuelCost(state.system, t.id);
-      const peek = peekPrices(t.id);
-      const hint = bestDealHint(herePrices, peek);
-      const card = document.createElement("div");
-      card.className = "jump-card";
-      const top = document.createElement("div");
-      top.className = "jump-top";
-      top.innerHTML =
-        "<strong>" + t.name + "</strong><span>" + cost + " fuel · " + hint + "</span>";
-      const peekRow = document.createElement("div");
-      peekRow.className = "peek";
-      peekRow.textContent = GOODS.map((g) => g.name.split(" ").pop() + " ₩" + peek[g.id]).join(" · ");
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "btn ghost";
-      btn.textContent = "Jump (" + cost + " fuel)";
-      btn.disabled = state.fuel < cost;
-      btn.onclick = () => doTravel(t.id);
-      card.appendChild(top);
-      card.appendChild(peekRow);
-      card.appendChild(btn);
-      routes.appendChild(card);
-    });
-
+    const dock = el("dock-blurb");
+    if (dock) {
+      dock.textContent = "Docked at " + s.name + ". " +
+        reachableFrom(state.system).length + " systems in jump range.";
+    }
+    if (ui.targetId && ui.chartMode === "local" && ui.targetId !== state.system && !inRange(state.system, ui.targetId)) {
+      ui.targetId = null;
+    }
     renderShipPanel();
+    if (ui.tab === "chart") sizeMap();
     drawMap();
+    renderTarget();
 
     const canRetire = s.retire && netWorth(state) >= RETIRE_NET;
     el("btn-retire").disabled = !canRetire;
@@ -516,8 +625,10 @@
     if (state.fuel < cost) return log("Need " + cost + " fuel.");
     state.fuel -= cost;
     state.system = toId;
+    ui.targetId = null;
     rollMarket(state);
     log("Arrived " + sys(toId).name + " (−" + cost + " fuel).");
+    showTab("dock");
     render();
     maybeEncounter();
   }
@@ -658,6 +769,10 @@
   el("enc-a").onclick = () => resolveEncounter("a");
   el("enc-b").onclick = () => resolveEncounter("b");
   el("btn-refuel").onclick = doRefuel;
+  el("btn-warp").onclick = () => {
+    if (!ui.targetId || ui.targetId === state.system) return;
+    doTravel(ui.targetId);
+  };
   el("btn-retire").onclick = () => {
     if (!(sys(state.system).retire && netWorth(state) >= RETIRE_NET)) return;
     log("Retired on Quiet Moon. Net ₩" + netWorth(state).toLocaleString() + ". Victory.");
@@ -666,9 +781,42 @@
   el("btn-reset").onclick = () => {
     if (!confirm("Wipe save and start fresh?")) return;
     state = fresh();
+    ui.targetId = null;
     rollMarket(state);
+    showTab("dock");
     render();
   };
 
+  document.querySelectorAll(".tabbar .tab").forEach((b) => {
+    b.onclick = () => showTab(b.dataset.tab);
+  });
+  document.querySelectorAll("[data-goto]").forEach((b) => {
+    b.onclick = () => showTab(b.dataset.goto);
+  });
+  el("mode-local").onclick = () => setChartMode("local");
+  el("mode-sector").onclick = () => setChartMode("sector");
+
+  el("map").addEventListener("pointerdown", (e) => {
+    const s = pickSystemAt(e.clientX, e.clientY);
+    if (!s) return;
+    if (s.id === state.system) {
+      ui.targetId = null;
+    } else {
+      ui.targetId = s.id;
+      if (ui.chartMode === "sector" && !inRange(state.system, s.id)) {
+        // allow select out of range in sector to show distance, but warp stays disabled
+      }
+    }
+    drawMap();
+    renderTarget();
+  });
+
+  window.addEventListener("resize", () => {
+    if (ui.tab !== "chart") return;
+    sizeMap();
+    drawMap();
+  });
+
+  showTab("dock");
   render();
 })();
