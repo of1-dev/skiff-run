@@ -1,6 +1,6 @@
 /** Headless Skiff Run engine — mechanical parity with play UI for MCP / tests. */
-export const VERSION = "0.7.0";
-export const RULESET = "skiff-headless-0.7.0";
+export const VERSION = "0.8.0";
+export const RULESET = "skiff-headless-0.8.0";
 const RETIRE_NET = 35000;
 const FUEL_PRICE = 45;
 const CREW_HIRE = 800;
@@ -57,7 +57,49 @@ export class SkiffGame {
     this.systems = SYSTEM_DEFS.map((s) => ({ ...s, x: 50, y: 50 }));
     this.state = null;
     this.pendingEncounter = null;
+    /** Who is issuing the next mutate: "agent" (MCP) or "human" (Fold bridge). */
+    this.actorRole = "agent";
     this.newGame();
+  }
+
+  ensurePrefs() {
+    if (!this.state) return;
+    if (!this.state.prefs || typeof this.state.prefs !== "object") {
+      this.state.prefs = { autoFuel: true };
+    }
+    if (this.state.prefs.autoFuel == null) this.state.prefs.autoFuel = true;
+  }
+
+  setPrefs(partial = {}) {
+    this.ensurePrefs();
+    if (partial.autoFuel != null) this.state.prefs.autoFuel = !!partial.autoFuel;
+    this.log(this.state.prefs.autoFuel ? "Auto-refuel on arrive: ON." : "Auto-refuel on arrive: OFF.");
+    return { ok: true, ...this.snapshot() };
+  }
+
+  /** Refuel without pilot lock (used after arrive / internal). Partial OK. */
+  applyRefuel() {
+    const need = this.hull().fuelMax - this.state.fuel;
+    if (need <= 0) return { filled: 0, spent: 0 };
+    const cost = need * FUEL_PRICE;
+    if (this.state.credits < cost) {
+      const can = Math.floor(this.state.credits / FUEL_PRICE);
+      if (can <= 0) return { filled: 0, spent: 0, broke: true };
+      this.state.fuel += can;
+      this.state.credits -= can * FUEL_PRICE;
+      this.log(`Auto-refuel +${can} for ₩${can * FUEL_PRICE}.`);
+      return { filled: can, spent: can * FUEL_PRICE };
+    }
+    this.state.fuel = this.hull().fuelMax;
+    this.state.credits -= cost;
+    this.log(`Auto-refuel full for ₩${cost}.`);
+    return { filled: need, spent: cost };
+  }
+
+  maybeAutoRefuel() {
+    this.ensurePrefs();
+    if (!this.state.prefs.autoFuel) return null;
+    return this.applyRefuel();
   }
 
   ship(id) { return SHIPS.find((s) => s.id === id); }
@@ -217,6 +259,7 @@ export class SkiffGame {
       chart,
       visited: { ember: true },
       pilot: "agent",
+      prefs: { autoFuel: true },
       log: "MCP seat online. Skiff-7 cleared Ember Reach.",
     };
     this.pendingEncounter = null;
@@ -225,8 +268,17 @@ export class SkiffGame {
   }
 
   requirePilot(forMutate = true) {
-    if (forMutate && this.state.pilot !== "agent") {
-      return { ok: false, error: "pilot_locked", pilot: this.state.pilot, hint: "Human has the stick. Use skiff_claim or wait for handoff." };
+    const actor = this.actorRole === "human" ? "human" : "agent";
+    if (forMutate && this.state.pilot !== actor) {
+      return {
+        ok: false,
+        error: "pilot_locked",
+        pilot: this.state.pilot,
+        actor,
+        hint: this.state.pilot === "human"
+          ? "Human has the stick. Use skiff_claim or wait for handoff."
+          : "Agent has the stick. Take stick in Fold, or wait for release.",
+      };
     }
     if (this.pendingEncounter && forMutate) {
       return { ok: false, error: "encounter_pending", encounter: this.pendingEncounter };
@@ -265,6 +317,7 @@ export class SkiffGame {
       netWorth: this.netWorth(),
       canRetire: !!(s.retire && this.netWorth() >= RETIRE_NET),
       visited: { ...this.state.visited },
+      prefs: { ...(this.state.prefs || { autoFuel: true }) },
       log: this.state.log,
       pendingEncounter: this.pendingEncounter,
     };
@@ -383,6 +436,7 @@ export class SkiffGame {
     this.markVisited(toId);
     this.rollMarket();
     this.log(`Arrived ${this.sys(toId).name} (−${cost} fuel).`);
+    this.maybeAutoRefuel();
     this.rollEncounter(toId);
     return { ok: true, ...this.snapshot() };
   }
@@ -424,8 +478,9 @@ export class SkiffGame {
 
   resolveEncounter(choice) {
     if (!this.pendingEncounter) return { ok: false, error: "no_encounter" };
-    const lock = this.state.pilot !== "agent"
-      ? { ok: false, error: "pilot_locked", pilot: this.state.pilot }
+    const actor = this.actorRole === "human" ? "human" : "agent";
+    const lock = this.state.pilot !== actor
+      ? { ok: false, error: "pilot_locked", pilot: this.state.pilot, actor }
       : null;
     if (lock) return lock;
     const kind = this.pendingEncounter.kind;

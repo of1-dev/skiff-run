@@ -62,8 +62,8 @@ save.pilot = "human" | "agent"
 1. ~~UI pilot flag + banner + Take stick~~ (0.6 stub)
 2. ~~Headless engine + stdio MCP~~ (`mcp/` — 0.7.0)
 3. Connect MCP to Grok Bot / Cursor for agent play + debugging
-4. Optional: sync browser save ↔ MCP session (still one captain)
-5. Optional spectator stream of agent actions in Fold UI
+4. ~~Fold spectator HTTP bridge~~ (`mcp/bridge.mjs` — 0.8.0) — see `docs/spectator.md`
+5. Optional richer live action feed of agent tool calls
 
 ## Run locally
 
@@ -77,6 +77,15 @@ Stdio MCP command for connectors:
 - args: `/absolute/path/to/skiff-run/mcp/server.mjs`
 
 Working directory should be the `mcp/` folder (or use absolute server path; Node resolves `./engine.mjs` relative to the server file).
+
+### Fold spectator (shared save)
+
+```bash
+node mcp/bridge.mjs
+# open http://127.0.0.1:8787/?bridge=1
+```
+
+Same `mcp/session/save.json` as stdio MCP. Details: `docs/spectator.md`.
 
 ## Depth note
 

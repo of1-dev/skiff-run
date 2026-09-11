@@ -17,7 +17,7 @@
     <header class="topbar">
       <div class="brand">
         <strong>SKIFF RUN</strong>
-        <span id="ver">0.3.0</span>
+        <span id="ver">0.8.0</span>
       </div>
       <div class="status-strip" aria-label="Status">
         <div><label>Sys</label><span id="sys-name">—</span></div>
@@ -71,7 +71,7 @@
           <div id="target-dossier" class="dossier" hidden></div>
           <div id="target-margin" class="margin-line" hidden></div>
           <div id="target-peek" class="peek"></div>
-          <div class="chart-legend hint">Node color = pirate risk (teal safe → red hot). Ring = expected trade edge from here.</div>
+          <div class="chart-legend hint">Node color = pirate risk (teal safe → red hot). Circle = hull jump range (not your fuel tank — fuel is the status strip). Teal halo = expected trade edge from here.</div>
           <div class="target-actions">
             <button type="button" id="btn-warp" class="btn ember" disabled>Jump</button>
             <button type="button" id="btn-refuel" class="btn ghost">Refuel</button>
@@ -100,6 +100,12 @@
           </div>
           <p class="hint" id="pilot-hint">You have the stick. Hand to Agent when MCP can fly this save.</p>
         </div>
+        <h3 class="sub">Jump prefs</h3>
+        <label class="pref-row hint" for="pref-autofuel">
+          <input type="checkbox" id="pref-autofuel" checked />
+          Auto-refuel on arrive
+        </label>
+        <p class="hint">When on, dock pumps fill what you can afford right after a successful jump. Fuel lives in the status strip — the chart circle is hull jump range only.</p>
         <h3 class="sub">Theme</h3>
         <div class="theme-packs">
           <div class="seg" role="group" aria-label="Theme pack">

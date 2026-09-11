@@ -4,39 +4,26 @@
  * Grok Bot CallDynamicTool currently delivers {} for all tool arguments on this
  * stdio server. Workaround: skiff_tick (no args) reads session/inbox.json.
  * Typed tools remain for clients that pass args correctly (Cursor IDE, mcp client).
+ * Shares mcp/session/save.json with mcp/bridge.mjs (Fold spectator).
  */
 import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { SkiffGame, RULESET, VERSION } from "./engine.mjs";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const INBOX = path.join(__dirname, "session", "inbox.json");
-const SAVE = path.join(__dirname, "session", "save.json");
+import { hydrateGame, persistGame, INBOX_PATH, SAVE_PATH } from "./session-store.mjs";
 
 const game = new SkiffGame();
-try {
-  if (fs.existsSync(SAVE)) {
-    const raw = JSON.parse(fs.readFileSync(SAVE, "utf8"));
-    if (raw?.state) {
-      game.state = raw.state;
-      if (raw.chart) game.applyChart(raw.chart);
-      else if (raw.state.chart) game.applyChart(raw.state.chart);
-      game.pendingEncounter = raw.pendingEncounter || null;
-    }
-  }
-} catch (_) { /* fresh seat */ }
+hydrateGame(game);
+game.ensurePrefs();
 
 function persist() {
-  fs.mkdirSync(path.dirname(SAVE), { recursive: true });
-  fs.writeFileSync(SAVE, JSON.stringify({
-    state: game.state,
-    chart: game.state.chart,
-    pendingEncounter: game.pendingEncounter,
-  }, null, 2));
+  persistGame(game);
+}
+
+function refresh() {
+  hydrateGame(game);
+  game.ensurePrefs();
 }
 
 const json = (data) => {
@@ -45,6 +32,7 @@ const json = (data) => {
 };
 
 function runOp(body) {
+  game.actorRole = "agent";
   const op = body?.op;
   switch (op) {
     case "state": return game.snapshot();
@@ -63,57 +51,70 @@ function runOp(body) {
     case "hire_crew": return game.hireCrew();
     case "fire_crew": return game.fireCrew();
     case "retire": return game.retire();
+    case "set_prefs": return game.setPrefs({ autoFuel: body.autoFuel });
     default: return { ok: false, error: "unknown_op", op };
   }
 }
 
 const server = new McpServer({ name: "skiff-run", version: VERSION });
 
-server.tool("skiff_state", "Dock snapshot.", {}, async () => json(game.snapshot()));
-server.tool("skiff_ruleset", "Ruleset id.", {}, async () => json({ ruleset: RULESET, version: VERSION }));
-server.tool("skiff_claim", "Agent takes the stick.", {}, async () => json(game.claim()));
-server.tool("skiff_release", "Release stick to human.", {}, async () => json(game.release()));
-server.tool("skiff_sell_all", "Sell entire hold.", {}, async () => json(game.sellAll()));
-server.tool("skiff_refuel", "Fill tanks.", {}, async () => json(game.refuel()));
-server.tool("skiff_hire_crew", "Hire one crew.", {}, async () => json(game.hireCrew()));
-server.tool("skiff_fire_crew", "Dismiss one crew.", {}, async () => json(game.fireCrew()));
-server.tool("skiff_retire", "Retire if able.", {}, async () => json(game.retire()));
+function tool(name, desc, schema, fn) {
+  server.tool(name, desc, schema, async (...args) => {
+    refresh();
+    return json(await fn(...args));
+  });
+}
 
-server.tool("skiff_new_game", "Fresh run. Optional seed.", {
+tool("skiff_state", "Dock snapshot.", {}, async () => game.snapshot());
+tool("skiff_ruleset", "Ruleset id.", {}, async () => ({ ruleset: RULESET, version: VERSION, savePath: SAVE_PATH }));
+tool("skiff_claim", "Agent takes the stick.", {}, async () => game.claim());
+tool("skiff_release", "Release stick to human.", {}, async () => game.release());
+tool("skiff_sell_all", "Sell entire hold.", {}, async () => game.sellAll());
+tool("skiff_refuel", "Fill tanks.", {}, async () => game.refuel());
+tool("skiff_hire_crew", "Hire one crew.", {}, async () => game.hireCrew());
+tool("skiff_fire_crew", "Dismiss one crew.", {}, async () => game.fireCrew());
+tool("skiff_retire", "Retire if able.", {}, async () => game.retire());
+
+tool("skiff_new_game", "Fresh run. Optional seed.", {
   seed: z.number().int().optional(),
-}, async ({ seed }) => json(game.newGame(seed)));
+}, async ({ seed }) => game.newGame(seed));
 
-server.tool("skiff_chart", "Local/sector chart.", {
+tool("skiff_chart", "Local/sector chart.", {
   mode: z.enum(["local", "sector"]).optional(),
-}, async ({ mode }) => json(game.chart(mode || "local")));
+}, async ({ mode }) => game.chart(mode || "local"));
 
-server.tool("skiff_buy", "Buy goods.", {
+tool("skiff_buy", "Buy goods.", {
   good: z.enum(["ore", "grain", "optics", "meds", "spice", "scrap"]),
   qty: z.number().int().min(1).max(40).optional(),
-}, async ({ good, qty }) => json(game.buy(good, qty ?? 1)));
+}, async ({ good, qty }) => game.buy(good, qty ?? 1));
 
-server.tool("skiff_sell", "Sell goods.", {
+tool("skiff_sell", "Sell goods.", {
   good: z.enum(["ore", "grain", "optics", "meds", "spice", "scrap"]),
   qty: z.number().int().min(1).max(40).optional(),
-}, async ({ good, qty }) => json(game.sell(good, qty ?? 1)));
+}, async ({ good, qty }) => game.sell(good, qty ?? 1));
 
-server.tool("skiff_jump", "Jump to system.", {
+tool("skiff_jump", "Jump to system.", {
   system: z.enum(["ember", "glass", "tide", "ash", "knot", "quiet"]),
-}, async ({ system }) => json(game.jump(system)));
+}, async ({ system }) => game.jump(system));
 
-server.tool("skiff_encounter", "Resolve encounter a|b.", {
+tool("skiff_encounter", "Resolve encounter a|b.", {
   choice: z.enum(["a", "b"]),
-}, async ({ choice }) => json(game.resolveEncounter(choice)));
+}, async ({ choice }) => game.resolveEncounter(choice));
 
-server.tool("skiff_buy_ship", "Buy hull at yard.", {
+tool("skiff_buy_ship", "Buy hull at yard.", {
   ship: z.enum(["skiff-7", "hold-barge", "ember-cutter"]),
-}, async ({ ship }) => json(game.buyShip(ship)));
+}, async ({ ship }) => game.buyShip(ship));
+
+tool("skiff_set_prefs", "Captain prefs (e.g. autoFuel).", {
+  autoFuel: z.boolean().optional(),
+}, async ({ autoFuel }) => game.setPrefs({ autoFuel }));
 
 server.tool(
   "skiff_act",
   "JSON-string action for clients that pass string args. request e.g. {\"op\":\"jump\",\"system\":\"tide\"}",
   { request: z.string() },
   async ({ request }) => {
+    refresh();
     try { return json(runOp(JSON.parse(request))); }
     catch (e) { return json({ ok: false, error: "bad_json", detail: String(e) }); }
   }
@@ -124,13 +125,14 @@ server.tool(
   "Execute session/inbox.json (no tool args). Write inbox then call tick. Clears inbox after run.",
   {},
   async () => {
-    if (!fs.existsSync(INBOX)) {
+    refresh();
+    if (!fs.existsSync(INBOX_PATH)) {
       return json({ ok: false, error: "no_inbox", hint: "Write mcp/session/inbox.json then call skiff_tick" });
     }
     let body;
-    try { body = JSON.parse(fs.readFileSync(INBOX, "utf8")); }
+    try { body = JSON.parse(fs.readFileSync(INBOX_PATH, "utf8")); }
     catch (e) { return json({ ok: false, error: "bad_inbox", detail: String(e) }); }
-    try { fs.unlinkSync(INBOX); } catch (_) {}
+    try { fs.unlinkSync(INBOX_PATH); } catch (_) {}
     return json(runOp(body));
   }
 );
