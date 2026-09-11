@@ -55,3 +55,23 @@ Only if chart powers land:
 - **Ember Compact** — bonded courier
 
 Everything else stays common.
+
+## Encounter profiles (by hull)
+
+Lane heat is **not** one roll for every ship. Profile knobs (batch-build with reputation + deeper encounters):
+
+| Knobs | Effect |
+|-------|--------|
+| **Signature** | How noticeable you are (cargo bulk, weapons lit, class size) |
+| **Prey value** | Corsairs prefer fat holds; ignore empty mites sometimes |
+| **Threat** | Armed / high Ember → more fight, fewer easy shakes; Wardens still care about Ledger |
+| **Quiet running** | Small unarmed freighters (Skiff-7, Mite) → fewer rolls overall (ST Flea-style) |
+
+Rough intent:
+
+- **Mite / Skiff-7** — low signature; rare capital-scale events; more ignore / small trader hails
+- **Hold Barge / Knot Hauler** — high prey value; Corsairs lean in; Wardens inspect cargo more
+- **Ember Cutter / Ash Lance** — higher threat; Corsairs may flee or fight hard; fewer “shake down the soft target” beats
+- **Wasp Prime / Quiet Ark** — endgame signature; special patrol attention + denser encounters when present
+
+0.6.0 already has a thin stub (`cargo <= 20 && !weapons` quieter). Full matrix lands with the meaty systems chunk — no postage-stamp PR.

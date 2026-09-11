@@ -65,3 +65,7 @@ Travel ticks: pirate / patrol / trader; Fight/Flee/Submit stubs; small hull quie
 ## Reputation vibe
 
 See `docs/reputation-vibe.md` — dual Ledger/Ember axes (Firefly/Guardians tonal homage). Batch with next deep systems chunk.
+
+## Hull-weighted encounters
+
+See hull-roster.md — signature / prey / threat / quiet running. Partial stub in 0.6.0; full matrix with next systems batch.
