@@ -1,15 +1,71 @@
 #!/usr/bin/env node
 /**
  * Skiff Run MCP agent seat (stdio).
- * Host quirk: some CallDynamicTool paths drop object fields; skiff_act accepts a JSON string.
+ * Grok Bot CallDynamicTool currently delivers {} for all tool arguments on this
+ * stdio server. Workaround: skiff_tick (no args) reads session/inbox.json.
+ * Typed tools remain for clients that pass args correctly (Cursor IDE, mcp client).
  */
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { SkiffGame, RULESET, VERSION } from "./engine.mjs";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const INBOX = path.join(__dirname, "session", "inbox.json");
+const SAVE = path.join(__dirname, "session", "save.json");
+
 const game = new SkiffGame();
-const json = (data) => ({ content: [{ type: "text", text: JSON.stringify(data, null, 2) }] });
+try {
+  if (fs.existsSync(SAVE)) {
+    const raw = JSON.parse(fs.readFileSync(SAVE, "utf8"));
+    if (raw?.state) {
+      game.state = raw.state;
+      if (raw.chart) game.applyChart(raw.chart);
+      else if (raw.state.chart) game.applyChart(raw.state.chart);
+      game.pendingEncounter = raw.pendingEncounter || null;
+    }
+  }
+} catch (_) { /* fresh seat */ }
+
+function persist() {
+  fs.mkdirSync(path.dirname(SAVE), { recursive: true });
+  fs.writeFileSync(SAVE, JSON.stringify({
+    state: game.state,
+    chart: game.state.chart,
+    pendingEncounter: game.pendingEncounter,
+  }, null, 2));
+}
+
+const json = (data) => {
+  persist();
+  return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+};
+
+function runOp(body) {
+  const op = body?.op;
+  switch (op) {
+    case "state": return game.snapshot();
+    case "ruleset": return { ruleset: RULESET, version: VERSION };
+    case "new_game": return game.newGame(body.seed);
+    case "claim": return game.claim();
+    case "release": return game.release();
+    case "chart": return game.chart(body.mode || "local");
+    case "buy": return game.buy(body.good, body.qty ?? 1);
+    case "sell": return game.sell(body.good, body.qty ?? 1);
+    case "sell_all": return game.sellAll();
+    case "refuel": return game.refuel();
+    case "jump": return game.jump(body.system);
+    case "encounter": return game.resolveEncounter(body.choice);
+    case "buy_ship": return game.buyShip(body.ship);
+    case "hire_crew": return game.hireCrew();
+    case "fire_crew": return game.fireCrew();
+    case "retire": return game.retire();
+    default: return { ok: false, error: "unknown_op", op };
+  }
+}
 
 const server = new McpServer({ name: "skiff-run", version: VERSION });
 
@@ -53,35 +109,29 @@ server.tool("skiff_buy_ship", "Buy hull at yard.", {
   ship: z.enum(["skiff-7", "hold-barge", "ember-cutter"]),
 }, async ({ ship }) => json(game.buyShip(ship)));
 
-/** Universal action — pass JSON text so hosts that drop object fields still work. */
 server.tool(
   "skiff_act",
-  "Run any action via JSON string. Examples: {\"op\":\"jump\",\"system\":\"tide\"} {\"op\":\"buy\",\"good\":\"ore\",\"qty\":10} {\"op\":\"encounter\",\"choice\":\"b\"} {\"op\":\"chart\",\"mode\":\"local\"} {\"op\":\"state\"} {\"op\":\"new_game\",\"seed\":42}",
-  { request: z.string().describe("JSON object with op and fields") },
+  "JSON-string action for clients that pass string args. request e.g. {\"op\":\"jump\",\"system\":\"tide\"}",
+  { request: z.string() },
   async ({ request }) => {
-    let body;
-    try { body = JSON.parse(request); }
+    try { return json(runOp(JSON.parse(request))); }
     catch (e) { return json({ ok: false, error: "bad_json", detail: String(e) }); }
-    const op = body.op;
-    switch (op) {
-      case "state": return json(game.snapshot());
-      case "ruleset": return json({ ruleset: RULESET, version: VERSION });
-      case "new_game": return json(game.newGame(body.seed));
-      case "claim": return json(game.claim());
-      case "release": return json(game.release());
-      case "chart": return json(game.chart(body.mode || "local"));
-      case "buy": return json(game.buy(body.good, body.qty ?? 1));
-      case "sell": return json(game.sell(body.good, body.qty ?? 1));
-      case "sell_all": return json(game.sellAll());
-      case "refuel": return json(game.refuel());
-      case "jump": return json(game.jump(body.system));
-      case "encounter": return json(game.resolveEncounter(body.choice));
-      case "buy_ship": return json(game.buyShip(body.ship));
-      case "hire_crew": return json(game.hireCrew());
-      case "fire_crew": return json(game.fireCrew());
-      case "retire": return json(game.retire());
-      default: return json({ ok: false, error: "unknown_op", op });
+  }
+);
+
+server.tool(
+  "skiff_tick",
+  "Execute session/inbox.json (no tool args). Write inbox then call tick. Clears inbox after run.",
+  {},
+  async () => {
+    if (!fs.existsSync(INBOX)) {
+      return json({ ok: false, error: "no_inbox", hint: "Write mcp/session/inbox.json then call skiff_tick" });
     }
+    let body;
+    try { body = JSON.parse(fs.readFileSync(INBOX, "utf8")); }
+    catch (e) { return json({ ok: false, error: "bad_inbox", detail: String(e) }); }
+    try { fs.unlinkSync(INBOX); } catch (_) {}
+    return json(runOp(body));
   }
 );
 
