@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.3.0";
+  const VERSION = "0.3.1";
   const SAVE_KEY = "skiff-run-v1";
   const RETIRE_NET = 35000;
   const FUEL_PRICE = 45;
@@ -590,6 +590,8 @@
 
     const canRetire = s.retire && netWorth(state) >= RETIRE_NET;
     el("btn-retire").disabled = !canRetire;
+    const sellAll = el("btn-sell-all");
+    if (sellAll) sellAll.disabled = cargoUsed(state) < 1;
     save(state);
   }
 
@@ -616,6 +618,23 @@
     state.cargo[id] -= n;
     state.credits += p * n;
     log("Sold " + n + " " + GOODS.find((g) => g.id === id).name + " for ₩" + (p * n) + ".");
+    render();
+  }
+
+  function doSellAll() {
+    let total = 0;
+    let units = 0;
+    GOODS.forEach((g) => {
+      const have = state.cargo[g.id] || 0;
+      if (have < 1) return;
+      const p = state.prices[g.id];
+      state.cargo[g.id] = 0;
+      state.credits += p * have;
+      total += p * have;
+      units += have;
+    });
+    if (units < 1) return log("Hold empty.");
+    log("Sold all (" + units + " units) for ₩" + total.toLocaleString() + ".");
     render();
   }
 
@@ -769,6 +788,7 @@
   el("enc-a").onclick = () => resolveEncounter("a");
   el("enc-b").onclick = () => resolveEncounter("b");
   el("btn-refuel").onclick = doRefuel;
+  el("btn-sell-all").onclick = doSellAll;
   el("btn-warp").onclick = () => {
     if (!ui.targetId || ui.targetId === state.system) return;
     doTravel(ui.targetId);

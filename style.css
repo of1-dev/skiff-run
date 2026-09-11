@@ -268,3 +268,12 @@ dialog::backdrop { background: rgba(0,0,0,.72); }
   .status-strip > :nth-child(5) { display: none; }
   .tab { font-size: 10px; padding: 8px 2px; }
 }
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.panel-head h2 { margin: 0; }
