@@ -1,12 +1,12 @@
 :root {
-  --wall: #0C0A09;
-  --raised: #1C1917;
-  --line: #3F3A36;
-  --type: #E7E0D6;
-  --dim: #A8A29E;
-  --mute: #78716C;
-  --ember: #D97757;
-  --sage: #6B8F7A;
+  --wall: #070B12;
+  --raised: #0F1623;
+  --line: #243044;
+  --type: #D7E2F0;
+  --dim: #8B9BB0;
+  --mute: #5C6B80;
+  --ember: #5B9FD4;
+  --sage: #3D9B8F;
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-l: env(safe-area-inset-left, 0px);
@@ -165,7 +165,7 @@ html, body {
   width: 100%;
   aspect-ratio: 1 / 1;
   max-height: min(52dvh, 520px);
-  background: #0C0A09;
+  background: var(--wall);
   border: 1px solid var(--line);
   margin-bottom: 8px;
 }
@@ -221,7 +221,7 @@ html, body {
   text-transform: uppercase;
 }
 .tab.active {
-  background: rgba(217, 119, 87, 0.2);
+  background: rgba(91, 159, 212, 0.22);
   border-color: var(--ember);
   color: var(--ember);
 }
