@@ -58,3 +58,13 @@ Do **not** line-for-line translate his `.c` into the repo. That would be a GPL d
 
 - Repo: `CREDITS.md`, `docs/st-mechanics-sot.md`
 - Metal-first ship: `cloud_agents_vs_nuc.md`
+
+## Extract folder
+
+First MD dump of ST tables/formulas:
+
+- **[`docs/st-extract/`](st-extract/README.md)** — index + politics, tradeitems, ships, gadgets-weapons-shields, police-record, encounters, pricing, autofuel-travel
+- License: [`st-extract/LICENSE-NOTE.md`](st-extract/LICENSE-NOTE.md), [`st-extract/RELICENSE.md`](st-extract/RELICENSE.md)
+
+Depth plan still: [`docs/depth-from-st.md`](depth-from-st.md).
+

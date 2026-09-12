@@ -1,7 +1,7 @@
 ---
 title: Skiff Run depth plan (from Space Trader mechanics)
 created: 2026-09-11
-updated: 2026-09-11
+updated: 2026-09-12
 type: design
 status: active
 dest: of1
@@ -69,3 +69,12 @@ See `docs/reputation-vibe.md` — dual Ledger/Ember axes (Firefly/Guardians tona
 ## Hull-weighted encounters
 
 See hull-roster.md — signature / prey / threat / quiet running. Partial stub in 0.6.0; full matrix with next systems batch.
+
+## Mechanics extract (2026-09-12)
+
+Structured table/formula dump (clean-room MD, file:line citations):
+
+→ **[`docs/st-extract/`](st-extract/README.md)** — politics, trade items, ships, equipment, police record, encounters, pricing, autofuel/travel, license notes.
+
+SoT policy: [`docs/st-mechanics-sot.md`](st-mechanics-sot.md). Relicense watch: [`docs/st-extract/RELICENSE.md`](st-extract/RELICENSE.md).
+
