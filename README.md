@@ -2,6 +2,8 @@
 
 Browser trade-run through the Ember chart. Original systems, goods, and ships.
 
+**License:** [GPLv2](LICENSE) (or later).
+
 **Credits:** mechanics inspired by Pieter Spronck’s Space Trader (GPLv2). See [CREDITS.md](CREDITS.md).
 
 Sibling to [Hex Wake](https://github.com/of1-dev/hex-wake) — related night palette, different rules.
