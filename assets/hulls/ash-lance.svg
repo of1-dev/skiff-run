@@ -1,5 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" fill="none" aria-hidden="true">
-  <path fill="currentColor" d="M18 40 L110 26 L152 40 L110 54 Z"/>
-  <path stroke="currentColor" stroke-width="2.5" d="M60 24 L78 14 M60 56 L78 66"/>
-  <rect x="100" y="34" width="14" height="12" fill="currentColor" opacity=".8"/>
+<svg class="hull-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" fill="none" aria-hidden="true">
+  <!-- hunter spike: elongated prow, sensor fin, lean engine -->
+  <path fill="currentColor" d="M16 36 L16 48 L36 54 L100 50 L156 40 L100 30 L36 26 Z"/>
+  <rect x="4" y="38" width="14" height="10" rx="2" fill="currentColor"/>
+  <path fill="currentColor" opacity=".55" d="M48 28 L78 18 L82 28 Z"/>
+  <path fill="currentColor" opacity=".45" d="M48 52 L78 62 L82 52 Z"/>
+  <rect x="88" y="34" width="20" height="12" rx="2" fill="currentColor" opacity=".7"/>
+  <path fill="currentColor" opacity=".4" d="M120 34 L150 40 L120 46 Z"/>
+  <rect x="60" y="36" width="12" height="8" rx="1" fill="currentColor" opacity=".5"/>
+  <circle cx="96" cy="40" r="2.5" fill="currentColor" opacity=".85"/>
 </svg>

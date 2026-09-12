@@ -1,6 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" fill="none" aria-hidden="true">
-  <path fill="currentColor" d="M14 40 L100 20 L156 40 L100 60 Z"/>
-  <path stroke="currentColor" stroke-width="3" d="M55 22 L70 8 M55 58 L70 72"/>
-  <path stroke="currentColor" stroke-width="3" d="M78 26 L92 12 M78 54 L92 68"/>
-  <rect x="108" y="34" width="16" height="12" fill="currentColor"/>
+<svg class="hull-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" fill="none" aria-hidden="true">
+  <!-- endgame war hull: aggressive wedge, stacked hardpoints, armored prow -->
+  <path fill="currentColor" d="M12 34 L12 50 L32 58 L96 54 L156 40 L96 26 L32 22 Z"/>
+  <rect x="2" y="36" width="14" height="14" rx="2" fill="currentColor"/>
+  <path fill="currentColor" opacity=".7" d="M40 22 L68 10 L74 24 Z"/>
+  <path fill="currentColor" opacity=".7" d="M40 58 L68 70 L74 56 Z"/>
+  <path fill="currentColor" opacity=".85" d="M70 18 L98 8 L102 20 L78 26 Z"/>
+  <path fill="currentColor" opacity=".85" d="M70 62 L98 72 L102 60 L78 54 Z"/>
+  <rect x="84" y="14" width="10" height="5" fill="currentColor"/>
+  <rect x="84" y="61" width="10" height="5" fill="currentColor"/>
+  <rect x="100" y="32" width="22" height="16" rx="2" fill="currentColor" opacity=".8"/>
+  <path fill="currentColor" opacity=".45" d="M122 34 L150 40 L122 46 Z"/>
+  <path fill="currentColor" opacity=".5" d="M48 30 L78 28 L78 52 L48 50 Z"/>
+  <circle cx="110" cy="40" r="3.5" fill="currentColor" opacity=".55"/>
 </svg>
