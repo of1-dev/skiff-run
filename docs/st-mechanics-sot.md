@@ -46,8 +46,8 @@ Do **not** line-for-line translate his `.c` into the repo. That would be a GPL d
 
 ## License watch
 
-- Repo: **MIT** while clean-room.
-- Substantial paste/port of ST C → must **GPL** that derivative. Prefer not to; prefer MD + JS clean-room.
+- Repo: **GPLv2** (locked 2026-09-12 for remake path).
+- Exact ST tables + remake path → **GPLv2** (matches Spronck). MD + JS implementation under same license.
 
 ## Keep
 
