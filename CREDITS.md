@@ -13,9 +13,11 @@ Skiff Run’s trade-run systems are **inspired by and mechanically based on** th
 
 Space Trader itself cites inspiration from SolarWars / DopeWars lineage and Elite (without Elite’s 3D flight). Original Space Trader artwork (except the icon) was copyright Alexander Lawrence — Skiff uses original of1 hull art, not that artwork.
 
-## License note
+## License
 
-This repository is currently MIT for of1-authored code. A future substantial port of Spronck’s C sources into this tree will require relicensing that derivative under GPL as the GPL requires.
+**GPLv2** (or later), matching Space Trader. See `LICENSE`.
+
+Skiff Run is an original of1 title; trade-run mechanics are inspired by / based on Spronck’s Space Trader. Exact ST tables may be used under the same GPL freedom Spronck granted for ports.
 
 ## Mechanics extract
 
