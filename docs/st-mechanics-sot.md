@@ -1,5 +1,5 @@
 ---
-title: Skiff Run — ST mechanics SoT + Skiff skin + credit
+title: Skiff Run — ST mechanics SoT + Skiff skin + stack
 created: 2026-09-12
 updated: 2026-09-12
 type: policy
@@ -10,35 +10,51 @@ source_kind: user-decision
 blockers: []
 ---
 
-# Skiff Run direction (locked 2026-09-12; credit update same day)
+# Skiff Run direction (locked 2026-09-12)
 
 ## Split
 
 | Layer | Source of truth |
 |-------|-----------------|
-| **Mechanics** | Public classic **Palm Space Trader** by **Pieter Spronck** (GPLv2 C / Palm OS). Politics, prices, encounters, ship/gadget math, travel/fuel/range, retirement economy. |
-| **Skin / product** | **Skiff Run** name and originals: Ember chart fiction, hull art, Fold UI, themes, MCP seat, of1-dev repo |
+| **Mechanics intent** | Public classic **Palm Space Trader** by **Pieter Spronck** (GPLv2 C). Analyze for politics, prices, encounters, ship/gadget math, travel/fuel/range, retirement. |
+| **Rules text** | **Markdown** under `docs/` — tables, formulas, contracts agents can diff. MD is the written SoT for what Skiff *should* do. |
+| **Runtime** | **JavaScript** — Fold (Pages) + shared engine + MCP seat. One hot-path language. |
+| **Skin / product** | **Skiff Run** name, Ember fiction, hull art, Fold UI, themes, of1-dev repo |
 
-## Credit (required)
+## Method (clean-room)
 
-- Always credit **Pieter Spronck** / Space Trader as the mechanical heritage.
-- Homepage: https://www.spronck.net/spacetrader/
-- Historical source mirror often cited: https://github.com/historicalsource/spacetrader
-- OK to say publicly: Skiff Run is a modern web trade-run **inspired by / mechanically based on** Space Trader.
-- Still **not** a Paramount / Star Trek product. No ST *trademark* packaging as if we own Space Trader; credit the author, keep our title **Skiff Run**.
+1. **Analyze** Spronck’s C (read / note behavior).
+2. **Write** rules into MD (`docs/…`) with modern structure — not a paste of his source.
+3. **Implement** those MD contracts in JS (`game.js` / shared engine / `mcp/engine.mjs`).
+4. **Credit** Spronck / Space Trader publicly (`CREDITS.md`, Captain). Title stays **Skiff Run**.
 
-## Keep
+Do **not** line-for-line translate his `.c` into the repo. That would be a GPL derivative. Clean-room alignment stays **MIT**.
 
-- Skiff Run name
-- Fold shell, themes, hull SVGs, MCP / spectator
-- Original system/hull/good names (not ST’s TNG-flavored system list)
+## Stack choices (locked)
+
+| Use | Language |
+|-----|----------|
+| Play UI + Pages + MCP game logic | **JavaScript** (keep) |
+| One-off analysis (dump ST tables → MD) | **Python** OK |
+| Rust / Go | **No** for this game unless Andrew reopens — overkill for the sim |
+
+## Credit
+
+- Pieter Spronck / Space Trader — https://www.spronck.net/spacetrader/
+- Historical source: https://github.com/historicalsource/spacetrader
+- Homage may be said aloud; not Paramount packaging; not “we own Space Trader”
 
 ## License watch
 
-- Current repo ships under **MIT** (clean-room / homage code so far).
-- ST C is **GPLv2**. A substantial **port of that C** into Skiff obligates **GPL** for the derivative (source available, same license). Relicense when that port lands; until then credit + mechanical alignment without pasting GPL source is the path.
+- Repo: **MIT** while clean-room.
+- Substantial paste/port of ST C → must **GPL** that derivative. Prefer not to; prefer MD + JS clean-room.
+
+## Keep
+
+- Fold shell, themes, hull SVGs, MCP / spectator
+- Original system/hull/good names (not ST’s TNG-flavored list)
 
 ## Related
 
 - Repo: `CREDITS.md`, `docs/st-mechanics-sot.md`
-- Ship metal-first: `cloud_agents_vs_nuc.md`
+- Metal-first ship: `cloud_agents_vs_nuc.md`
