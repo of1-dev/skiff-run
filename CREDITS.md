@@ -21,5 +21,5 @@ Skiff Run is an original of1 title; trade-run mechanics are inspired by / based 
 
 ## Mechanics extract
 
-Table and formula notes from Spronck’s C live in [`docs/st-extract/`](docs/st-extract/README.md). Exact numbers are GPL-origin; shipping them in the Skiff engine should trigger a GPLv2 relicense PR — see [`docs/st-extract/RELICENSE.md`](docs/st-extract/RELICENSE.md). Root `LICENSE` remains MIT for this docs-only phase.
+Table and formula notes from Spronck’s C live in [`docs/st-extract/`](docs/st-extract/README.md). Repo license is **GPLv2** — see [`LICENSE`](LICENSE) and [`docs/st-extract/RELICENSE.md`](docs/st-extract/RELICENSE.md).
 
