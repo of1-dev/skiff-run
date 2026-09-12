@@ -12,7 +12,7 @@ blockers: []
 
 # Skiff Run depth — ST mechanical extract
 
-**IP:** Steal structure and formulas only. No ST system names (many TNG-flavored), no Palm homage branding in public UI.
+**IP:** Port structure and formulas from ST. Keep Skiff system/hull names (not ST’s TNG-flavored list). **Credit** Pieter Spronck / Space Trader publicly; title stays Skiff Run.
 
 Primary sources: `github.com/historicalsource/spacetrader` (`DataTypes.h`, `Global.c`, `Traveler.c`, `Encounter.c`, …).
 
