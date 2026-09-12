@@ -16,3 +16,8 @@ Space Trader itself cites inspiration from SolarWars / DopeWars lineage and Elit
 ## License note
 
 This repository is currently MIT for of1-authored code. A future substantial port of Spronck’s C sources into this tree will require relicensing that derivative under GPL as the GPL requires.
+
+## Mechanics extract
+
+Table and formula notes from Spronck’s C live in [`docs/st-extract/`](docs/st-extract/README.md). Exact numbers are GPL-origin; shipping them in the Skiff engine should trigger a GPLv2 relicense PR — see [`docs/st-extract/RELICENSE.md`](docs/st-extract/RELICENSE.md). Root `LICENSE` remains MIT for this docs-only phase.
+
