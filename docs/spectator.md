@@ -48,4 +48,4 @@ Host-wide arg drop still applies: keep using `enqueue.mjs` + `skiff_tick` for Gr
 
 ## Quiet IP
 
-Public UI stays original Ember chart copy — no Palm / Space Trader remake billboarding.
+Public UI keeps Skiff Ember chart fiction; Captain/CREDITS credit Space Trader (Spronck).
