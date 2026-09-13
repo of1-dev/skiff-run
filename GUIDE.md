@@ -81,6 +81,8 @@ When you’re ready to scale, hunt a **yard** (Ember Reach, Ash Meridian, Knot H
 
 ## 6. Hulls, fuel vs range, encounters
 
+Relative hull sizes (Mite → Quiet Ark, including Unbowed and Wasp Prime) live on the **Ember Hull Scale Chart** in `docs/hull-roster.md`.
+
 ### Hulls you’ll actually sign for (this build)
 
 | Hull | Hold | Tank | Range | Arms | Notes |
