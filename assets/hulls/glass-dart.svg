@@ -1,10 +1,14 @@
 <svg class="hull-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" fill="none" aria-hidden="true">
-  <!-- fast needle courier: long thin fuselage, tiny canopy, twin microfins -->
-  <path fill="currentColor" d="M14 38 L14 44 L40 48 L130 44 L154 40 L130 36 L40 32 Z"/>
-  <rect x="4" y="37" width="12" height="8" rx="1.5" fill="currentColor" opacity=".95"/>
-  <path fill="currentColor" opacity=".5" d="M50 34 L90 32 L90 48 L50 46 Z"/>
-  <ellipse cx="108" cy="40" rx="10" ry="5" fill="currentColor" opacity=".65"/>
-  <path fill="currentColor" opacity=".4" d="M132 36 L150 40 L132 44 Z"/>
-  <path stroke="currentColor" stroke-width="2" opacity=".55" d="M62 30 L74 22 M62 50 L74 58"/>
-  <rect x="70" y="36" width="18" height="8" rx="1" fill="currentColor" opacity=".35"/>
+  <!-- fast needle courier -->
+  <g id="hull">
+    <path fill="currentColor" d="M14 38 L14 44 L40 48 L130 44 L154 40 L130 36 L40 32 Z"/>
+    <path stroke="currentColor" stroke-width="2" opacity=".55" d="M62 30 L74 22 M62 50 L74 58"/>
+  </g>
+  <g id="canopy">
+    <ellipse cx="108" cy="40" rx="10" ry="5" fill="currentColor" opacity=".65"/>
+  </g>
+  <g id="thruster">
+    <rect x="4" y="37" width="12" height="8" rx="1.5" fill="currentColor" opacity=".95"/>
+  </g>
+  <g id="hit-flash" opacity="0"><rect width="160" height="80" fill="currentColor"/></g>
 </svg>

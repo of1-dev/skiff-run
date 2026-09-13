@@ -1,10 +1,15 @@
 <svg class="hull-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" fill="none" aria-hidden="true">
-  <!-- slim light freighter: single aft engine, belly cargo pod, cockpit nose -->
-  <path fill="currentColor" opacity=".9" d="M22 34 L22 50 L34 54 L34 30 Z"/>
-  <rect x="8" y="36" width="16" height="12" rx="2" fill="currentColor"/>
-  <path fill="currentColor" d="M34 32 L108 26 L142 40 L108 54 L34 48 Z"/>
-  <path fill="currentColor" opacity=".55" d="M52 46 L78 44 L78 58 L56 56 Z"/>
-  <path fill="currentColor" opacity=".4" d="M118 34 L136 40 L118 46 Z"/>
-  <rect x="96" y="34" width="14" height="12" rx="1.5" fill="currentColor" opacity=".7"/>
-  <path stroke="currentColor" stroke-width="2" opacity=".55" d="M60 28 L72 22 M60 52 L72 58"/>
+  <!-- starter light freighter -->
+  <g id="hull">
+    <path fill="currentColor" d="M34 32 L108 26 L142 40 L108 54 L34 48 Z"/>
+    <path fill="currentColor" opacity=".55" d="M52 46 L78 44 L78 58 L56 56 Z"/>
+  </g>
+  <g id="canopy">
+    <rect x="96" y="34" width="14" height="12" rx="1.5" fill="currentColor" opacity=".7"/>
+  </g>
+  <g id="thruster">
+    <path fill="currentColor" opacity=".9" d="M22 34 L22 50 L34 54 L34 30 Z"/>
+    <rect x="8" y="36" width="16" height="12" rx="2" fill="currentColor"/>
+  </g>
+  <g id="hit-flash" opacity="0"><rect width="160" height="80" fill="currentColor"/></g>
 </svg>

@@ -44,7 +44,7 @@ Relative size for docs / yard talk. Solo viewport fills lie — use this sheet.
 | Wasp Prime | 3.6 |
 | Quiet Ark | 4.0 |
 
-**Unbowed** is in the Ember keep pack (art + scale). Buyable unlock / SVG land in a later slice — not every keep hull is on the Yard tab yet.
+**Unbowed** is in the Ember keep pack (art + scale + SVG). Buyable unlock still parked — not every keep hull is on the Yard tab yet.
 
 ## Live (0.4.x)
 
@@ -54,7 +54,7 @@ Relative size for docs / yard talk. Solo viewport fills lie — use this sheet.
 | `hold-barge` | cargo hauler | `assets/hulls/hold-barge.svg` |
 | `ember-cutter` | armed cutter | `assets/hulls/ember-cutter.svg` |
 
-## Planned common classes (SVGs on disk; stats TBD)
+## Planned common classes (riggable SVGs on disk; stats TBD)
 
 Mechanical homage slots (original names only):
 
@@ -67,7 +67,7 @@ Mechanical homage slots (original names only):
 | `tide-runner` | balanced multi-role | `tide-runner.svg` |
 | `quiet-ark` | late tank / retire ferry | `quiet-ark.svg` |
 | `wasp-prime` | endgame war hull | `wasp-prime.svg` |
-| `unbowed` | gated compact war | `unbowed.svg` (pending) |
+| `unbowed` | gated compact war | `unbowed.svg` |
 
 ## Faction exclusives (parked)
 
