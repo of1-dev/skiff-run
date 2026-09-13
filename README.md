@@ -12,6 +12,8 @@ Open `index.html` locally or enable GitHub Pages on `main` / root.
 
 ## How to play
 
+**Captain’s Notes:** see [GUIDE.md](GUIDE.md) — fold-sized how-to in ’98 shareware voice.
+
 Fold-friendly **tabs**: Dock · Market · Chart (Local / Sector / Full) · Yard · Captain. Warp from the chart.
 
 
