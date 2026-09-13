@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.2";
+  const VERSION = "0.9.3";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const bridgeOn = (() => {
@@ -8,8 +8,8 @@
     catch (_) { return false; }
   })();
   const THEMES = ["cobalt", "coffee", "lcars"];
-  const RETIRE_NET = 35000;
-  const FUEL_PRICE = 45;
+  const RETIRE_NET = (globalThis.SkiffMarket && globalThis.SkiffMarket.RETIRE_NET) || 35000;
+  const FUEL_PRICE = (globalThis.SkiffFuel && globalThis.SkiffFuel.FUEL_PRICE) || 45;
   const CREW_HIRE = 800;
   const CREW_FIRE_REFUND = 200;
   // DOCK_WORK_PAY from js/yard-economy.js (SkiffYardEconomy)
@@ -207,6 +207,11 @@
     return r.dumped;
   }
 
+  const SF = globalThis.SkiffFuel;
+  const SM = globalThis.SkiffMarket;
+  const SE = globalThis.SkiffEncounter;
+  if (!SF || !SM || !SE) throw new Error("Skiff fuel/market/encounter modules missing — load js/*.js before game.js");
+
   function mulberry32(a) {
     return function () {
       a |= 0; a = a + 0x6D2B79F5 | 0;
@@ -321,25 +326,10 @@
     return { seed, pos };
   }
 
-  function hash32(str) {
-    let h = 2166136261 >>> 0;
-    for (let i = 0; i < str.length; i++) {
-      h ^= str.charCodeAt(i);
-      h = Math.imul(h, 16777619);
-    }
-    return h >>> 0;
-  }
+  function hash32(str) { return SM.hash32(str); }
 
   // Stable prices so remote peek matches arrival.
-  function priceFor(system, good) {
-    const m = system.mods[good.id] || 1;
-    const size = system.size == null ? 2 : system.size;
-    // Larger docks lean slightly cheaper (ST-style size pressure).
-    const sizeMul = (100 - size * 3) / 100;
-    const h = hash32(system.id + ":" + good.id);
-    const jitter = 0.92 + ((h % 160) / 1000);
-    return Math.max(8, Math.round(good.base * m * sizeMul * jitter));
-  }
+  function priceFor(system, good) { return SM.priceFor(system, good); }
 
   function activityLabel(n) {
     const i = Math.max(0, Math.min(ACTIVITY.length - 1, n | 0));
@@ -364,14 +354,7 @@
     return "#C44C4C";
   }
 
-  function bestLaneEdge(herePrices, therePrices) {
-    let best = null;
-    GOODS.forEach((g) => {
-      const edge = therePrices[g.id] - herePrices[g.id];
-      if (!best || edge > best.edge) best = { id: g.id, name: g.name, edge };
-    });
-    return best;
-  }
+  function bestLaneEdge(herePrices, therePrices) { return SM.bestLaneEdge(herePrices, therePrices, GOODS); }
 
   // Expected credit delta if you sell current hold at target vs here.
   function cargoMarginAt(toId) {
@@ -388,35 +371,27 @@
     return { total, units };
   }
 
-  function dist(a, b) {
-    const dx = a.x - b.x;
-    const dy = a.y - b.y;
-    return Math.sqrt(dx * dx + dy * dy);
-  }
+  function dist(a, b) { return SF.dist(a, b); }
 
   // World units per fuel point — fuelCost = ceil(distance / FUEL_DIST).
-  const FUEL_DIST = 14;
+  const FUEL_DIST = SF.FUEL_DIST;
 
   function fuelCost(fromId, toId) {
-    const d = dist(sys(fromId), sys(toId));
-    return Math.max(1, Math.ceil(d / FUEL_DIST));
+    return SF.fuelCost(sys(fromId), sys(toId));
   }
 
   function inRange(fromId, toId) {
-    return dist(sys(fromId), sys(toId)) <= hull().range + 0.01;
+    return SF.inRange(sys(fromId), sys(toId), hull().range);
   }
 
   /** Max world distance you can jump with current fuel, capped by hull.range (Palm ST–style chart circle). */
   function fuelReachDistance() {
-    const fuel = Math.max(0, state.fuel | 0);
-    return Math.min(hull().range, fuel * FUEL_DIST);
+    return SF.fuelReachDistance(state.fuel, hull().range);
   }
 
   /** Hull range AND enough fuel for fuelCost — chart “in reach” / Local visibility. */
   function canJumpTo(fromId, toId) {
-    if (!fromId || !toId || fromId === toId) return false;
-    if (!inRange(fromId, toId)) return false;
-    return state.fuel >= fuelCost(fromId, toId);
+    return SF.canJumpTo({ from: sys(fromId), to: sys(toId), hullRange: hull().range, fuel: state.fuel });
   }
 
   function reachableFrom(fromId) {
@@ -445,21 +420,10 @@
     };
   }
 
-  function cargoUsed(st) {
-    return Object.values(st.cargo).reduce((a, b) => a + b, 0);
-  }
-
-  function inventoryValue(st) {
-    return GOODS.reduce((sum, g) => sum + (st.cargo[g.id] || 0) * (st.prices[g.id] || g.base), 0);
-  }
-
-  function shipValue(st) {
-    return ship(st.shipId)?.price || 0;
-  }
-
-  function netWorth(st) {
-    return st.credits + inventoryValue(st) + Math.floor(shipValue(st) * 0.5);
-  }
+  function cargoUsed(st) { return SM.cargoUsed(st.cargo); }
+  function inventoryValue(st) { return SM.inventoryValue(st, GOODS); }
+  function shipValue(st) { return SM.shipValue(st.shipId, SHIPS); }
+  function netWorth(st) { return SM.netWorth(st, GOODS, SHIPS); }
 
   function rollMarket(st) {
     const s = sys(st.system);
@@ -474,17 +438,7 @@
     return out;
   }
 
-  function bestDealHint(herePrices, therePrices) {
-    let best = null;
-    GOODS.forEach((g) => {
-      const buy = herePrices[g.id];
-      const sell = therePrices[g.id];
-      const edge = sell - buy;
-      if (!best || edge > best.edge) best = { id: g.id, name: g.name, edge, buy, sell };
-    });
-    if (!best || best.edge < 4) return "flat lane";
-    return best.name + " +" + best.edge + "₩";
-  }
+  function bestDealHint(herePrices, therePrices) { return SM.bestDealHint(herePrices, therePrices, GOODS); }
 
   function load() {
     try {
@@ -1208,16 +1162,15 @@
       if (currentPilot() === "agent") return log("Agent has the stick.");
       return void bridgeAct({ op: "buy", good: id, qty: Math.max(1, qty | 0) });
     }
-    qty = Math.max(1, qty | 0);
+    const r = SM.applyBuy({
+      cargo: state.cargo, credits: state.credits, prices: state.prices,
+      goods: GOODS, holdMax: hull().cargo, id: id, qty: qty,
+    });
+    if (!r.ok) return log(r.reason === "hold_full" ? "Hold full." : "Not enough credits.");
+    state.credits = r.credits;
+    state.cargo = r.cargo;
     const p = state.prices[id];
-    const room = hull().cargo - cargoUsed(state);
-    if (room <= 0) return log("Hold full.");
-    const canPay = Math.floor(state.credits / p);
-    const n = Math.min(qty, room, canPay);
-    if (n < 1) return log("Not enough credits.");
-    state.credits -= p * n;
-    state.cargo[id] += n;
-    log("Bought " + n + " " + GOODS.find((g) => g.id === id).name + " for ₩" + (p * n) + ".");
+    log("Bought " + r.n + " " + GOODS.find((g) => g.id === id).name + " for ₩" + (p * r.n) + ".");
     render();
   }
 
@@ -1226,14 +1179,15 @@
       if (currentPilot() === "agent") return log("Agent has the stick.");
       return void bridgeAct({ op: "sell", good: id, qty: Math.max(1, qty | 0) });
     }
-    qty = Math.max(1, qty | 0);
-    const have = state.cargo[id] || 0;
-    if (have < 1) return log("Nothing to sell.");
-    const n = Math.min(qty, have);
+    const r = SM.applySell({
+      cargo: state.cargo, credits: state.credits, prices: state.prices,
+      goods: GOODS, id: id, qty: qty,
+    });
+    if (!r.ok) return log("Nothing to sell.");
+    state.credits = r.credits;
+    state.cargo = r.cargo;
     const p = state.prices[id];
-    state.cargo[id] -= n;
-    state.credits += p * n;
-    log("Sold " + n + " " + GOODS.find((g) => g.id === id).name + " for ₩" + (p * n) + ".");
+    log("Sold " + r.n + " " + GOODS.find((g) => g.id === id).name + " for ₩" + (p * r.n) + ".");
     render();
   }
 
@@ -1242,40 +1196,30 @@
       if (currentPilot() === "agent") return log("Agent has the stick.");
       return void bridgeAct({ op: "sell_all" });
     }
-    let total = 0;
-    let units = 0;
-    GOODS.forEach((g) => {
-      const have = state.cargo[g.id] || 0;
-      if (have < 1) return;
-      const p = state.prices[g.id];
-      state.cargo[g.id] = 0;
-      state.credits += p * have;
-      total += p * have;
-      units += have;
+    const r = SM.applySellAll({
+      cargo: state.cargo, credits: state.credits, prices: state.prices, goods: GOODS,
     });
-    if (units < 1) return log("Hold empty.");
-    log("Sold all (" + units + " units) for ₩" + total.toLocaleString() + ".");
+    if (!r.ok) return log("Hold empty.");
+    state.credits = r.credits;
+    state.cargo = r.cargo;
+    log("Sold all (" + r.units + " units) for ₩" + r.total.toLocaleString() + ".");
     render();
   }
 
   function applyRefuelInternal(prefix) {
-    const need = hull().fuelMax - state.fuel;
-    if (need <= 0) return false;
-    const cost = need * FUEL_PRICE;
-    if (state.credits < cost) {
-      const can = Math.floor(state.credits / FUEL_PRICE);
-      if (can <= 0) {
-        if (!prefix) log("Can't afford fuel.");
-        return false;
-      }
-      state.fuel += can;
-      state.credits -= can * FUEL_PRICE;
-      log((prefix || "Partial refuel") + " +" + can + " for ₩" + (can * FUEL_PRICE) + ".");
+    const r = SF.applyRefuel({ fuel: state.fuel, fuelMax: hull().fuelMax, credits: state.credits });
+    if (!r.ok) {
+      if (!prefix && r.reason === "credits") log("Can't afford fuel.");
+      return false;
+    }
+    state.fuel = r.fuel;
+    state.credits = r.credits;
+    if (r.partial) {
+      log((prefix || "Partial refuel") + " +" + r.bought + " for ₩" + (r.bought * FUEL_PRICE) + ".");
+    } else if (prefix) {
+      log(prefix + " full for ₩" + (r.bought * FUEL_PRICE) + ".");
     } else {
-      state.fuel = hull().fuelMax;
-      state.credits -= cost;
-      if (prefix) log(prefix + " full for ₩" + cost + ".");
-      else log("Refueled for ₩" + cost + ".");
+      log("Refueled for ₩" + (r.bought * FUEL_PRICE) + ".");
     }
     return true;
   }
@@ -1397,17 +1341,8 @@
   // Thin encounters: chance scales with destination police/pirate; small hulls quieter.
   function maybeEncounter(toId) {
     const dest = sys(toId) || sys(state.system);
-    const police = dest.police | 0;
-    const pirate = dest.pirate | 0;
-    const quietHull = hull().cargo <= 20 && !hull().weapons;
-    const scale = quietHull ? 0.62 : 1;
-    const pCorsair = (pirate / 7) * 0.48 * scale;
-    const pWarden = (police / 7) * 0.36 * scale;
-    const pTrader = ((7 - pirate) / 7) * 0.14 * scale;
-    const r = Math.random();
-    if (r < pCorsair) openEncounter("corsair", dest);
-    else if (r < pCorsair + pWarden) openEncounter("warden", dest);
-    else if (r < pCorsair + pWarden + pTrader) openEncounter("trader", dest);
+    const kind = SE.pickEncounter(SE.encounterOdds(dest, hull()), Math.random);
+    if (kind !== "none") openEncounter(kind, dest);
   }
 
   const dlg = el("encounter");
