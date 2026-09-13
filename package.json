@@ -1,0 +1,8 @@
+{
+  "name": "skiff-run",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/acceptance/*.test.js",
+    "test:acceptance": "node --test test/acceptance/*.test.js"
+  }
+}

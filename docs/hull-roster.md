@@ -44,30 +44,32 @@ Relative size for docs / yard talk. Solo viewport fills lie — use this sheet.
 | Wasp Prime | 3.6 |
 | Quiet Ark | 4.0 |
 
-**Unbowed** is in the Ember keep pack (art + scale + SVG). Buyable unlock still parked — not every keep hull is on the Yard tab yet.
+**Unbowed** is in the Ember keep pack (art + scale + SVG). Buyable unlock still parked — not open Yard stock.
 
-## Live (0.4.x)
+### Yard stock (0.9.2)
 
-| id | role | SVG |
-|----|------|-----|
-| `skiff-7` | starter light freighter | `assets/hulls/skiff-7.svg` |
-| `hold-barge` | cargo hauler | `assets/hulls/hold-barge.svg` |
-| `ember-cutter` | armed cutter | `assets/hulls/ember-cutter.svg` |
+- **Full yard** (`yard: true`): all commons (not Unbowed).
+- **Mite scrap**: most non-yard docks when tech ≥ Craft (2) and pirate &lt; 6.
+- **Dry dock**: tech ≤ 1, or pirate ≥ 6 without a real yard — market + dock work only.
+- Soft-fail: dock work ₩400 once per stay; Mite Take can jettison overflow; trade-down pays scrap surplus.
 
-## Planned common classes (riggable SVGs on disk; stats TBD)
+## Live Yard commons (0.9.2)
 
-Mechanical homage slots (original names only):
+| id | role | cargo | fuel | range | guns | crew | list ₩ |
+|----|------|------:|-----:|------:|:----:|-----:|-------:|
+| `mite` | escape short-hopper | 10 | 10 | 20 | no | 1 | 0 |
+| `skiff-7` | starter light freighter | 20 | 14 | 28 | no | 1 | 0 |
+| `glass-dart` | fast courier | 12 | 16 | 42 | no | 1 | 4500 |
+| `tide-runner` | balanced multi-role | 24 | 16 | 34 | no | 2 | 7000 |
+| `knot-hauler` | mid cargo | 32 | 17 | 30 | no | 3 | 8000 |
+| `hold-barge` | fat hauler | 40 | 18 | 32 | no | 3 | 9000 |
+| `ember-cutter` | armed cutter | 16 | 16 | 38 | yes | 2 | 12000 |
+| `ash-lance` | pirate-hunter | 14 | 18 | 40 | yes | 2 | 15000 |
+| `quiet-ark` | late tank / ferry | 50 | 22 | 36 | no | 4 | 22000 |
+| `wasp-prime` | endgame war | 18 | 20 | 44 | yes | 3 | 28000 |
+| `unbowed` | gated compact war | — | — | — | — | — | unlock later |
 
-| id | role sketch | SVG |
-|----|-------------|-----|
-| `mite` | cheapest short-hopper | `mite.svg` |
-| `glass-dart` | fast courier | `glass-dart.svg` |
-| `ash-lance` | pirate-hunter / bounty | `ash-lance.svg` |
-| `knot-hauler` | mid cargo | `knot-hauler.svg` |
-| `tide-runner` | balanced multi-role | `tide-runner.svg` |
-| `quiet-ark` | late tank / retire ferry | `quiet-ark.svg` |
-| `wasp-prime` | endgame war hull | `wasp-prime.svg` |
-| `unbowed` | gated compact war | `unbowed.svg` |
+SVGs: `assets/hulls/<id>.svg` (Unbowed art ships; buy does not).
 
 ## Faction exclusives (parked)
 

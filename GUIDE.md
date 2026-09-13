@@ -34,7 +34,7 @@ Five tabs. Learn them like muscle memory:
 | **Dock** | Where you are, the ship’s log, shortcuts, and — when you’re ready — retirement. |
 | **Market** | Buy and sell the six staples. Use **+/−** for quantity, then Buy/Sell. **Sell all** dumps the hold at local prices. |
 | **Chart** | See the Ember map, pick a target, **Jump**. Modes: Local · Sector · Full (see below). |
-| **Yard** | Hulls and bunks — only useful when you’re docked at a yard system. |
+| **Yard** | Hulls and bunks. Full commons at real yards; most docks scrap a **Mite**; a few dry docks sell none. Dock work pays once per stay. |
 | **Captain** | Pilot handoff, jump prefs, theme packs, **New game**. |
 
 The **status strip** up top is gospel: system, credits (₩), **fuel**, hold fill, and **net**. Glance at it before every jump.
@@ -77,6 +77,8 @@ Cheap bulk at the bottom; meds and optics pay when you find a hungry dock.
 
 When you’re ready to scale, hunt a **yard** (Ember Reach, Ash Meridian, Knot Harbor, and several others on the Full chart). Bigger hold or longer legs — pick one dream and save for it.
 
+**Soft-fail:** go broke and the galaxy still has a path. **Dock work** pays a small stake once per stay. **Most** docks scrap a free **Mite** (overflow cargo gets jettisoned). Dead-tech or corsair-hot pads stay **dry** — no hulls — so learn the chart. Trading *down* pays scrap into your pocket.
+
 ---
 
 ## 6. Hulls, fuel vs range, encounters
@@ -91,7 +93,7 @@ Relative hull sizes (Mite → Quiet Ark, including Unbowed and Wasp Prime) live 
 | **Hold Barge** | 40 | 18 | 32 | no | Money printer; still runs from fights. |
 | **Ember Cutter** | 16 | 16 | 38 | yes | Legs + guns; hire crew before you swagger. |
 
-Yards trade in your old hull. Crew hire/fire lives on the Yard tab (bunks matter if you plan to **Fight**).
+Yards trade in your old hull (trade-*down* can cash out). Crew hire/fire lives on the Yard tab (bunks matter if you plan to **Fight**). Unbowed is not open stock.
 
 ### Encounters on the lane
 
