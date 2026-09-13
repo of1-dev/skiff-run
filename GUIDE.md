@@ -1,7 +1,7 @@
 # SKIFF RUN — Captain’s Notes / How To Play
 
 *A fold-sized pamphlet for the Ember chart.*  
-*Version 0.9.0 · Keep in the glove box.*
+*Version 0.9.1 · Keep in the glove box.*
 
 ---
 
@@ -45,9 +45,9 @@ The **status strip** up top is gospel: system, credits (₩), **fuel**, hold fil
 
 1. Open **Chart**.
 2. Pick a mode:
-   - **Local** — only systems inside your **hull jump circle**. Cleanest for day-to-day hops.
-   - **Sector** — a regional window (~48 units). Dim dots are still “on the map” but outside your current range.
-   - **Full** — the entire Ember galaxy (all 64 names). Great for planning; crowded; zoom with your eyeballs.
+   - **Local** — only systems inside your **hull jump circle**. Camera zooms to that neighborhood.
+   - **Sector** — a regional window (~48 units). Camera fits the sector; dim dots are outside hull range.
+   - **Full** — the entire Ember galaxy (all 64 names). Whole map, no neighborhood zoom.
 3. Tap a system. Read the target card: fuel cost, dossier, neighbor peeks, and a margin stub if you’re carrying cargo.
 4. Hit **Jump** when you’ve got the fuel.
 
