@@ -1,10 +1,14 @@
 <svg class="hull-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" fill="none" aria-hidden="true">
-  <!-- streamlined freighter: organic curves, mid hold, soft fins -->
-  <path fill="currentColor" d="M20 42 C28 28, 50 20, 78 22 C110 24, 136 30, 148 40 C136 50, 110 56, 78 58 C50 60, 28 52, 20 38 Z"/>
-  <ellipse cx="72" cy="40" rx="22" ry="12" fill="currentColor" opacity=".35"/>
-  <path fill="currentColor" opacity=".55" d="M108 32 C120 34, 134 36, 142 40 C134 44, 120 46, 108 48 Z"/>
-  <rect x="8" y="36" width="14" height="12" rx="3" fill="currentColor" opacity=".85"/>
-  <path fill="currentColor" opacity=".45" d="M54 22 C66 14, 86 14, 98 22 L92 28 C82 22, 68 22, 60 28 Z"/>
-  <path fill="currentColor" opacity=".4" d="M54 58 C66 66, 86 66, 98 58 L92 52 C82 58, 68 58, 60 52 Z"/>
-  <ellipse cx="118" cy="40" rx="7" ry="4" fill="currentColor" opacity=".55"/>
+  <!-- multi-role freighter -->
+  <g id="hull">
+    <path fill="currentColor" d="M20 42 C28 28, 50 20, 78 22 C110 24, 136 30, 148 40 C136 50, 110 56, 78 58 C50 60, 28 52, 20 38 Z"/>
+    <ellipse cx="72" cy="40" rx="22" ry="12" fill="currentColor" opacity=".35"/>
+  </g>
+  <g id="canopy">
+    <ellipse cx="118" cy="40" rx="7" ry="4" fill="currentColor" opacity=".55"/>
+  </g>
+  <g id="thruster">
+    <rect x="8" y="36" width="14" height="12" rx="3" fill="currentColor" opacity=".85"/>
+  </g>
+  <g id="hit-flash" opacity="0"><rect width="160" height="80" fill="currentColor"/></g>
 </svg>

@@ -1,11 +1,15 @@
 <svg class="hull-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" fill="none" aria-hidden="true">
-  <!-- late tank / ferry bulk: rounded mass, stacked decks, heavy aft -->
-  <path fill="currentColor" d="M24 28 C24 20, 36 16, 52 16 L120 16 C140 16, 150 26, 150 40 C150 54, 140 64, 120 64 L52 64 C36 64, 24 60, 24 52 Z"/>
-  <rect x="8" y="32" width="20" height="22" rx="4" fill="currentColor" opacity=".9"/>
-  <rect x="48" y="26" width="70" height="14" rx="4" fill="currentColor" opacity=".4"/>
-  <rect x="52" y="44" width="60" height="12" rx="3" fill="currentColor" opacity=".3"/>
-  <ellipse cx="132" cy="40" rx="10" ry="14" fill="currentColor" opacity=".5"/>
-  <circle cx="36" cy="40" r="6" fill="currentColor" opacity=".55"/>
-  <rect x="70" y="30" width="24" height="6" rx="1" fill="currentColor" opacity=".55"/>
-  <path stroke="currentColor" stroke-width="2.5" opacity=".35" d="M60 16 L60 10 M90 16 L90 10 M110 16 L110 10"/>
+  <!-- late tank / ferry -->
+  <g id="hull">
+    <path fill="currentColor" d="M24 28 C24 20, 36 16, 52 16 L120 16 C140 16, 150 26, 150 40 C150 54, 140 64, 120 64 L52 64 C36 64, 24 60, 24 52 Z"/>
+    <rect x="48" y="26" width="70" height="14" rx="4" fill="currentColor" opacity=".4"/>
+  </g>
+  <g id="canopy">
+    <circle cx="36" cy="40" r="6" fill="currentColor" opacity=".55"/>
+    <rect x="70" y="30" width="24" height="6" rx="1" fill="currentColor" opacity=".55"/>
+  </g>
+  <g id="thruster">
+    <rect x="8" y="32" width="20" height="22" rx="4" fill="currentColor" opacity=".9"/>
+  </g>
+  <g id="hit-flash" opacity="0"><rect width="160" height="80" fill="currentColor"/></g>
 </svg>
