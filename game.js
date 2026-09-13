@@ -369,13 +369,29 @@
     return Math.sqrt(dx * dx + dy * dy);
   }
 
+  // World units per fuel point — fuelCost = ceil(distance / FUEL_DIST).
+  const FUEL_DIST = 14;
+
   function fuelCost(fromId, toId) {
     const d = dist(sys(fromId), sys(toId));
-    return Math.max(1, Math.ceil(d / 14));
+    return Math.max(1, Math.ceil(d / FUEL_DIST));
   }
 
   function inRange(fromId, toId) {
     return dist(sys(fromId), sys(toId)) <= hull().range + 0.01;
+  }
+
+  /** Max world distance you can jump with current fuel, capped by hull.range (Palm ST–style chart circle). */
+  function fuelReachDistance() {
+    const fuel = Math.max(0, state.fuel | 0);
+    return Math.min(hull().range, fuel * FUEL_DIST);
+  }
+
+  /** Hull range AND enough fuel for fuelCost — chart “in reach” / Local visibility. */
+  function canJumpTo(fromId, toId) {
+    if (!fromId || !toId || fromId === toId) return false;
+    if (!inRange(fromId, toId)) return false;
+    return state.fuel >= fuelCost(fromId, toId);
   }
 
   function reachableFrom(fromId) {
@@ -605,7 +621,7 @@
 
   function chartVisible(s, hereId, mode) {
     if (s.id === hereId) return true;
-    if (mode === "local") return inRange(hereId, s.id);
+    if (mode === "local") return canJumpTo(hereId, s.id);
     if (mode === "sector") return inSector(hereId, s.id);
     return true; // full / galaxy
   }
@@ -636,9 +652,9 @@
     } else {
       const pts = [{ x: here.x, y: here.y }];
       if (mode === "local") {
-        const r = hull().range;
+        const r = Math.max(fuelReachDistance(), 1);
         SYSTEMS.forEach((s) => {
-          if (s.id === here.id || inRange(here.id, s.id)) pts.push(s);
+          if (s.id === here.id || canJumpTo(here.id, s.id)) pts.push(s);
         });
         pts.push({ x: here.x - r, y: here.y }, { x: here.x + r, y: here.y });
         pts.push({ x: here.x, y: here.y - r }, { x: here.x, y: here.y + r });
@@ -657,7 +673,7 @@
       let spanX = Math.max(1e-6, maxX - minX);
       let spanY = Math.max(1e-6, maxY - minY);
       const minSpan = mode === "local"
-        ? Math.max(hull().range * 2.2, 18)
+        ? Math.max(Math.max(fuelReachDistance(), 8) * 2.2, 18)
         : Math.max(SECTOR_RADIUS * 0.55, 28);
       if (spanX < minSpan) {
         const mid = (minX + maxX) / 2;
@@ -724,11 +740,11 @@
     const fullBtn = el("mode-full");
     if (fullBtn) fullBtn.classList.toggle("active", mode === "full");
     el("chart-hint").textContent = mode === "local"
-      ? "Local: systems inside your hull jump circle (range ≠ fuel). Tap to target, then Jump."
+      ? "Local: systems inside your fuel reach circle (like Palm ST). Tap to target, then Jump."
       : mode === "sector"
-        ? "Sector: regional window (~" + SECTOR_RADIUS + " units). Dim = outside hull jump range."
-        : "Full: entire Ember galaxy (" + SYSTEMS.length + " systems). Dim = outside hull jump range.";
-    if (mode === "local" && ui.targetId && !inRange(state.system, ui.targetId) && ui.targetId !== state.system) {
+        ? "Sector: regional window (~" + SECTOR_RADIUS + " units). Dim = beyond current fuel reach."
+        : "Full: entire Ember galaxy (" + SYSTEMS.length + " systems). Dim = beyond current fuel reach.";
+    if (mode === "local" && ui.targetId && !canJumpTo(state.system, ui.targetId) && ui.targetId !== state.system) {
       ui.targetId = null;
     }
     drawMap();
@@ -767,7 +783,7 @@
     ctx.fillRect(0, 0, w, h);
 
     const here = sys(state.system);
-    const range = hull().range;
+    const reachR = fuelReachDistance();
     const mode = ui.chartMode;
     const full = mode === "full";
     const cam = chartCamera(mode, here, w, h);
@@ -788,18 +804,20 @@
       ctx.beginPath(); ctx.moveTo(0, p.y); ctx.lineTo(w, p.y); ctx.stroke();
     }
 
-    // Range ring in world units via camera scale
-    ctx.beginPath();
-    ctx.arc(herePt.x, herePt.y, range * cam.scale, 0, Math.PI * 2);
-    ctx.strokeStyle = tc.ring;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+    // Fuel-reach ring (Palm ST Short Range Chart style), via camera scale
+    if (reachR > 0) {
+      ctx.beginPath();
+      ctx.arc(herePt.x, herePt.y, reachR * cam.scale, 0, Math.PI * 2);
+      ctx.strokeStyle = tc.ring;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
 
-    // Links only to in-range systems (keeps Full readable).
+    // Links only to jumps you can afford now (keeps Full readable).
     SYSTEMS.forEach((s) => {
       if (s.id === here.id) return;
       if (!chartVisible(s, here.id, mode)) return;
-      if (!inRange(here.id, s.id)) return;
+      if (!canJumpTo(here.id, s.id)) return;
       const p = cam.toScreen(s.x, s.y);
       ctx.beginPath();
       ctx.moveTo(herePt.x, herePt.y);
@@ -810,7 +828,7 @@
 
     SYSTEMS.forEach((s) => {
       if (!chartVisible(s, here.id, mode)) return;
-      const reach = s.id === here.id || inRange(here.id, s.id);
+      const reach = s.id === here.id || canJumpTo(here.id, s.id);
       const p = cam.toScreen(s.x, s.y);
       const px = p.x;
       const py = p.y;
@@ -923,15 +941,19 @@
       return;
     }
     const t = sys(id);
-    const reach = inRange(state.system, id);
+    const hullOk = inRange(state.system, id);
     const cost = fuelCost(state.system, id);
+    const fuelOk = state.fuel >= cost;
+    const reach = hullOk && fuelOk;
     const peek = peekPrices(id);
     const hint = bestDealHint(state.prices, peek);
     const visited = isVisited(id);
     title.textContent = t.name + (visited ? "" : " · unvisited");
     meta.textContent = reach
       ? (cost + " fuel · " + hint + (t.yard ? " · yard" : "") + (t.retire ? " · retire dock" : ""))
-      : ("Out of range (" + Math.ceil(dist(sys(state.system), t)) + " units · your range " + hull().range + ")");
+      : (!hullOk
+        ? ("Out of range (" + Math.ceil(dist(sys(state.system), t)) + " units · hull " + hull().range + ")")
+        : ("Need " + cost + " fuel (have " + state.fuel + ")"));
     if (dossier) {
       dossier.hidden = false;
       dossier.textContent =
@@ -957,8 +979,8 @@
       }
     }
     peekEl.textContent = GOODS.map((g) => g.name.split(" ").pop() + " ₩" + peek[g.id]).join(" · ");
-    warp.disabled = !reach || state.fuel < cost;
-    warp.textContent = reach ? ("Jump −" + cost + " fuel") : "Out of range";
+    warp.disabled = !reach;
+    warp.textContent = reach ? ("Jump −" + cost + " fuel") : (!hullOk ? "Out of range" : "Need fuel");
   }
 
   function renderShipPanel() {
@@ -1102,7 +1124,7 @@
       dock.textContent = "Docked at " + s.name + ". " +
         reachableFrom(state.system).length + " systems in jump range.";
     }
-    if (ui.targetId && ui.chartMode === "local" && ui.targetId !== state.system && !inRange(state.system, ui.targetId)) {
+    if (ui.targetId && ui.chartMode === "local" && ui.targetId !== state.system && !canJumpTo(state.system, ui.targetId)) {
       ui.targetId = null;
     }
     renderShipPanel();

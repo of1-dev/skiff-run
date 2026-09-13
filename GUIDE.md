@@ -45,13 +45,13 @@ The **status strip** up top is gospel: system, credits (₩), **fuel**, hold fil
 
 1. Open **Chart**.
 2. Pick a mode:
-   - **Local** — only systems inside your **hull jump circle**. Camera zooms to that neighborhood.
-   - **Sector** — a regional window (~48 units). Camera fits the sector; dim dots are outside hull range.
+   - **Local** — only systems inside your **fuel reach circle** (what you can jump to now). Camera zooms to that neighborhood.
+   - **Sector** — a regional window (~48 units). Camera fits the sector; dim dots are beyond current fuel reach.
    - **Full** — the entire Ember galaxy (all 64 names). Whole map, no neighborhood zoom.
 3. Tap a system. Read the target card: fuel cost, dossier, neighbor peeks, and a margin stub if you’re carrying cargo.
 4. Hit **Jump** when you’ve got the fuel.
 
-**Important (read twice):** the circle on the chart is **hull jump range**, not your fuel tank. Fuel lives in the status strip. You can be “in range” on the map and still dry on the pump — refill before you look foolish.
+**Important (read twice):** the circle on the chart is **fuel reach** — how far current tanks can take you this hop (capped by hull max), like the Palm ST Short Range Chart. Hull range still hard-caps the longest legal jump; empty tanks shrink the circle.
 
 **New** (Captain tab) reshuffles **x/y** of the same named systems into new lanes. Names stay; geography lies differently every career.
 
@@ -125,7 +125,7 @@ Net, not raw cash alone. Cargo and half a ship’s list price count. Some captai
 - There is talk of handing the stick to a quiet co-pilot marked only **You** / **Agent**. Take it back when the lane feels wrong.
 - A jump preference exists that **tops the tanks on arrive** if you can afford the pump. Old Palm habits die hard.
 - Chart toggles that sound like radio bands — **Local · Sector · Full** — are real mode switches, not wallpaper.
-- Red and teal on the map mean more than pretty ink. Circle ≠ strip. Learn which is which before midnight jumps.
+- Red and teal on the map mean more than pretty ink. The circle is fuel reach (not a permanent hull halo). Learn it before midnight jumps.
 - **New** does not invent new worlds. It lies about the roads between the old ones.
 - Patrols and raiders have names. You’ll learn them the first time a dialog box refuses to be ignored.
 - Rumor places a soft ending at a moon that doesn’t advertise — bring enough net, not just hope.
