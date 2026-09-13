@@ -79,8 +79,8 @@ tool("skiff_new_game", "Fresh run. Optional seed.", {
   seed: z.number().int().optional(),
 }, async ({ seed }) => game.newGame(seed));
 
-tool("skiff_chart", "Local/sector chart.", {
-  mode: z.enum(["local", "sector"]).optional(),
+tool("skiff_chart", "Local/sector/full chart.", {
+  mode: z.enum(["local", "sector", "full"]).optional(),
 }, async ({ mode }) => game.chart(mode || "local"));
 
 tool("skiff_buy", "Buy goods.", {
@@ -93,8 +93,8 @@ tool("skiff_sell", "Sell goods.", {
   qty: z.number().int().min(1).max(40).optional(),
 }, async ({ good, qty }) => game.sell(good, qty ?? 1));
 
-tool("skiff_jump", "Jump to system.", {
-  system: z.enum(["ember", "glass", "tide", "ash", "knot", "quiet"]),
+tool("skiff_jump", "Jump to system (roster id).", {
+  system: z.string().min(1),
 }, async ({ system }) => game.jump(system));
 
 tool("skiff_encounter", "Resolve encounter a|b.", {

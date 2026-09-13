@@ -1,4 +1,4 @@
-# SKIFF RUN 0.8.3
+# SKIFF RUN 0.9.0
 
 Browser trade-run through the Ember chart. Original systems, goods, and ships.
 
@@ -12,13 +12,13 @@ Open `index.html` locally or enable GitHub Pages on `main` / root.
 
 ## How to play
 
-Fold-friendly **tabs**: Dock · Market · Chart (Local / Sector) · Yard · Captain. Warp from the chart.
+Fold-friendly **tabs**: Dock · Market · Chart (Local / Sector / Full) · Yard · Captain. Warp from the chart.
 
 
 1. Buy low / sell high across systems. Use **+/−** qty, then Buy/Sell.
-2. Check the **chart** and **Travel** peeks — neighbor prices + fuel cost by distance. **New** reshuffles the same named systems into a new layout.
+2. Check the **chart** (Local = jump range, Sector = regional, Full = whole galaxy) and peeks — neighbor prices + fuel cost by distance. **New** reshuffles the same named systems into a new layout.
 3. Refuel at each stop. Jump range depends on your hull.
-4. Yards at Ember Reach / Ash Meridian / Knot Harbor: trade up to Hold Barge or armed Ember Cutter. Hire crew for bunks.
+4. Yards at Ember Reach / Ash Meridian / Knot Harbor and other yard docks: trade up to Hold Barge or armed Ember Cutter. Hire crew for bunks.
 5. Encounters: **Ledger Wardens** or **Ash Corsairs** (armed+crewed can fight).
 6. Reach **₩35,000** net and retire on **Quiet Moon**.
 
@@ -56,3 +56,8 @@ Chart circle = **hull jump range**, not the fuel tank (fuel is the status strip)
 ## Thin encounters (0.6)
 
 Jumps can hit **Ash Corsairs**, **Ledger Wardens**, or a **lane trader**. Odds follow destination pirate/police activity (chart colors matter). Small unarmed hulls draw less heat.
+
+## Full galaxy (0.9)
+
+Chart modes: **Local** (hull jump range) · **Sector** (regional window) · **Full** (entire playable map).
+Named roster expanded to a ST-scale Ember galaxy (64 systems); New still reshuffles x/y of the same names.

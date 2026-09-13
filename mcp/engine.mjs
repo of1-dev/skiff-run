@@ -1,6 +1,6 @@
 /** Headless Skiff Run engine — mechanical parity with play UI for MCP / tests. */
-export const VERSION = "0.8.3";
-export const RULESET = "skiff-headless-0.8.3";
+export const VERSION = "0.9.0";
+export const RULESET = "skiff-headless-0.9.0";
 const RETIRE_NET = 35000;
 const FUEL_PRICE = 45;
 const CREW_HIRE = 800;
@@ -26,6 +26,64 @@ export const SYSTEM_DEFS = [
   { id: "ash", name: "Ash Meridian", mods: { scrap: 0.6, spice: 0.9, grain: 1.2 }, yard: true, tech: 4, size: 2, gov: "Fringe Compact", police: 1, pirate: 6 },
   { id: "knot", name: "Knot Harbor", mods: { optics: 0.8, meds: 1.3, ore: 1.1 }, yard: true, tech: 6, size: 3, gov: "Harbor Syndicate", police: 5, pirate: 2 },
   { id: "quiet", name: "Quiet Moon", mods: { grain: 1.1, spice: 1.1, scrap: 1.15 }, retire: true, tech: 2, size: 1, gov: "Quiet Protectorate", police: 3, pirate: 1 },
+  { id: "cinder", name: "Cinder Well", mods: { ore: 0.74, scrap: 1.24, optics: 1.19 }, yard: true, tech: 4, size: 2, gov: "Well Compact", police: 3, pirate: 4 },
+  { id: "ledger", name: "Drift Ledger", mods: { optics: 0.72, meds: 1.22, scrap: 1.17 }, tech: 5, size: 2, gov: "Ledger Freehold", police: 4, pirate: 2 },
+  { id: "spindle", name: "Rust Spindle", mods: { scrap: 0.61, grain: 1.26, meds: 1.06 }, tech: 3, size: 2, gov: "Spindle League", police: 2, pirate: 5 },
+  { id: "cobaltfen", name: "Cobalt Fen", mods: { meds: 0.72, optics: 1.17, scrap: 1.17 }, tech: 5, size: 3, gov: "Fen Protectorate", police: 5, pirate: 1 },
+  { id: "foldmargin", name: "Fold Margin", mods: { spice: 0.69, scrap: 1.3399999999999999, grain: 1.1400000000000001 }, tech: 4, size: 2, gov: "Margin Compact", police: 2, pirate: 4 },
+  { id: "palekiln", name: "Pale Kiln", mods: { ore: 0.6799999999999999, spice: 1.23, grain: 1.1300000000000001 }, tech: 3, size: 2, gov: "Kiln Freehold", police: 2, pirate: 3 },
+  { id: "ironquay", name: "Iron Quay", mods: { scrap: 0.63, meds: 1.23, ore: 1.08 }, yard: true, tech: 5, size: 3, gov: "Quay Syndicate", police: 4, pirate: 3 },
+  { id: "softvault", name: "Soft Vault", mods: { meds: 0.7, ore: 1.15, optics: 1.1500000000000001 }, tech: 6, size: 2, gov: "Vault Compact", police: 6, pirate: 1 },
+  { id: "brinegate", name: "Brine Gate", mods: { grain: 0.6, ore: 1.2, meds: 1.05 }, tech: 2, size: 2, gov: "Gate League", police: 3, pirate: 3 },
+  { id: "sootladder", name: "Soot Ladder", mods: { scrap: 0.6799999999999999, meds: 1.2799999999999998, ore: 1.1300000000000001 }, tech: 3, size: 1, gov: "Ladder Compact", police: 1, pirate: 5 },
+  { id: "coppervein", name: "Copper Vein", mods: { ore: 0.63, spice: 1.18, grain: 1.08 }, tech: 4, size: 2, gov: "Vein Freehold", police: 3, pirate: 3 },
+  { id: "nightquill", name: "Night Quill", mods: { optics: 0.69, scrap: 1.24, grain: 1.1400000000000001 }, tech: 5, size: 1, gov: "Quill Protectorate", police: 4, pirate: 2 },
+  { id: "ambersluice", name: "Amber Sluice", mods: { spice: 0.69, scrap: 1.19, grain: 1.1400000000000001 }, tech: 3, size: 2, gov: "Sluice League", police: 2, pirate: 4 },
+  { id: "gritanchor", name: "Grit Anchor", mods: { scrap: 0.6799999999999999, meds: 1.2799999999999998, ore: 1.1300000000000001 }, tech: 2, size: 2, gov: "Anchor Compact", police: 2, pirate: 5 },
+  { id: "loomreach", name: "Loom Reach", mods: { optics: 0.69, scrap: 1.29, grain: 1.1400000000000001 }, yard: true, tech: 6, size: 3, gov: "Loom Syndicate", police: 5, pirate: 2 },
+  { id: "voidpeddle", name: "Void Peddle", mods: { spice: 0.6599999999999999, grain: 1.3099999999999998, meds: 1.11 }, tech: 4, size: 1, gov: "Peddle Freehold", police: 1, pirate: 6 },
+  { id: "sparforge", name: "Spar Forge", mods: { ore: 0.69, scrap: 1.24, optics: 1.1400000000000001 }, tech: 5, size: 2, gov: "Forge Compact", police: 3, pirate: 3 },
+  { id: "claybeacon", name: "Clay Beacon", mods: { grain: 0.6599999999999999, optics: 1.16, spice: 1.11 }, tech: 2, size: 2, gov: "Beacon League", police: 3, pirate: 2 },
+  { id: "mistharbor", name: "Mist Harbor", mods: { meds: 0.63, spice: 1.18, ore: 1.08 }, tech: 4, size: 3, gov: "Mist Syndicate", police: 4, pirate: 3 },
+  { id: "rimequay", name: "Rime Quay", mods: { scrap: 0.6699999999999999, optics: 1.3199999999999998, spice: 1.12 }, tech: 3, size: 2, gov: "Rime Compact", police: 2, pirate: 4 },
+  { id: "flintcross", name: "Flint Cross", mods: { ore: 0.6, grain: 1.2999999999999998, meds: 1.05 }, tech: 3, size: 2, gov: "Cross Freehold", police: 2, pirate: 4 },
+  { id: "emberfall", name: "Emberfall", mods: { spice: 0.6799999999999999, meds: 1.3299999999999998, ore: 1.1300000000000001 }, tech: 4, size: 2, gov: "Fall League", police: 3, pirate: 3 },
+  { id: "saltmeridian", name: "Salt Meridian", mods: { grain: 0.62, meds: 1.3199999999999998, scrap: 1.07 }, tech: 3, size: 2, gov: "Salt Compact", police: 3, pirate: 3 },
+  { id: "oxbow", name: "Oxbow Dock", mods: { scrap: 0.64, spice: 1.3399999999999999, grain: 1.09 }, tech: 2, size: 2, gov: "Oxbow Freehold", police: 2, pirate: 3 },
+  { id: "wisphollow", name: "Wisp Hollow", mods: { meds: 0.62, optics: 1.27, scrap: 1.07 }, tech: 1, size: 1, gov: "Hollow Protectorate", police: 1, pirate: 2 },
+  { id: "brassladder", name: "Brass Ladder", mods: { optics: 0.64, scrap: 1.3399999999999999, grain: 1.09 }, yard: true, tech: 6, size: 2, gov: "Brass Syndicate", police: 5, pirate: 2 },
+  { id: "duskorchard", name: "Dusk Orchard", mods: { grain: 0.6799999999999999, spice: 1.3299999999999998, ore: 1.1300000000000001 }, tech: 3, size: 2, gov: "Dusk Freehold", police: 2, pirate: 3 },
+  { id: "coilharbor", name: "Coil Harbor", mods: { ore: 0.71, optics: 1.16, spice: 1.1600000000000001 }, tech: 5, size: 3, gov: "Coil Compact", police: 4, pirate: 3 },
+  { id: "redledger", name: "Red Ledger", mods: { spice: 0.72, optics: 1.17, scrap: 1.17 }, tech: 4, size: 2, gov: "Red League", police: 2, pirate: 5 },
+  { id: "palespur", name: "Pale Spur", mods: { meds: 0.6599999999999999, grain: 1.3099999999999998, spice: 1.11 }, tech: 4, size: 1, gov: "Pale League", police: 3, pirate: 3 },
+  { id: "tinreach", name: "Tin Reach", mods: { scrap: 0.6599999999999999, grain: 1.21, meds: 1.11 }, tech: 3, size: 2, gov: "Tin Compact", police: 3, pirate: 3 },
+  { id: "mosskiln", name: "Moss Kiln", mods: { grain: 0.7, ore: 1.15, meds: 1.1500000000000001 }, tech: 2, size: 2, gov: "Moss Freehold", police: 2, pirate: 2 },
+  { id: "shardquay", name: "Shard Quay", mods: { optics: 0.63, spice: 1.3299999999999998, ore: 1.08 }, tech: 5, size: 2, gov: "Shard Syndicate", police: 4, pirate: 3 },
+  { id: "windfold", name: "Windfold", mods: { spice: 0.6, ore: 1.2999999999999998, optics: 1.05 }, tech: 3, size: 1, gov: "Fold Compact", police: 1, pirate: 5 },
+  { id: "cruciblefen", name: "Crucible Fen", mods: { ore: 0.74, scrap: 1.29, optics: 1.19 }, tech: 5, size: 2, gov: "Crucible League", police: 3, pirate: 4 },
+  { id: "lumendrift", name: "Lumen Drift", mods: { optics: 0.62, meds: 1.17, scrap: 1.07 }, yard: true, tech: 7, size: 3, gov: "Lumen Syndicate", police: 6, pirate: 1 },
+  { id: "ashenquill", name: "Ashen Quill", mods: { meds: 0.73, spice: 1.3299999999999998, ore: 1.1800000000000002 }, tech: 4, size: 1, gov: "Ashen Protectorate", police: 3, pirate: 3 },
+  { id: "thornharbor", name: "Thorn Harbor", mods: { scrap: 0.6799999999999999, meds: 1.2799999999999998, ore: 1.1300000000000001 }, tech: 3, size: 2, gov: "Thorn Compact", police: 2, pirate: 5 },
+  { id: "silkbasalt", name: "Silk Basalt", mods: { ore: 0.61, optics: 1.21, spice: 1.06 }, tech: 4, size: 2, gov: "Basalt Freehold", police: 3, pirate: 2 },
+  { id: "frostspindle", name: "Frost Spindle", mods: { optics: 0.64, scrap: 1.24, grain: 1.09 }, tech: 5, size: 2, gov: "Frost League", police: 4, pirate: 2 },
+  { id: "torchmargin", name: "Torch Margin", mods: { spice: 0.72, optics: 1.17, scrap: 1.17 }, tech: 3, size: 2, gov: "Torch Compact", police: 2, pirate: 4 },
+  { id: "nettlegate", name: "Nettle Gate", mods: { grain: 0.64, scrap: 1.24, optics: 1.09 }, tech: 2, size: 2, gov: "Nettle League", police: 3, pirate: 3 },
+  { id: "obsidianfen", name: "Obsidian Fen", mods: { ore: 0.74, scrap: 1.29, optics: 1.19 }, tech: 4, size: 2, gov: "Obsidian Compact", police: 2, pirate: 5 },
+  { id: "coralledger", name: "Coral Ledger", mods: { meds: 0.61, grain: 1.3099999999999998, spice: 1.06 }, tech: 5, size: 2, gov: "Coral Freehold", police: 4, pirate: 2 },
+  { id: "skiffmere", name: "Skiffmere", mods: { scrap: 0.71, grain: 1.3099999999999998, meds: 1.1600000000000001 }, tech: 3, size: 2, gov: "Mere Compact", police: 3, pirate: 3 },
+  { id: "quillbone", name: "Quillbone", mods: { optics: 0.71, grain: 1.26, spice: 1.1600000000000001 }, tech: 4, size: 1, gov: "Bone Protectorate", police: 3, pirate: 4 },
+  { id: "marrowdock", name: "Marrow Dock", mods: { scrap: 0.61, grain: 1.16, meds: 1.06 }, tech: 2, size: 2, gov: "Marrow League", police: 2, pirate: 4 },
+  { id: "vellumreach", name: "Vellum Reach", mods: { meds: 0.6599999999999999, grain: 1.3099999999999998, spice: 1.11 }, tech: 6, size: 2, gov: "Vellum Syndicate", police: 5, pirate: 1 },
+  { id: "pitchorchard", name: "Pitch Orchard", mods: { grain: 0.6, ore: 1.2999999999999998, meds: 1.05 }, tech: 3, size: 2, gov: "Pitch Freehold", police: 2, pirate: 3 },
+  { id: "crowbarquay", name: "Crowbar Quay", mods: { ore: 0.6, grain: 1.15, meds: 1.05 }, tech: 3, size: 2, gov: "Crowbar Compact", police: 1, pirate: 6 },
+  { id: "lanternspur", name: "Lantern Spur", mods: { spice: 0.74, scrap: 1.29, grain: 1.19 }, tech: 4, size: 2, gov: "Lantern League", police: 3, pirate: 3 },
+  { id: "softiron", name: "Soft Iron", mods: { ore: 0.74, scrap: 1.19, optics: 1.19 }, tech: 5, size: 3, gov: "Iron Compact", police: 4, pirate: 2 },
+  { id: "dustcompact", name: "Dust Compact", mods: { scrap: 0.6599999999999999, grain: 1.26, meds: 1.11 }, tech: 2, size: 2, gov: "Dust Freehold", police: 2, pirate: 4 },
+  { id: "coalridge", name: "Ridge of Coals", mods: { ore: 0.6799999999999999, spice: 1.3299999999999998, grain: 1.1300000000000001 }, tech: 3, size: 2, gov: "Ridge League", police: 2, pirate: 4 },
+  { id: "mirrorbasin", name: "Mirror Basin", mods: { optics: 0.6699999999999999, meds: 1.27, scrap: 1.12 }, tech: 6, size: 2, gov: "Basin Syndicate", police: 5, pirate: 2 },
+  { id: "hearthknot", name: "Hearth Knot", mods: { meds: 0.6, ore: 1.15, optics: 1.05 }, yard: true, tech: 5, size: 3, gov: "Hearth Compact", police: 4, pirate: 2 },
+  { id: "farember", name: "Far Ember", mods: { spice: 0.71, grain: 1.3099999999999998, meds: 1.1600000000000001 }, tech: 4, size: 1, gov: "Far Compact", police: 2, pirate: 5 },
+  { id: "gutterwake", name: "Gutter Wake", mods: { scrap: 0.71, grain: 1.26, meds: 1.1600000000000001 }, tech: 2, size: 1, gov: "Wake Freehold", police: 1, pirate: 6 }
 ];
 
 export const SHIPS = [
@@ -122,11 +180,11 @@ export class SkiffGame {
   buildChart(seed) {
     seed = (seed >>> 0) || (Math.floor(Math.random() * 0xffffffff) || 1);
     const rand = mulberry32(seed);
-    const minD = 16;
-    const pad = 10;
+    const minD = 7;
+    const pad = 6;
     const pos = {};
     const placeOne = (id, prefer) => {
-      for (let attempt = 0; attempt < 80; attempt++) {
+      for (let attempt = 0; attempt < 120; attempt++) {
         let x, y;
         if (prefer && attempt < 20) {
           x = prefer.x + (rand() - 0.5) * 24;
@@ -173,7 +231,7 @@ export class SkiffGame {
       }
       return seen.size === this.systems.length;
     };
-    for (let n = 0; n < 40 && !connected(); n++) {
+    for (let n = 0; n < 120 && !connected(); n++) {
       const orphan = this.systems.find((s) => {
         const seen = new Set(["ember"]);
         const q = ["ember"];
@@ -189,7 +247,7 @@ export class SkiffGame {
       if (!orphan) break;
       const anchor = this.systems[Math.floor(rand() * this.systems.length)];
       const ang = rand() * Math.PI * 2;
-      const rad = 12 + rand() * 8;
+      const rad = maxRange * (0.55 + rand() * 0.35);
       orphan.x = Math.max(pad, Math.min(100 - pad, anchor.x + Math.cos(ang) * rad));
       orphan.y = Math.max(pad, Math.min(100 - pad, anchor.y + Math.sin(ang) * rad));
       pos[orphan.id] = { x: Math.round(orphan.x * 10) / 10, y: Math.round(orphan.y * 10) / 10 };
@@ -325,8 +383,14 @@ export class SkiffGame {
 
   chart(mode = "local") {
     const here = this.state.system;
+    const SECTOR_RADIUS = 48;
     const nodes = this.systems
-      .filter((s) => mode !== "local" || s.id === here || this.inRange(here, s.id))
+      .filter((s) => {
+        if (s.id === here) return true;
+        if (mode === "local") return this.inRange(here, s.id);
+        if (mode === "sector") return this.dist(this.sys(here), s) <= SECTOR_RADIUS + 0.01;
+        return true; // full
+      })
       .map((s) => {
         const reach = s.id === here || this.inRange(here, s.id);
         const peek = this.peekPrices(s.id);
