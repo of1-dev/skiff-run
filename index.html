@@ -17,7 +17,7 @@
     <header class="topbar">
       <div class="brand">
         <strong>SKIFF RUN</strong>
-        <span id="ver">0.8.3</span>
+        <span id="ver">0.9.0</span>
       </div>
       <div class="status-strip" aria-label="Status">
         <div><label>Sys</label><span id="sys-name">—</span></div>
@@ -59,6 +59,7 @@
           <div class="seg" role="tablist" aria-label="Chart mode">
             <button type="button" id="mode-local" class="seg-btn active">Local</button>
             <button type="button" id="mode-sector" class="seg-btn">Sector</button>
+            <button type="button" id="mode-full" class="seg-btn">Full</button>
           </div>
         </div>
         <p class="hint" id="chart-hint">Tap a system in range to target it, then jump.</p>
@@ -91,7 +92,7 @@
 
       <section id="tab-captain" class="panel" data-tab="captain" hidden>
         <h2>Captain</h2>
-        <p class="hint">Save is automatic. New reshuffles the chart — same systems, new lanes.</p>
+        <p class="hint">Save is automatic. New reshuffles the full galaxy — same named systems, new lanes.</p>
         <h3 class="sub">Pilot</h3>
         <div class="theme-packs">
           <div class="seg" role="group" aria-label="Who has the stick">
