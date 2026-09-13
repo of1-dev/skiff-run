@@ -1,7 +1,7 @@
 ---
 title: Skiff Run hull roster
 created: 2026-09-11
-updated: 2026-09-11
+updated: 2026-09-13
 type: design
 status: draft
 dest: of1
@@ -24,6 +24,28 @@ Named-faction fantasy is closer to **Hex Wake / Space Wars** energy. For Skiff w
 - **Common classes** — buyable at yards (tech / wealth gated later). Same SVG for all captains.
 - **Exclusives** (optional later) — Corsair prize hull, Warden patrol refit, Compact courier — same base SVG + badge/tint, or a unique path.
 
+## Hull scale (locked 2026-09-13)
+
+Relative size for docs / yard talk. Solo viewport fills lie — use this sheet.
+
+![Ember Hull Scale Chart](../assets/docs/ember-hull-scale.png)
+
+| Hull | Scale |
+|------|------:|
+| Mite | 1.0 |
+| Unbowed | 1.15 |
+| Glass Dart | 1.3 |
+| Skiff-7 | 1.5 |
+| Ember Cutter | 1.7 |
+| Ash Lance | 1.8 |
+| Tide Runner | 2.4 |
+| Knot Hauler | 2.8 |
+| Hold Barge | 3.2 |
+| Wasp Prime | 3.6 |
+| Quiet Ark | 4.0 |
+
+**Unbowed** is in the Ember keep pack (art + scale). Buyable unlock / SVG land in a later slice — not every keep hull is on the Yard tab yet.
+
 ## Live (0.4.x)
 
 | id | role | SVG |
@@ -45,6 +67,7 @@ Mechanical homage slots (original names only):
 | `tide-runner` | balanced multi-role | `tide-runner.svg` |
 | `quiet-ark` | late tank / retire ferry | `quiet-ark.svg` |
 | `wasp-prime` | endgame war hull | `wasp-prime.svg` |
+| `unbowed` | gated compact war | `unbowed.svg` (pending) |
 
 ## Faction exclusives (parked)
 
