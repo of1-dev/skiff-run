@@ -63,3 +63,12 @@ Jumps can hit **Ash Corsairs**, **Ledger Wardens**, or a **lane trader**. Odds f
 
 Chart modes: **Local** (hull jump range) · **Sector** (regional window) · **Full** (entire playable map).
 Named roster expanded to a ST-scale Ember galaxy (64 systems); New still reshuffles x/y of the same names.
+
+
+## Tests (ATDD)
+
+```bash
+npm test
+```
+
+See `docs/testing-atdd.md`.

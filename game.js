@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.1";
+  const VERSION = "0.9.2";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const bridgeOn = (() => {
@@ -12,6 +12,7 @@
   const FUEL_PRICE = 45;
   const CREW_HIRE = 800;
   const CREW_FIRE_REFUND = 200;
+  // DOCK_WORK_PAY from js/yard-economy.js (SkiffYardEconomy)
 
   const GOODS = [
     { id: "ore", name: "Basalt Ore", base: 40 },
@@ -162,9 +163,19 @@
   let SYSTEMS = SYSTEM_DEFS.map((s) => Object.assign({ x: 50, y: 50 }, s));
 
   const SHIPS = [
+    // Soft-fail escape (Flea homage). Free Take; scrap pads + full yards.
+    { id: "mite", name: "Mite", cargo: 10, fuelMax: 10, range: 20, weapons: false, crewMax: 1, price: 0 },
+    // Fresh game still starts in Skiff-7, not Mite.
     { id: "skiff-7", name: "Skiff-7", cargo: 20, fuelMax: 14, range: 28, weapons: false, crewMax: 1, price: 0 },
+    { id: "glass-dart", name: "Glass Dart", cargo: 12, fuelMax: 16, range: 42, weapons: false, crewMax: 1, price: 4500 },
+    { id: "tide-runner", name: "Tide Runner", cargo: 24, fuelMax: 16, range: 34, weapons: false, crewMax: 2, price: 7000 },
+    { id: "knot-hauler", name: "Knot Hauler", cargo: 32, fuelMax: 17, range: 30, weapons: false, crewMax: 3, price: 8000 },
     { id: "hold-barge", name: "Hold Barge", cargo: 40, fuelMax: 18, range: 32, weapons: false, crewMax: 3, price: 9000 },
     { id: "ember-cutter", name: "Ember Cutter", cargo: 16, fuelMax: 16, range: 38, weapons: true, crewMax: 2, price: 12000 },
+    { id: "ash-lance", name: "Ash Lance", cargo: 14, fuelMax: 18, range: 40, weapons: true, crewMax: 2, price: 15000 },
+    { id: "quiet-ark", name: "Quiet Ark", cargo: 50, fuelMax: 22, range: 36, weapons: false, crewMax: 4, price: 22000 },
+    { id: "wasp-prime", name: "Wasp Prime", cargo: 18, fuelMax: 20, range: 44, weapons: true, crewMax: 3, price: 28000 },
+    // Unbowed: HULL_SVG only — unlock later, never open yard stock.
   ];
 
   function sys(id) { return SYSTEMS.find((s) => s.id === id); }
@@ -180,6 +191,20 @@
     wrap.setAttribute("aria-hidden", "true");
     wrap.innerHTML = HULL_SVG[id] || HULL_SVG["skiff-7"] || "";
     return wrap;
+  }
+
+
+  // Yard economy — pure logic in js/yard-economy.js (ATDD). Thin adapters only.
+  const YE = globalThis.SkiffYardEconomy;
+  if (!YE) throw new Error("SkiffYardEconomy missing — load js/yard-economy.js before game.js");
+  const DOCK_WORK_PAY = YE.DOCK_WORK_PAY;
+  function hullStock(s) { return YE.hullStock(s); }
+  function yardOffered() { return YE.yardOffered(hullStock(sys(state.system)), SHIPS); }
+  function dumpToFit(maxCargo) {
+    const ids = GOODS.map((g) => g.id);
+    const r = YE.dumpToFit(state.cargo, ids, maxCargo);
+    state.cargo = r.cargo;
+    return r.dumped;
   }
 
   function mulberry32(a) {
@@ -405,7 +430,7 @@
       v: VERSION,
       system: "ember",
       credits: 3200,
-      fuel: SHIPS[0].fuelMax,
+      fuel: (ship("skiff-7") || SHIPS.find((s) => s.id === "skiff-7") || SHIPS[0]).fuelMax,
       cargo: Object.fromEntries(GOODS.map((g) => [g.id, 0])),
       prices: {},
       shipId: "skiff-7",
@@ -415,6 +440,7 @@
       visited: { ember: true },
       pilot: "human",
       prefs: { autoFuel: true },
+      dockWorkAt: null,
       log: "Skiff-7 cleared Ember Reach. New chart this run — same systems, new lanes.",
     };
   }
@@ -475,6 +501,7 @@
         if (st.system) st.visited[st.system] = true;
         else st.visited.ember = true;
       }
+      if (st.dockWorkAt === undefined) st.dockWorkAt = null;
       if (st.pilot !== "human" && st.pilot !== "agent") st.pilot = "human";
       st.prefs = st.prefs || { autoFuel: true };
       if (st.prefs.autoFuel == null) st.prefs.autoFuel = true;
@@ -996,47 +1023,84 @@
     }
     const yard = el("yard");
     yard.innerHTML = "";
-    const atYard = !!sys(state.system).yard;
-    if (!atYard) {
-      yard.innerHTML = "<p class=\"hint\">No yard here. Look for yard systems on the chart (Ember Reach, Ash Meridian, Knot Harbor, and more).</p>";
+    const stock = hullStock(sys(state.system));
+    const offered = yardOffered();
+    if (stock === "none") {
+      yard.innerHTML = "<p class=\"hint\">Dry dock — no usable hull stock (dead-tech or too hot). Market and dock work still run. Chart toward a Mite scrap or a real yard.</p>";
+    } else if (stock === "mite") {
+      const note = document.createElement("p");
+      note.className = "hint";
+      note.textContent = "Scrap pad — Mite escape hull only. Full yards carry the rest of the commons.";
+      yard.appendChild(note);
     } else {
-      SHIPS.forEach((s) => {
-        if (s.id === state.shipId) return;
-        const row = document.createElement("div");
-        row.className = "yard-row";
-        const ownedTrade = Math.floor((hull().price || 0) * 0.55);
-        const due = Math.max(0, s.price - ownedTrade);
-        const info = document.createElement("div");
-        info.className = "yard-info";
-        info.appendChild(makeHullArt(s.id, "hull-art hull-art--thumb"));
-        const text = document.createElement("div");
-        const listPrice = s.price === 0
-          ? "List free (starter)"
-          : ("List ₩" + s.price.toLocaleString());
-        const tradeHint = s.price === 0
-          ? "Take this hull"
-          : (ownedTrade > 0
-            ? ("You pay ₩" + due.toLocaleString() + " after ₩" + ownedTrade.toLocaleString() + " trade-in")
-            : ("You pay ₩" + due.toLocaleString() + " (no trade-in on current hull)"));
-        text.innerHTML =
-          "<strong>" + s.name + "</strong><div class=\"have\">" +
-          "hold " + s.cargo + " · fuel " + s.fuelMax + " · range " + s.range +
-          (s.weapons ? " · weapons" : " · no guns") +
-          " · crew max " + s.crewMax +
-          "</div><div class=\"have\">" + listPrice + "</div>" +
-          "<div class=\"hint\">" + tradeHint + "</div>";
-        info.appendChild(text);
-        row.appendChild(info);
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "chip";
-        btn.textContent = s.price === 0 ? "Take" : "Buy";
-        btn.disabled = state.credits < due || cargoUsed(state) > s.cargo;
-        btn.onclick = () => doBuyShip(s.id);
-        row.appendChild(btn);
-        yard.appendChild(row);
-      });
+      const note = document.createElement("p");
+      note.className = "hint";
+      note.textContent = "Full yard — commons on the list. Unbowed stays gated (not for sale).";
+      yard.appendChild(note);
     }
+    offered.forEach((s) => {
+      if (s.id === state.shipId) return;
+      const row = document.createElement("div");
+      row.className = "yard-row";
+      const ownedTrade = Math.floor((hull().price || 0) * 0.55);
+      const delta = YE.tradeDelta(hull().price || 0, s.price);
+      const due = YE.tradeDue(delta);
+      const surplus = YE.tradeSurplus(delta);
+      const info = document.createElement("div");
+      info.className = "yard-info";
+      info.appendChild(makeHullArt(s.id, "hull-art hull-art--thumb"));
+      const text = document.createElement("div");
+      const listPrice = s.price === 0
+        ? "List free (escape / starter)"
+        : ("List ₩" + s.price.toLocaleString());
+      let tradeHint;
+      if (s.price === 0 && surplus > 0) tradeHint = "Take + scrap payout ₩" + surplus.toLocaleString();
+      else if (s.price === 0) tradeHint = "Take this hull";
+      else if (surplus > 0) tradeHint = "Trade down — pocket ₩" + surplus.toLocaleString();
+      else if (ownedTrade > 0) tradeHint = "You pay ₩" + due.toLocaleString() + " after ₩" + ownedTrade.toLocaleString() + " trade-in";
+      else tradeHint = "You pay ₩" + due.toLocaleString() + " (no trade-in on current hull)";
+      const cargoBlock = cargoUsed(state) > s.cargo;
+      const escapeDump = s.id === "mite" && cargoBlock;
+      text.innerHTML =
+        "<strong>" + s.name + "</strong><div class=\"have\">" +
+        "hold " + s.cargo + " · fuel " + s.fuelMax + " · range " + s.range +
+        (s.weapons ? " · weapons" : " · no guns") +
+        " · crew max " + s.crewMax +
+        "</div><div class=\"have\">" + listPrice + "</div>" +
+        "<div class=\"hint\">" + tradeHint +
+        (escapeDump ? " · taking Mite jettisons overflow cargo" : "") +
+        "</div>";
+      info.appendChild(text);
+      row.appendChild(info);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "chip";
+      btn.textContent = s.price === 0 ? "Take" : "Buy";
+      btn.disabled = state.credits < due || (cargoBlock && !escapeDump);
+      btn.onclick = () => doBuyShip(s.id);
+      row.appendChild(btn);
+      yard.appendChild(row);
+    });
+
+    const workRow = document.createElement("div");
+    workRow.className = "yard-row";
+    const workInfo = document.createElement("div");
+    workInfo.className = "yard-info";
+    const worked = state.dockWorkAt === state.system;
+    workInfo.innerHTML = "<div><strong>Dock work</strong><div class=\"hint\">" +
+      (worked
+        ? "Already worked this stay — jump to reset."
+        : ("Shift pays ₩" + DOCK_WORK_PAY + ". Once per dock stay.")) +
+      "</div></div>";
+    workRow.appendChild(workInfo);
+    const workBtn = document.createElement("button");
+    workBtn.type = "button";
+    workBtn.className = "chip ghost";
+    workBtn.textContent = worked ? "Done" : ("Work (+₩" + DOCK_WORK_PAY + ")");
+    workBtn.disabled = worked;
+    workBtn.onclick = doDockWork;
+    workRow.appendChild(workBtn);
+    yard.appendChild(workRow);
 
     const crewBox = el("crew-actions");
     crewBox.innerHTML = "";
@@ -1233,6 +1297,7 @@
     state.fuel -= cost;
     state.system = toId;
     markVisited(toId);
+    state.dockWorkAt = null;
     ui.targetId = null;
     rollMarket(state);
     log("Arrived " + sys(toId).name + " (−" + cost + " fuel).");
@@ -1261,16 +1326,45 @@
     }
     const next = ship(id);
     if (!next) return;
-    if (!sys(state.system).yard) return log("No yard at this dock.");
-    if (cargoUsed(state) > next.cargo) return log("Dump cargo before taking a smaller hold.");
-    const trade = Math.floor((hull().price || 0) * 0.55);
-    const due = Math.max(0, next.price - trade);
+    const stock = hullStock(sys(state.system));
+    if (!yardOffered().some((s) => s.id === id)) {
+      return log(stock === "none" ? "Dry dock — no hull stock here." : "That hull isn't on this pad.");
+    }
+    if (cargoUsed(state) > next.cargo) {
+      if (next.id === "mite") {
+        const n = dumpToFit(next.cargo);
+        if (cargoUsed(state) > next.cargo) return log("Can't lighten enough for a Mite.");
+        log("Jettisoned " + n + " cargo to squeeze into a Mite.");
+      } else {
+        return log("Dump cargo before taking a smaller hold.");
+      }
+    }
+    const delta = YE.tradeDelta(hull().price || 0, next.price);
+    const due = YE.tradeDue(delta);
+    const surplus = YE.tradeSurplus(delta);
     if (state.credits < due) return log("Need ₩" + due.toLocaleString() + " after trade-in.");
     state.credits -= due;
+    state.credits += surplus;
     state.shipId = next.id;
     state.crew = Math.min(state.crew, next.crewMax);
     if (state.fuel > next.fuelMax) state.fuel = next.fuelMax;
-    log("Signed for " + next.name + (next.weapons ? " (armed)" : "") + ". Paid ₩" + due.toLocaleString() + ".");
+    let pay = "Paid ₩" + due.toLocaleString();
+    if (surplus > 0) pay = "Scrap payout ₩" + surplus.toLocaleString();
+    else if (due === 0) pay = "No cash due";
+    log("Signed for " + next.name + (next.weapons ? " (armed)" : "") + ". " + pay + ".");
+    render();
+  }
+
+  function doDockWork() {
+    if (bridgeOn) {
+      if (currentPilot() === "agent") return log("Agent has the stick.");
+      return void bridgeAct({ op: "dock_work" });
+    }
+    const shift = YE.afterDockWork(state.dockWorkAt, state.system, state.credits);
+    if (!shift.ok) return log("Already worked this stay.");
+    state.dockWorkAt = shift.dockWorkAt;
+    state.credits = shift.credits;
+    log("Dock shift done. +₩" + shift.pay + " — limp stake toward a Mite or yard.");
     render();
   }
 
