@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.3";
+  const VERSION = "0.9.4";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const bridgeOn = (() => {
@@ -211,6 +211,8 @@
   const SM = globalThis.SkiffMarket;
   const SE = globalThis.SkiffEncounter;
   if (!SF || !SM || !SE) throw new Error("Skiff fuel/market/encounter modules missing — load js/*.js before game.js");
+  const SP = globalThis.SkiffDockPress;
+  if (!SP) throw new Error("SkiffDockPress missing — load js/dock-press.js before game.js");
 
   function mulberry32(a) {
     return function () {
@@ -416,6 +418,8 @@
       pilot: "human",
       prefs: { autoFuel: true },
       dockWorkAt: null,
+      pressBoughtAt: null,
+      lastPress: null,
       log: "Skiff-7 cleared Ember Reach. New chart this run — same systems, new lanes.",
     };
   }
@@ -456,6 +460,8 @@
         else st.visited.ember = true;
       }
       if (st.dockWorkAt === undefined) st.dockWorkAt = null;
+      if (st.pressBoughtAt === undefined) st.pressBoughtAt = null;
+      if (st.lastPress === undefined) st.lastPress = null;
       if (st.pilot !== "human" && st.pilot !== "agent") st.pilot = "human";
       st.prefs = st.prefs || { autoFuel: true };
       if (st.prefs.autoFuel == null) st.prefs.autoFuel = true;
@@ -1142,6 +1148,37 @@
       dock.textContent = "Docked at " + s.name + ". " +
         reachableFrom(state.system).length + " systems in jump range.";
     }
+    const pressBox = el("press-box");
+    if (pressBox) {
+      pressBox.innerHTML = "";
+      const bought = state.pressBoughtAt === state.system;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn ghost";
+      btn.textContent = bought ? "Press bought" : ("Buy Dock Press (₩" + SP.PRESS_PRICE + ")");
+      btn.disabled = bought || state.credits < SP.PRESS_PRICE;
+      btn.onclick = doBuyPress;
+      pressBox.appendChild(btn);
+      const edition = state.lastPress;
+      if (edition && bought) {
+        const paper = document.createElement("div");
+        paper.className = "press-edition";
+        paper.innerHTML = "<strong>" + edition.masthead + "</strong>";
+        const ul = document.createElement("ul");
+        edition.lines.forEach((line) => {
+          const li = document.createElement("li");
+          li.textContent = line;
+          ul.appendChild(li);
+        });
+        paper.appendChild(ul);
+        pressBox.appendChild(paper);
+      } else if (!bought) {
+        const hint = document.createElement("p");
+        hint.className = "hint";
+        hint.textContent = "Local sheet — goods tips, lane heat, and the odd job lead. Once per stay.";
+        pressBox.appendChild(hint);
+      }
+    }
     if (ui.targetId && ui.chartMode === "local" && ui.targetId !== state.system && !canJumpTo(state.system, ui.targetId)) {
       ui.targetId = null;
     }
@@ -1242,6 +1279,7 @@
     state.system = toId;
     markVisited(toId);
     state.dockWorkAt = null;
+    state.pressBoughtAt = null;
     ui.targetId = null;
     rollMarket(state);
     log("Arrived " + sys(toId).name + " (−" + cost + " fuel).");
@@ -1339,6 +1377,35 @@
   }
 
   // Thin encounters: chance scales with destination police/pirate; small hulls quieter.
+
+  function doBuyPress() {
+    if (bridgeOn) {
+      if (currentPilot() === "agent") return log("Agent has the stick.");
+      return void bridgeAct({ op: "buy_press" });
+    }
+    const buy = SP.buyPress({
+      credits: state.credits,
+      pressBoughtAt: state.pressBoughtAt,
+      systemId: state.system,
+    });
+    if (!buy.ok) {
+      return log(buy.reason === "already"
+        ? "Already bought today's Press at this dock."
+        : "Need ₩" + SP.PRESS_PRICE + " for the Dock Press.");
+    }
+    state.credits = buy.credits;
+    state.pressBoughtAt = buy.pressBoughtAt;
+    const edition = SP.rollEdition({
+      hereId: state.system,
+      systems: SYSTEMS,
+      goods: GOODS,
+      priceFor: priceFor,
+    });
+    state.lastPress = edition;
+    log("Dock Press ₩" + buy.paid + " — " + edition.masthead);
+    render();
+  }
+
   function maybeEncounter(toId) {
     const dest = sys(toId) || sys(state.system);
     const kind = SE.pickEncounter(SE.encounterOdds(dest, hull()), Math.random);
