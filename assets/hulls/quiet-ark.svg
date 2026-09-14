@@ -1,15 +1,40 @@
 <svg class="hull-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" fill="none" aria-hidden="true">
   <!-- late tank / ferry -->
+  <defs>
+    <linearGradient id="metal-quiet-ark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E8EEF6"/>
+      <stop offset="45%" stop-color="#9AA8BC"/>
+      <stop offset="100%" stop-color="#4A5568"/>
+    </linearGradient>
+    <linearGradient id="shade-quiet-ark" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#2A3340" stop-opacity=".55"/>
+      <stop offset="55%" stop-color="#2A3340" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="glow-quiet-ark" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FFB24A" stop-opacity=".95"/>
+      <stop offset="100%" stop-color="#FF6A2A" stop-opacity=".15"/>
+    </linearGradient>
+    <radialGradient id="canopy-quiet-ark" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#B8F0FF"/>
+      <stop offset="55%" stop-color="#3AA0C8"/>
+      <stop offset="100%" stop-color="#0B3A4A"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="88" cy="68" rx="58" ry="4" fill="#000" opacity=".3"/>
   <g id="hull">
-    <path fill="currentColor" d="M24 28 C24 20, 36 16, 52 16 L120 16 C140 16, 150 26, 150 40 C150 54, 140 64, 120 64 L52 64 C36 64, 24 60, 24 52 Z"/>
-    <rect x="48" y="26" width="70" height="14" rx="4" fill="currentColor" opacity=".4"/>
+    <path fill="url(#metal-quiet-ark)" d="M20 28 C20 18, 36 12, 54 12 L122 12 C144 12, 154 26, 154 40 C154 54, 144 66, 122 66 L54 66 C36 66, 20 60, 20 50 Z"/>
+    <path fill="url(#shade-quiet-ark)" d="M20 28 C20 18, 36 12, 54 12 L122 12 C144 12, 154 26, 154 40 C154 54, 144 66, 122 66 L54 66 C36 66, 20 60, 20 50 Z"/>
+    <rect x="50" y="24" width="74" height="16" rx="5" fill="#5A687A" opacity=".4"/>
+    <path stroke="#EEF3FA" stroke-width=".8" opacity=".45" d="M54 20 L120 20 M54 48 L120 48 M70 14 L70 64 M100 14 L100 64"/>
   </g>
   <g id="canopy">
-    <circle cx="36" cy="40" r="6" fill="currentColor" opacity=".55"/>
-    <rect x="70" y="30" width="24" height="6" rx="1" fill="currentColor" opacity=".55"/>
+    <circle cx="34" cy="40" r="7" fill="url(#canopy-quiet-ark)"/>
+    <circle cx="32" cy="38" r="2.2" fill="#E8FBFF" opacity=".65"/>
+    <rect x="72" y="28" width="28" height="7" rx="1.5" fill="url(#canopy-quiet-ark)" opacity=".85"/>
   </g>
   <g id="thruster">
-    <rect x="8" y="32" width="20" height="22" rx="4" fill="currentColor" opacity=".9"/>
+    <rect x="4" y="30" width="20" height="24" rx="4" fill="#2A3340"/>
+    <ellipse cx="3" cy="42" rx="8" ry="7" fill="url(#glow-quiet-ark)"/>
   </g>
-  <g id="hit-flash" opacity="0"><rect width="160" height="80" fill="currentColor"/></g>
+  <g id="hit-flash" opacity="0"><rect width="160" height="80" fill="#fff"/></g>
 </svg>
