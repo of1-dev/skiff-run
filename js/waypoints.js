@@ -64,6 +64,19 @@
     return indexOf(list, systemId) >= 0;
   }
 
+  function pinHint(opts) {
+    const o = opts || {};
+    const targetId = o.targetId || null;
+    const hereId = o.hereId || null;
+    if (!targetId) {
+      return { ok: false, reason: "no_target", log: "Pick a dock on the chart first — Pin needs a target." };
+    }
+    if (targetId === hereId) {
+      return { ok: false, reason: "here", log: "That's your current dock. Tap another system, then Pin." };
+    }
+    return { ok: true, reason: null, log: null };
+  }
+
   return {
     MAX_WAYPOINTS,
     normalize,
@@ -72,5 +85,6 @@
     nextAfter,
     indexOf,
     isPinned,
+    pinHint,
   };
 });

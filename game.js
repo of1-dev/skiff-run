@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.17";
+  const VERSION = "0.9.18";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const bridgeOn = (() => {
@@ -972,6 +972,49 @@
       if (d < bestD) { bestD = d; best = s; }
     });
     return best;
+  }
+
+
+  function renderWaypointChrome() {
+    const box = el("waypoint-list");
+    const pinBtn = el("btn-waypoint");
+    const ids = WP.normalize(state.waypoints);
+    if (pinBtn) {
+      const targeted = ui.targetId && ui.targetId !== state.system;
+      const pinned = targeted && WP.isPinned(ids, ui.targetId);
+      pinBtn.textContent = pinned ? "Unpin" : "Pin";
+      pinBtn.disabled = false;
+    }
+    if (!box) return;
+    box.innerHTML = "";
+    if (!ids.length) {
+      box.textContent = "No pins. Target a dock (not this one), then Pin. Numbered dots show on the chart.";
+      return;
+    }
+    const label = document.createElement("div");
+    label.textContent = "Pins — tap to target:";
+    box.appendChild(label);
+    ids.forEach(function (id, i) {
+      const s = sys(id);
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip wp-jump";
+      b.textContent = (i + 1) + " · " + (s ? s.name : id);
+      b.onclick = function () {
+        ui.targetId = id;
+        ui.searchHitId = id;
+        setChartMode(CF.viewForLead({
+          hereId: state.system,
+          targetId: id,
+          canJump: canJumpTo(state.system, id),
+          inSector: inSector(state.system, id),
+        }));
+        log("Chart → " + (s ? s.name : id) + ".");
+        showTab("chart");
+        render();
+      };
+      box.appendChild(b);
+    });
   }
 
   function renderTarget() {
@@ -2003,12 +2046,20 @@
   const pinBtn = el("btn-waypoint");
   if (pinBtn) pinBtn.onclick = () => {
     const id = ui.targetId;
-    if (!id || id === state.system) return;
+    const hint = WP.pinHint({ targetId: id, hereId: state.system });
+    if (!hint.ok) {
+      const box = el("waypoint-list");
+      if (box) box.textContent = hint.log;
+      return log(hint.log);
+    }
     const r = WP.toggle(state.waypoints, id);
     state.waypoints = r.list;
-    if (r.full) log("Waypoint list full (" + WP.MAX_WAYPOINTS + "). Unpin one first.");
-    else if (r.added) log("Pinned " + (sys(id) || {}).name + " (#" + r.list.length + ").");
-    else if (r.removed) log("Unpinned " + (sys(id) || {}).name + ".");
+    let msg;
+    if (r.full) msg = "Waypoint list full (" + WP.MAX_WAYPOINTS + "). Unpin one first.";
+    else if (r.added) msg = "Pinned " + ((sys(id) || {}).name || id) + " (#" + r.list.length + "). Numbered dot on the chart.";
+    else if (r.removed) msg = "Unpinned " + ((sys(id) || {}).name || id) + ".";
+    else msg = "Pin did nothing.";
+    log(msg);
     save(state); render();
   };
   const wpClear = el("btn-wp-clear");

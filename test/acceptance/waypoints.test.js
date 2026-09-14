@@ -41,3 +41,21 @@ describe("ATDD: waypoints path", () => {
     assert.deepEqual(W.clear(["a", "b"]), []);
   });
 });
+
+describe("ATDD: pin UX gate", () => {
+  it("refuses with no target", () => {
+    const r = W.pinHint({ targetId: null, hereId: "ember" });
+    assert.equal(r.ok, false);
+    assert.equal(r.reason, "no_target");
+    assert.match(r.log, /target/i);
+  });
+  it("refuses pinning current dock", () => {
+    const r = W.pinHint({ targetId: "ember", hereId: "ember" });
+    assert.equal(r.ok, false);
+    assert.equal(r.reason, "here");
+  });
+  it("allows another dock", () => {
+    const r = W.pinHint({ targetId: "ash", hereId: "ember" });
+    assert.equal(r.ok, true);
+  });
+});
