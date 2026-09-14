@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.10";
+  const VERSION = "0.9.11";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const bridgeOn = (() => {
@@ -189,7 +189,11 @@
     const wrap = document.createElement("div");
     wrap.className = cls || "hull-art";
     wrap.setAttribute("aria-hidden", "true");
-    wrap.innerHTML = HULL_SVG[id] || HULL_SVG["skiff-7"] || "";
+    let html = HULL_SVG[id] || HULL_SVG["skiff-7"] || "";
+    // Unique group ids per instance (avoid DOM id clashes across yard rows).
+    const suffix = "-" + String(id || "hull") + "-" + Math.random().toString(36).slice(2, 7);
+    html = html.replace(/\bid="(hull|canopy|thruster|hit-flash)"/g, 'id="$1' + suffix + '"');
+    wrap.innerHTML = html;
     return wrap;
   }
 
@@ -204,6 +208,8 @@
   if (!WP) throw new Error("SkiffWaypoints missing — load js/waypoints.js before game.js");
   const SK = (typeof SkiffSkills !== "undefined") ? SkiffSkills : null;
   if (!SK) throw new Error("SkiffSkills missing — load js/skills.js before game.js");
+  const TF = (typeof SkiffTradeFog !== "undefined") ? SkiffTradeFog : null;
+  if (!TF) throw new Error("SkiffTradeFog missing — load js/trade-fog.js before game.js");
 
   const DOCK_WORK_PAY = YE.DOCK_WORK_PAY;
   function hullStock(s) { return YE.hullStock(s); }
@@ -617,10 +623,13 @@
   }
 
   // Sector = regional window around current dock; Full = entire roster.
-  const SECTOR_RADIUS = 48;
+  const SECTOR_RADIUS = TF.SECTOR_RADIUS;
 
   function inSector(fromId, toId) {
     return dist(sys(fromId), sys(toId)) <= SECTOR_RADIUS + 0.01;
+  }
+  function canSeeTrade(toId) {
+    return TF.canSeeTradeIntel({ dist: dist(sys(state.system), sys(toId)), sectorRadius: SECTOR_RADIUS });
   }
 
   function chartVisible(s, hereId, mode) {
@@ -854,7 +863,7 @@
         ctx.stroke();
       }
       // Reward ring: expected lane edge from current dock buys
-      if (s.id !== here.id && reach) {
+      if (s.id !== here.id && reach && canSeeTrade(s.id)) {
         const edge = bestLaneEdge(state.prices, peekPrices(s.id));
         if (edge && edge.edge >= 4) {
           const ring = Math.min(10, 4 + edge.edge / 4);
@@ -961,8 +970,9 @@
     const cost = fuelCost(state.system, id);
     const fuelOk = state.fuel >= cost;
     const reach = hullOk && fuelOk;
-    const peek = peekPrices(id);
-    const hint = bestDealHint(state.prices, peek);
+    const tradeOk = canSeeTrade(id);
+    const peek = tradeOk ? peekPrices(id) : null;
+    const hint = tradeOk ? bestDealHint(state.prices, peek) : "trade fogged (out of sector)";
     const visited = isVisited(id);
     title.textContent = t.name + (visited ? "" : " · unvisited");
     meta.textContent = reach
@@ -975,26 +985,35 @@
       dossier.textContent =
         SIZE_NAME[t.size|0] + " · " + TECH_NAME[t.tech|0] + " · " + (t.gov || "—") +
         "\nPolice " + activityLabel(t.police) + " · Pirates " + activityLabel(t.pirate) +
-        (visited ? "" : "\n(Resources still fogged — first dock reveals more later.)");
+        (visited ? "" : "\n(Resources still fogged — first dock reveals more later.)") +
+        (tradeOk ? "" : "\nTrade prices unknown outside your sector — buy Dock Press or fly closer.");
     }
     if (marginEl) {
-      const hold = cargoMarginAt(id);
-      const lane = bestLaneEdge(state.prices, peek);
-      marginEl.hidden = false;
-      if (hold.units > 0) {
-        const sign = hold.total >= 0 ? "+" : "";
-        marginEl.textContent = "Hold vs here: " + sign + "₩" + hold.total.toLocaleString() + " if sold there";
-        marginEl.className = "margin-line " + (hold.total > 0 ? "good" : hold.total < 0 ? "bad" : "");
-      } else if (lane) {
-        const sign = lane.edge >= 0 ? "+" : "";
-        marginEl.textContent = "Lane stub: buy " + lane.name + " here → " + sign + lane.edge + "₩/u there";
-        marginEl.className = "margin-line " + (lane.edge >= 4 ? "good" : lane.edge < 0 ? "bad" : "");
-      } else {
-        marginEl.textContent = "Lane stub: flat";
+      if (!tradeOk) {
+        marginEl.hidden = false;
+        marginEl.textContent = "Trade fog — out of sector. No price peeks.";
         marginEl.className = "margin-line";
+      } else {
+        const hold = cargoMarginAt(id);
+        const lane = bestLaneEdge(state.prices, peek);
+        marginEl.hidden = false;
+        if (hold.units > 0) {
+          const sign = hold.total >= 0 ? "+" : "";
+          marginEl.textContent = "Hold vs here: " + sign + "₩" + hold.total.toLocaleString() + " if sold there";
+          marginEl.className = "margin-line " + (hold.total > 0 ? "good" : hold.total < 0 ? "bad" : "");
+        } else if (lane) {
+          const sign = lane.edge >= 0 ? "+" : "";
+          marginEl.textContent = "Lane stub: buy " + lane.name + " here → " + sign + lane.edge + "₩/u there";
+          marginEl.className = "margin-line " + (lane.edge >= 4 ? "good" : lane.edge < 0 ? "bad" : "");
+        } else {
+          marginEl.textContent = "Lane stub: flat";
+          marginEl.className = "margin-line";
+        }
       }
     }
-    peekEl.textContent = GOODS.map((g) => g.name.split(" ").pop() + " ₩" + peek[g.id]).join(" · ");
+    peekEl.textContent = tradeOk
+      ? GOODS.map((g) => g.name.split(" ").pop() + " ₩" + peek[g.id]).join(" · ")
+      : "Prices fogged — leave sector to scout, or read the Press.";
     warp.disabled = !reach;
     warp.textContent = reach ? ("Jump −" + cost + " fuel") : (!hullOk ? "Out of range" : "Need fuel");
   }
