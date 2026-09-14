@@ -1,16 +1,40 @@
 <svg class="hull-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" fill="none" aria-hidden="true">
   <!-- pirate hunter -->
+  <defs>
+    <linearGradient id="metal-ash-lance" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E8EEF6"/>
+      <stop offset="45%" stop-color="#9AA8BC"/>
+      <stop offset="100%" stop-color="#4A5568"/>
+    </linearGradient>
+    <linearGradient id="shade-ash-lance" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#2A3340" stop-opacity=".55"/>
+      <stop offset="55%" stop-color="#2A3340" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="glow-ash-lance" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FFB24A" stop-opacity=".95"/>
+      <stop offset="100%" stop-color="#FF6A2A" stop-opacity=".15"/>
+    </linearGradient>
+    <radialGradient id="canopy-ash-lance" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#B8F0FF"/>
+      <stop offset="55%" stop-color="#3AA0C8"/>
+      <stop offset="100%" stop-color="#0B3A4A"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="90" cy="64" rx="52" ry="3.5" fill="#000" opacity=".28"/>
   <g id="hull">
-    <path fill="currentColor" d="M16 36 L16 48 L36 54 L100 50 L156 40 L100 30 L36 26 Z"/>
-    <path fill="currentColor" opacity=".55" d="M48 28 L78 18 L82 28 Z"/>
-    <path fill="currentColor" opacity=".45" d="M48 52 L78 62 L82 52 Z"/>
+    <path fill="url(#metal-ash-lance)" d="M14 36 L14 48 L36 56 L104 50 L158 40 L104 30 L36 24 Z"/>
+    <path fill="url(#shade-ash-lance)" d="M14 36 L14 48 L36 56 L104 50 L158 40 L104 30 L36 24 Z"/>
+    <path fill="#6B7788" d="M48 26 L80 14 L84 28 Z"/>
+    <path fill="#6B7788" d="M48 54 L80 66 L84 52 Z"/>
+    <path stroke="#EEF3FA" stroke-width=".8" opacity=".5" d="M40 34 L130 38 M40 46 L130 42"/>
   </g>
   <g id="canopy">
-    <circle cx="96" cy="40" r="2.5" fill="currentColor" opacity=".85"/>
-    <rect x="88" y="34" width="20" height="12" rx="2" fill="currentColor" opacity=".7"/>
+    <circle cx="100" cy="40" r="3" fill="#E8FBFF" opacity=".85"/>
+    <rect x="90" y="33" width="22" height="13" rx="2" fill="url(#canopy-ash-lance)"/>
   </g>
   <g id="thruster">
-    <rect x="4" y="38" width="14" height="10" rx="2" fill="currentColor"/>
+    <rect x="2" y="37" width="14" height="10" rx="2" fill="#2A3340"/>
+    <ellipse cx="1" cy="42" rx="7" ry="4.5" fill="url(#glow-ash-lance)"/>
   </g>
-  <g id="hit-flash" opacity="0"><rect width="160" height="80" fill="currentColor"/></g>
+  <g id="hit-flash" opacity="0"><rect width="160" height="80" fill="#fff"/></g>
 </svg>

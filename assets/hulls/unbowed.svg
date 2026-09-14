@@ -1,19 +1,42 @@
 <svg class="hull-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" fill="none" aria-hidden="true">
-  <!-- gated compact war — small unassuming wedge, tiny bay, overgunned look without capital mass -->
+  <!-- gated compact war -->
+  <defs>
+    <linearGradient id="metal-unbowed" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E8EEF6"/>
+      <stop offset="45%" stop-color="#9AA8BC"/>
+      <stop offset="100%" stop-color="#4A5568"/>
+    </linearGradient>
+    <linearGradient id="shade-unbowed" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#2A3340" stop-opacity=".55"/>
+      <stop offset="55%" stop-color="#2A3340" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="glow-unbowed" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FFB24A" stop-opacity=".95"/>
+      <stop offset="100%" stop-color="#FF6A2A" stop-opacity=".15"/>
+    </linearGradient>
+    <radialGradient id="canopy-unbowed" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#B8F0FF"/>
+      <stop offset="55%" stop-color="#3AA0C8"/>
+      <stop offset="100%" stop-color="#0B3A4A"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="92" cy="62" rx="40" ry="3.2" fill="#000" opacity=".26"/>
   <g id="hull">
-    <path fill="currentColor" d="M48 34 L48 46 L70 52 L118 46 L136 40 L118 34 L70 28 Z"/>
-    <path fill="currentColor" opacity=".45" d="M78 36 L102 40 L78 44 Z"/>
-    <!-- tiny bay notch -->
-    <rect x="84" y="42" width="16" height="6" rx="1" fill="currentColor" opacity=".35"/>
+    <path fill="url(#metal-unbowed)" d="M46 34 L46 46 L72 54 L122 46 L140 40 L122 34 L72 26 Z"/>
+    <path fill="url(#shade-unbowed)" d="M46 34 L46 46 L72 54 L122 46 L140 40 L122 34 L72 26 Z"/>
+    <path fill="#5A687A" opacity=".55" d="M78 36 L104 40 L78 44 Z"/>
+    <rect x="86" y="42" width="16" height="6" rx="1" fill="#3A4452" opacity=".55"/>
+    <path stroke="#EEF3FA" stroke-width=".7" opacity=".5" d="M60 36 L118 38 M60 44 L118 42"/>
   </g>
   <g id="canopy">
-    <rect x="104" y="36" width="12" height="8" rx="1" fill="currentColor" opacity=".65"/>
+    <rect x="108" y="35" width="14" height="9" rx="1.2" fill="url(#canopy-unbowed)"/>
+    <rect x="110" y="36.5" width="4" height="3" rx=".3" fill="#E8FBFF" opacity=".55"/>
   </g>
   <g id="thruster">
-    <rect x="36" y="36" width="14" height="10" rx="1.5" fill="currentColor" opacity=".9"/>
-    <!-- cheek nacelle hints flush -->
-    <rect x="60" y="30" width="22" height="6" rx="1" fill="currentColor" opacity=".5"/>
-    <rect x="60" y="44" width="22" height="6" rx="1" fill="currentColor" opacity=".5"/>
+    <rect x="34" y="35" width="14" height="10" rx="1.5" fill="#2A3340"/>
+    <rect x="58" y="29" width="24" height="6" rx="1" fill="#6B7788" opacity=".65"/>
+    <rect x="58" y="45" width="24" height="6" rx="1" fill="#6B7788" opacity=".65"/>
+    <ellipse cx="33" cy="40" rx="6" ry="4" fill="url(#glow-unbowed)"/>
   </g>
-  <g id="hit-flash" opacity="0"><rect width="160" height="80" fill="currentColor"/></g>
+  <g id="hit-flash" opacity="0"><rect width="160" height="80" fill="#fff"/></g>
 </svg>

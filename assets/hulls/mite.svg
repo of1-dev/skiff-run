@@ -1,14 +1,39 @@
 <svg class="hull-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" fill="none" aria-hidden="true">
   <!-- tiny short-hopper -->
+  <defs>
+    <linearGradient id="metal-mite" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E8EEF6"/>
+      <stop offset="45%" stop-color="#9AA8BC"/>
+      <stop offset="100%" stop-color="#4A5568"/>
+    </linearGradient>
+    <linearGradient id="shade-mite" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#2A3340" stop-opacity=".55"/>
+      <stop offset="55%" stop-color="#2A3340" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="glow-mite" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FFB24A" stop-opacity=".95"/>
+      <stop offset="100%" stop-color="#FF6A2A" stop-opacity=".15"/>
+    </linearGradient>
+    <radialGradient id="canopy-mite" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#B8F0FF"/>
+      <stop offset="55%" stop-color="#3AA0C8"/>
+      <stop offset="100%" stop-color="#0B3A4A"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="80" cy="62" rx="28" ry="3.5" fill="#000" opacity=".28"/>
   <g id="hull">
-    <path fill="currentColor" d="M62 36 L104 32 L118 40 L104 48 L62 44 Z"/>
-    <path fill="currentColor" opacity=".55" d="M70 38 L86 40 L70 42 Z"/>
+    <path fill="url(#metal-mite)" d="M62 36 L104 31 L118 40 L104 49 L62 44 Z"/>
+    <path fill="url(#shade-mite)" d="M62 36 L104 31 L118 40 L104 49 L62 44 Z"/>
+    <path stroke="#D7E0EC" stroke-width=".8" opacity=".7" d="M72 38 L98 35 M72 42 L98 45"/>
+    <path fill="#6B7788" opacity=".55" d="M70 38 L86 40 L70 42 Z"/>
   </g>
   <g id="canopy">
-    <circle cx="72" cy="40" r="7" fill="currentColor" opacity=".7"/>
+    <circle cx="72" cy="40" r="6.5" fill="url(#canopy-mite)"/>
+    <circle cx="70" cy="38.5" r="2" fill="#E8FBFF" opacity=".7"/>
   </g>
   <g id="thruster">
-    <rect x="50" y="36" width="12" height="8" rx="1.5" fill="currentColor" opacity=".9"/>
+    <rect x="50" y="36.5" width="12" height="7" rx="1.5" fill="#3A4452"/>
+    <ellipse cx="49" cy="40" rx="5" ry="3.2" fill="url(#glow-mite)"/>
   </g>
-  <g id="hit-flash" opacity="0"><rect width="160" height="80" fill="currentColor"/></g>
+  <g id="hit-flash" opacity="0"><rect width="160" height="80" fill="#fff"/></g>
 </svg>

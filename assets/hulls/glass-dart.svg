@@ -1,14 +1,39 @@
 <svg class="hull-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" fill="none" aria-hidden="true">
   <!-- fast needle courier -->
+  <defs>
+    <linearGradient id="metal-glass-dart" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E8EEF6"/>
+      <stop offset="45%" stop-color="#9AA8BC"/>
+      <stop offset="100%" stop-color="#4A5568"/>
+    </linearGradient>
+    <linearGradient id="shade-glass-dart" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#2A3340" stop-opacity=".55"/>
+      <stop offset="55%" stop-color="#2A3340" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="glow-glass-dart" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FFB24A" stop-opacity=".95"/>
+      <stop offset="100%" stop-color="#FF6A2A" stop-opacity=".15"/>
+    </linearGradient>
+    <radialGradient id="canopy-glass-dart" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#B8F0FF"/>
+      <stop offset="55%" stop-color="#3AA0C8"/>
+      <stop offset="100%" stop-color="#0B3A4A"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="90" cy="62" rx="50" ry="3.2" fill="#000" opacity=".25"/>
   <g id="hull">
-    <path fill="currentColor" d="M14 38 L14 44 L40 48 L130 44 L154 40 L130 36 L40 32 Z"/>
-    <path stroke="currentColor" stroke-width="2" opacity=".55" d="M62 30 L74 22 M62 50 L74 58"/>
+    <path fill="url(#metal-glass-dart)" d="M12 38 L40 32 L132 36 L156 40 L132 44 L40 48 L12 42 Z"/>
+    <path fill="url(#shade-glass-dart)" d="M12 38 L40 32 L132 36 L156 40 L132 44 L40 48 L12 42 Z"/>
+    <path stroke="#E8EEF6" stroke-width=".8" opacity=".65" d="M48 36 L120 38 M48 44 L120 42"/>
+    <path stroke="#7EC8E8" stroke-width="1.2" opacity=".45" d="M60 30 L74 22 M60 50 L74 58"/>
   </g>
   <g id="canopy">
-    <ellipse cx="108" cy="40" rx="10" ry="5" fill="currentColor" opacity=".65"/>
+    <ellipse cx="112" cy="40" rx="11" ry="5.5" fill="url(#canopy-glass-dart)"/>
+    <ellipse cx="108" cy="39" rx="3" ry="1.6" fill="#E8FBFF" opacity=".65"/>
   </g>
   <g id="thruster">
-    <rect x="4" y="37" width="12" height="8" rx="1.5" fill="currentColor" opacity=".95"/>
+    <rect x="2" y="37" width="12" height="8" rx="1.5" fill="#2A3340"/>
+    <ellipse cx="1" cy="41" rx="6" ry="3.5" fill="url(#glow-glass-dart)"/>
   </g>
-  <g id="hit-flash" opacity="0"><rect width="160" height="80" fill="currentColor"/></g>
+  <g id="hit-flash" opacity="0"><rect width="160" height="80" fill="#fff"/></g>
 </svg>
