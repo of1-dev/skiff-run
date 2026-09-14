@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#060A14" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>SKIFF RUN</title>
-  <link rel="stylesheet" href="style.css?v=0.9.21" />
+  <link rel="stylesheet" href="style.css?v=0.9.22" />
 </head>
 <body>
   <div id="app" class="shell">
@@ -17,7 +17,7 @@
     <header class="topbar">
       <div class="brand">
         <strong>SKIFF RUN</strong>
-        <span id="ver">0.9.21</span>
+        <span id="ver">0.9.22</span>
       </div>
       <div class="status-strip" aria-label="Status">
         <div><label>Sys</label><span id="sys-name">—</span></div>
@@ -52,7 +52,11 @@
       <section id="tab-market" class="panel" data-tab="market" hidden>
         <div class="panel-head">
           <h2>Market</h2>
-          <button type="button" id="btn-sell-all" class="btn ghost">Sell all</button>
+          <div class="market-tools">
+            <button type="button" id="btn-fill-cheap" class="btn ghost">Fill cheap</button>
+            <button type="button" id="btn-sell-expensive" class="btn ghost">Sell expensive</button>
+            <button type="button" id="btn-sell-all" class="btn ghost">Sell all</button>
+          </div>
         </div>
         <p class="hint">Cues vs galaxy average: <span class="cue-label cue-label--buy">Cheap — buy</span> · Fair · <span class="cue-label cue-label--avoid">Expensive — skip/sell</span>.</p>
         <div id="market" class="market"></div>
@@ -172,18 +176,18 @@
       <button type="button" id="enc-b" class="btn ghost">B</button>
     </div>
   </dialog>
-  <script src="js/yard-economy.js?v=0.9.21"></script>
-  <script src="js/fuel.js?v=0.9.21"></script>
-  <script src="js/market.js?v=0.9.21"></script>
-  <script src="js/encounter.js?v=0.9.21"></script>
-  <script src="js/dock-press.js?v=0.9.21"></script>
-  <script src="js/debug-god.js?v=0.9.21"></script>
-  <script src="js/waypoints.js?v=0.9.21"></script>
-  <script src="js/chart-find.js?v=0.9.21"></script>
-  <script src="js/route.js?v=0.9.21"></script>
-  <script src="js/skills.js?v=0.9.21"></script>
-  <script src="js/crew.js?v=0.9.21"></script>
-  <script src="js/trade-fog.js?v=0.9.21"></script>
-  <script src="game.js?v=0.9.21"></script>
+  <script src="js/yard-economy.js?v=0.9.22"></script>
+  <script src="js/fuel.js?v=0.9.22"></script>
+  <script src="js/market.js?v=0.9.22"></script>
+  <script src="js/encounter.js?v=0.9.22"></script>
+  <script src="js/dock-press.js?v=0.9.22"></script>
+  <script src="js/debug-god.js?v=0.9.22"></script>
+  <script src="js/waypoints.js?v=0.9.22"></script>
+  <script src="js/chart-find.js?v=0.9.22"></script>
+  <script src="js/route.js?v=0.9.22"></script>
+  <script src="js/skills.js?v=0.9.22"></script>
+  <script src="js/crew.js?v=0.9.22"></script>
+  <script src="js/trade-fog.js?v=0.9.22"></script>
+  <script src="game.js?v=0.9.22"></script>
 </body>
 </html>

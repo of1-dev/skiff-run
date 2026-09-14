@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.21";
+  const VERSION = "0.9.22";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const bridgeOn = (() => {
@@ -1414,6 +1414,17 @@
     el("btn-retire").disabled = !canRetire;
     const sellAll = el("btn-sell-all");
     if (sellAll) sellAll.disabled = cargoUsed(state) < 1;
+    const fillCheapBtn = el("btn-fill-cheap");
+    if (fillCheapBtn) fillCheapBtn.disabled = cargoUsed(state) >= h.cargo || state.credits < 1;
+    const sellExpBtn = el("btn-sell-expensive");
+    if (sellExpBtn) {
+      const hasExp = GOODS.some((g) => {
+        const have = state.cargo[g.id] || 0;
+        if (have < 1) return false;
+        return SM.marketCue(state.prices[g.id], avgCache[g.id], have).tone === "avoid";
+      });
+      sellExpBtn.disabled = !hasExp;
+    }
     save(state);
   }
 
@@ -1509,6 +1520,44 @@
     state.credits = r.credits;
     state.cargo = r.cargo;
     log("Sold all (" + r.units + " units) for ₩" + r.total.toLocaleString() + ".");
+    render();
+  }
+
+  function galaxyAvgs() {
+    return Object.fromEntries(GOODS.map((g) => [g.id, SM.galaxyAveragePrice(SYSTEMS, g)]));
+  }
+
+  function doFillCheap() {
+    if (bridgeOn) {
+      if (currentPilot() === "agent") return log("Agent has the stick.");
+      return void bridgeAct({ op: "fill_cheap" });
+    }
+    const r = SM.applyFillCheap({
+      cargo: state.cargo, credits: state.credits, prices: state.prices,
+      goods: GOODS, holdMax: hull().cargo, avgs: galaxyAvgs(),
+    });
+    log(SM.fillCheapLog(r));
+    if (!r.ok) return;
+    state.credits = r.credits;
+    state.cargo = r.cargo;
+    tickSkill("trader", true);
+    render();
+  }
+
+  function doSellExpensive() {
+    if (bridgeOn) {
+      if (currentPilot() === "agent") return log("Agent has the stick.");
+      return void bridgeAct({ op: "sell_expensive" });
+    }
+    const r = SM.applySellExpensive({
+      cargo: state.cargo, credits: state.credits, prices: state.prices,
+      goods: GOODS, avgs: galaxyAvgs(),
+    });
+    log(SM.sellExpensiveLog(r));
+    if (!r.ok) return;
+    state.credits = r.credits;
+    state.cargo = r.cargo;
+    tickSkill("trader", true);
     render();
   }
 
@@ -1888,6 +1937,8 @@
   el("enc-b").onclick = () => resolveEncounter("b");
   el("btn-refuel").onclick = doRefuel;
   el("btn-sell-all").onclick = doSellAll;
+  el("btn-fill-cheap").onclick = doFillCheap;
+  el("btn-sell-expensive").onclick = doSellExpensive;
   el("btn-warp").onclick = () => {
     if (!ui.targetId || ui.targetId === state.system) return;
     doTravel(ui.targetId);
@@ -2046,6 +2097,8 @@
       return void bridgeAct(bodyFn.apply(null, arguments));
     };
     el("btn-sell-all").onclick = wrapHuman(null, () => ({ op: "sell_all" }));
+    el("btn-fill-cheap").onclick = wrapHuman(null, () => ({ op: "fill_cheap" }));
+    el("btn-sell-expensive").onclick = wrapHuman(null, () => ({ op: "sell_expensive" }));
     el("btn-retire").onclick = wrapHuman(null, () => ({ op: "retire" }));
     el("btn-reset").onclick = () => {
       if (!confirm("Wipe save and start fresh on the shared seat?")) return;
