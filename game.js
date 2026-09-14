@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.8";
+  const VERSION = "0.9.9";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const bridgeOn = (() => {
@@ -200,6 +200,8 @@
   const GOD = (typeof SkiffDebugGod !== "undefined") ? SkiffDebugGod : null;
   if (!GOD) throw new Error("SkiffDebugGod missing — load js/debug-god.js before game.js");
   const debugOn = GOD.isDebugOn(typeof location !== "undefined" ? location.search : "");
+  const WP = (typeof SkiffWaypoints !== "undefined") ? SkiffWaypoints : null;
+  if (!WP) throw new Error("SkiffWaypoints missing — load js/waypoints.js before game.js");
 
   const DOCK_WORK_PAY = YE.DOCK_WORK_PAY;
   function hullStock(s) { return YE.hullStock(s); }
@@ -427,6 +429,7 @@
       dockWorkAt: null,
       pressBoughtAt: null,
       lastPress: null,
+      waypoints: [],
       log: "Skiff-7 cleared Ember Reach. New chart this run — same systems, new lanes.",
     };
   }
@@ -863,6 +866,18 @@
         ctx.lineWidth = 1.5;
         ctx.stroke();
       }
+      const wpIdx = WP.indexOf(state.waypoints, s.id);
+      if (wpIdx >= 0) {
+        ctx.beginPath();
+        ctx.arc(px, py - r - 6, 5.5, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(232,160,106,0.95)";
+        ctx.fill();
+        ctx.fillStyle = "#1a120c";
+        ctx.font = "700 9px ui-sans-serif, system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(String(wpIdx + 1), px, py - r - 3);
+        ctx.textAlign = "start";
+      }
       const showLabel = !full || reach || selected || s.yard || s.retire || visited;
       if (showLabel) {
         ctx.fillStyle = visited ? tc.label : tc.mute;
@@ -1209,6 +1224,7 @@
       ui.targetId = null;
     }
     renderShipPanel();
+    renderWaypointChrome();
     if (ui.tab === "chart") sizeMap();
     drawMap();
     renderTarget();
@@ -1342,6 +1358,25 @@
       save(state); render();
     };
   }
+
+
+  const pinBtn = el("btn-waypoint");
+  if (pinBtn) pinBtn.onclick = () => {
+    const id = ui.targetId;
+    if (!id || id === state.system) return;
+    const r = WP.toggle(state.waypoints, id);
+    state.waypoints = r.list;
+    if (r.full) log("Waypoint list full (" + WP.MAX_WAYPOINTS + "). Unpin one first.");
+    else if (r.added) log("Pinned " + (sys(id) || {}).name + " (#" + r.list.length + ").");
+    else if (r.removed) log("Unpinned " + (sys(id) || {}).name + ".");
+    save(state); render();
+  };
+  const wpClear = el("btn-wp-clear");
+  if (wpClear) wpClear.onclick = () => {
+    state.waypoints = WP.clear(state.waypoints);
+    log("Waypoints cleared.");
+    save(state); render();
+  };
 
   showTab("dock");
     render();
