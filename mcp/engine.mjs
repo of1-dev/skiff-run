@@ -1,10 +1,15 @@
 /** Headless Skiff Run engine — mechanical parity with play UI for MCP / tests. */
-export const VERSION = "0.9.1";
-export const RULESET = "skiff-headless-0.9.1";
+export const VERSION = "0.9.23";
+export const RULESET = "skiff-0.9.23";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
+const AgentActionLog = require("../js/agent-action-log.js");
 const RETIRE_NET = 35000;
 const FUEL_PRICE = 45;
 const CREW_HIRE = 800;
 const CREW_FIRE_REFUND = 200;
+const PRESS_PRICE = 75;
+const DOCK_WORK_PAY = 400;
 
 export const ACTIVITY = ["Absent", "Minimal", "Few", "Some", "Moderate", "Many", "Abundant", "Swarms"];
 export const TECH_NAME = ["Pre-ag", "Ag", "Low", "Craft", "Early-ind", "Industrial", "Post-ind", "Hi-tech"];
@@ -90,6 +95,14 @@ export const SHIPS = [
   { id: "skiff-7", name: "Skiff-7", cargo: 20, fuelMax: 14, range: 28, weapons: false, crewMax: 1, price: 0 },
   { id: "hold-barge", name: "Hold Barge", cargo: 40, fuelMax: 18, range: 32, weapons: false, crewMax: 3, price: 9000 },
   { id: "ember-cutter", name: "Ember Cutter", cargo: 16, fuelMax: 16, range: 38, weapons: true, crewMax: 2, price: 12000 },
+  { id: "unbowed", name: "Unbowed", cargo: 12, fuelMax: 16, range: 36, weapons: true, crewMax: 3, price: 0, gated: true },
+];
+
+/** Peak Unbowed crew — match Fold js/debug-god.js PEAK_UNBOWED_CREW. */
+export const PEAK_UNBOWED_CREW = [
+  { role: "helm", quirk: "steady hands", pilot: 9, fighter: 3, trader: 2, engineer: 3 },
+  { role: "guns", quirk: "hot temper", pilot: 3, fighter: 9, trader: 2, engineer: 3 },
+  { role: "wrench", quirk: "cloak-rated", pilot: 3, fighter: 3, trader: 2, engineer: 9, label: "Quiet Hands" },
 ];
 
 function hash32(str) {
@@ -126,6 +139,10 @@ export class SkiffGame {
       this.state.prefs = { autoFuel: true };
     }
     if (this.state.prefs.autoFuel == null) this.state.prefs.autoFuel = true;
+    if (!Array.isArray(this.state.agentLog)) this.state.agentLog = [];
+    if (this.state.pressBoughtAt === undefined) this.state.pressBoughtAt = null;
+    if (this.state.dockWorkAt === undefined) this.state.dockWorkAt = null;
+    if (this.state.lastPress === undefined) this.state.lastPress = null;
   }
 
   setPrefs(partial = {}) {
@@ -313,11 +330,17 @@ export class SkiffGame {
       prices: {},
       shipId: "skiff-7",
       crew: 0,
+      roster: [],
+      godYard: false,
       epoch: 1,
       chart,
       visited: { ember: true },
       pilot: "agent",
       prefs: { autoFuel: true },
+      agentLog: [],
+      pressBoughtAt: null,
+      dockWorkAt: null,
+      lastPress: null,
       log: "MCP seat online. Skiff-7 cleared Ember Reach.",
     };
     this.pendingEncounter = null;
@@ -372,6 +395,7 @@ export class SkiffGame {
       cargoMax: h.cargo,
       prices: { ...this.state.prices },
       ship: { id: h.id, name: h.name, weapons: h.weapons, range: h.range, crew: this.state.crew, crewMax: h.crewMax },
+      roster: Array.isArray(this.state.roster) ? this.state.roster.map((c) => ({ ...c })) : [],
       netWorth: this.netWorth(),
       canRetire: !!(s.retire && this.netWorth() >= RETIRE_NET),
       visited: { ...this.state.visited },
@@ -498,6 +522,8 @@ export class SkiffGame {
     this.state.fuel -= cost;
     this.state.system = toId;
     this.markVisited(toId);
+    this.state.dockWorkAt = null;
+    this.state.pressBoughtAt = null;
     this.rollMarket();
     this.log(`Arrived ${this.sys(toId).name} (−${cost} fuel).`);
     this.maybeAutoRefuel();
@@ -621,11 +647,21 @@ export class SkiffGame {
     return { ok: true, ...this.snapshot() };
   }
 
+  /** Commons yard list — never includes gated hulls (Unbowed). */
+  openYardStock() {
+    return SHIPS.filter((s) => !s.gated);
+  }
+
+  yardOpenStock() {
+    return this.openYardStock();
+  }
+
   buyShip(id) {
     const lock = this.requirePilot();
     if (lock) return lock;
     const next = this.ship(id);
     if (!next) return { ok: false, error: "unknown_ship" };
+    if (next.gated && !this.state.godYard) return { ok: false, error: "gated_hull" };
     if (!this.sys(this.state.system).yard) return { ok: false, error: "no_yard" };
     if (this.cargoUsed() > next.cargo) return { ok: false, error: "cargo_overflow" };
     const trade = Math.floor((this.hull().price || 0) * 0.55);
@@ -634,9 +670,49 @@ export class SkiffGame {
     this.state.credits -= due;
     this.state.shipId = next.id;
     this.state.crew = Math.min(this.state.crew, next.crewMax);
+    if (Array.isArray(this.state.roster)) {
+      this.state.roster = this.state.roster.slice(0, next.crewMax);
+      this.state.crew = Math.min(this.state.crew, this.state.roster.length || this.state.crew);
+    }
     if (this.state.fuel > next.fuelMax) this.state.fuel = next.fuelMax;
     this.log(`Signed for ${next.name}. Paid ₩${due}.`);
     return { ok: true, ...this.snapshot() };
+  }
+
+  /**
+   * God/debug Unbowed kit — match Fold grantUnbowed / PEAK_UNBOWED_CREW.
+   * Not a career path; spectator long-run / MCP grant only.
+   */
+  grantUnbowed() {
+    const lock = this.requirePilot();
+    if (lock) return lock;
+    const next = this.ship("unbowed");
+    if (!next) return { ok: false, error: "unknown_ship" };
+    // Jettison overflow to fit Unbowed cargo 12.
+    const ids = Object.keys(this.state.cargo);
+    let used = this.cargoUsed();
+    let jettison = 0;
+    while (used > next.cargo) {
+      let dumped = false;
+      for (let i = ids.length - 1; i >= 0; i--) {
+        const id = ids[i];
+        if ((this.state.cargo[id] || 0) > 0) {
+          this.state.cargo[id] -= 1;
+          used -= 1;
+          jettison += 1;
+          dumped = true;
+          break;
+        }
+      }
+      if (!dumped) break;
+    }
+    this.state.shipId = next.id;
+    this.state.fuel = next.fuelMax;
+    this.state.roster = PEAK_UNBOWED_CREW.map((c) => ({ ...c }));
+    this.state.crew = this.state.roster.length;
+    const jnote = jettison ? ` Jettisoned ${jettison} cargo to fit hold.` : "";
+    this.log(`God/debug Unbowed kit granted — peak crew (Quiet Hands cloak-rated).${jnote}`);
+    return { ok: true, jettison, ...this.snapshot() };
   }
 
   hireCrew() {
@@ -669,5 +745,157 @@ export class SkiffGame {
     }
     this.log(`Retired on Quiet Moon. Net ₩${this.netWorth()}. Victory.`);
     return { ok: true, victory: true, ...this.snapshot() };
+  }
+
+
+  galaxyAveragePrice(good) {
+    if (!this.systems.length) return good.base;
+    let sum = 0;
+    for (const s of this.systems) sum += this.priceFor(s, good);
+    return sum / this.systems.length;
+  }
+
+  marketCue(localPrice, avgPrice, have) {
+    const avg = avgPrice || 1;
+    const ratio = localPrice / avg;
+    if (ratio <= 0.92) return { tone: "buy", label: "Cheap — buy", ratio };
+    if (ratio >= 1.08) {
+      return { tone: "avoid", label: (have | 0) > 0 ? "Expensive — sell" : "Expensive — skip", ratio };
+    }
+    return { tone: "fair", label: "Fair", ratio };
+  }
+
+  /** Dock Press — once per system; simplified masthead+tips for headless. */
+  buyPress() {
+    const lock = this.requirePilot();
+    if (lock) return lock;
+    const systemId = this.state.system;
+    if (this.state.pressBoughtAt === systemId) {
+      return { ok: false, error: "already", reason: "already", ...this.snapshot() };
+    }
+    if (this.state.credits < PRESS_PRICE) {
+      return { ok: false, error: "no_credits", reason: "credits", ...this.snapshot() };
+    }
+    this.state.credits -= PRESS_PRICE;
+    this.state.pressBoughtAt = systemId;
+    const here = this.sys(systemId);
+    const masthead = "Dock Press — " + (here?.name || "Unknown dock");
+    const tips = [];
+    const others = this.systems.filter((s) => s.id !== systemId);
+    if (GOODS.length && others.length) {
+      const g = GOODS[Math.floor(Math.random() * GOODS.length)];
+      const ranked = others
+        .map((s) => ({ s, p: this.priceFor(s, g) }))
+        .sort((a, b) => a.p - b.p);
+      if (Math.random() < 0.5) {
+        const cheap = ranked[0];
+        tips.push(`Traders whisper ${g.name} is cheap at ${cheap.s.name} (list ~₩${cheap.p}).`);
+      } else {
+        const dear = ranked[ranked.length - 1];
+        tips.push(`Bulletin: ${g.name} runs expensive at ${dear.s.name} (list ~₩${dear.p}).`);
+      }
+    }
+    const yard = others.filter((s) => s.yard);
+    if (yard.length) {
+      const s = yard[Math.floor(Math.random() * yard.length)];
+      tips.push(`Yard slips open at ${s.name} — hulls and bunks if your ledger holds.`);
+    } else {
+      tips.push("Lane quiet. Refuel, shift docks, listen for the next edition.");
+    }
+    while (tips.length < 2) tips.push("Weather fax blank. The Press still took your credits.");
+    if (tips.length > 3) tips.length = 3;
+    this.state.lastPress = { masthead, tips, lines: tips.slice(), price: PRESS_PRICE };
+    this.log(`Bought Dock Press for ₩${PRESS_PRICE}. ${masthead}`);
+    return { ok: true, paid: PRESS_PRICE, lastPress: this.state.lastPress, ...this.snapshot() };
+  }
+
+  /** Buy max affordable of the locally cheapest (vs galaxy avg) good. */
+  fillCheap() {
+    const lock = this.requirePilot();
+    if (lock) return lock;
+    const room = this.hull().cargo - this.cargoUsed();
+    if (room < 1) {
+      this.log("Nothing cheap here.");
+      return { ok: false, error: "nothing_cheap", reason: "nothing_cheap", ...this.snapshot() };
+    }
+    let best = null;
+    for (const g of GOODS) {
+      const local = this.state.prices[g.id];
+      const avg = this.galaxyAveragePrice(g);
+      if (local == null) continue;
+      const cue = this.marketCue(local, avg, this.state.cargo[g.id] || 0);
+      if (cue.tone !== "buy") continue;
+      const n = Math.min(room, Math.floor(this.state.credits / local));
+      if (n < 1) continue;
+      const savedPer = avg - local;
+      const cand = { id: g.id, name: g.name, n, price: local, savedPer };
+      if (!best || savedPer > best.savedPer || (savedPer === best.savedPer && n > best.n)) best = cand;
+    }
+    if (!best) {
+      this.log("Nothing cheap here.");
+      return { ok: false, error: "nothing_cheap", reason: "nothing_cheap", ...this.snapshot() };
+    }
+    this.state.credits -= best.price * best.n;
+    this.state.cargo[best.id] += best.n;
+    const spent = best.price * best.n;
+    this.log(`Filled cheap: ${best.n} ${best.name} for ₩${spent}.`);
+    return { ok: true, id: best.id, name: best.name, n: best.n, price: best.price, spent, ...this.snapshot() };
+  }
+
+  /** Sell held goods priced expensive vs galaxy avg. */
+  sellExpensive() {
+    const lock = this.requirePilot();
+    if (lock) return lock;
+    const sold = [];
+    let total = 0;
+    let units = 0;
+    for (const g of GOODS) {
+      const have = this.state.cargo[g.id] || 0;
+      if (have < 1) continue;
+      const local = this.state.prices[g.id];
+      const avg = this.galaxyAveragePrice(g);
+      if (local == null) continue;
+      const cue = this.marketCue(local, avg, have);
+      if (cue.tone !== "avoid") continue;
+      this.state.cargo[g.id] = 0;
+      const lineTotal = local * have;
+      this.state.credits += lineTotal;
+      sold.push({ id: g.id, name: g.name, n: have, total: lineTotal });
+      total += lineTotal;
+      units += have;
+    }
+    if (units < 1) {
+      this.log("Nothing expensive in hold.");
+      return { ok: false, error: "nothing_expensive", reason: "nothing_expensive", sold: [], total: 0, units: 0, ...this.snapshot() };
+    }
+    const names = sold.map((s) => `${s.n} ${s.name}`).join(", ");
+    this.log(`Sold expensive: ${names} for ₩${total}.`);
+    return { ok: true, sold, total, units, ...this.snapshot() };
+  }
+
+  /** Once-per-system dock work (+₩400). */
+  dockWork() {
+    const lock = this.requirePilot();
+    if (lock) return lock;
+    const systemId = this.state.system;
+    if (this.state.dockWorkAt === systemId) {
+      return { ok: false, error: "already", reason: "already", ...this.snapshot() };
+    }
+    this.state.credits += DOCK_WORK_PAY;
+    this.state.dockWorkAt = systemId;
+    this.log(`Dock work shift. +₩${DOCK_WORK_PAY}.`);
+    return { ok: true, pay: DOCK_WORK_PAY, ...this.snapshot() };
+  }
+
+  /**
+   * Append a spectator agent act to state.agentLog (newest last).
+   * Skip observe-only ops (state/ruleset/chart). Persist via next persistGame.
+   */
+  recordAgentAct(op, result) {
+    if (!this.state) return;
+    if (!AgentActionLog.shouldLog(op)) return;
+    const summary = AgentActionLog.summarize(op, result);
+    const entry = { t: Date.now(), op: String(op), summary };
+    this.state.agentLog = AgentActionLog.append(this.state.agentLog || [], entry);
   }
 }

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#060A14" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>SKIFF RUN</title>
-  <link rel="stylesheet" href="style.css?v=0.9.22" />
+  <link rel="stylesheet" href="style.css?v=0.9.23" />
 </head>
 <body>
   <div id="app" class="shell">
@@ -118,6 +118,8 @@
           </div>
           <p class="hint" id="pilot-hint">You have the stick. Hand to Agent when MCP can fly this save.</p>
         </div>
+        <h3 class="sub">Agent action log</h3>
+        <div id="agent-action-log" class="agent-action-log hint" aria-live="polite">No agent acts yet.</div>
         <h3 class="sub">Jump prefs</h3>
         <label class="pref-row hint" for="pref-autofuel">
           <input type="checkbox" id="pref-autofuel" checked />
@@ -176,18 +178,19 @@
       <button type="button" id="enc-b" class="btn ghost">B</button>
     </div>
   </dialog>
-  <script src="js/yard-economy.js?v=0.9.22"></script>
-  <script src="js/fuel.js?v=0.9.22"></script>
-  <script src="js/market.js?v=0.9.22"></script>
-  <script src="js/encounter.js?v=0.9.22"></script>
-  <script src="js/dock-press.js?v=0.9.22"></script>
-  <script src="js/debug-god.js?v=0.9.22"></script>
-  <script src="js/waypoints.js?v=0.9.22"></script>
-  <script src="js/chart-find.js?v=0.9.22"></script>
-  <script src="js/route.js?v=0.9.22"></script>
-  <script src="js/skills.js?v=0.9.22"></script>
-  <script src="js/crew.js?v=0.9.22"></script>
-  <script src="js/trade-fog.js?v=0.9.22"></script>
-  <script src="game.js?v=0.9.22"></script>
+  <script src="js/yard-economy.js?v=0.9.23"></script>
+  <script src="js/fuel.js?v=0.9.23"></script>
+  <script src="js/market.js?v=0.9.23"></script>
+  <script src="js/encounter.js?v=0.9.23"></script>
+  <script src="js/dock-press.js?v=0.9.23"></script>
+  <script src="js/debug-god.js?v=0.9.23"></script>
+  <script src="js/waypoints.js?v=0.9.23"></script>
+  <script src="js/chart-find.js?v=0.9.23"></script>
+  <script src="js/route.js?v=0.9.23"></script>
+  <script src="js/skills.js?v=0.9.23"></script>
+  <script src="js/crew.js?v=0.9.23"></script>
+  <script src="js/trade-fog.js?v=0.9.23"></script>
+  <script src="js/agent-action-log.js?v=0.9.23"></script>
+  <script src="game.js?v=0.9.23"></script>
 </body>
 </html>

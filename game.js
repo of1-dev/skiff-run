@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.22";
+  const VERSION = "0.9.23";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const bridgeOn = (() => {
@@ -1281,6 +1281,29 @@
     crewBox.appendChild(list);
   }
 
+
+  function renderAgentActionLog() {
+    const box = el("agent-action-log");
+    if (!box) return;
+    const rows = Array.isArray(state.agentLog) ? state.agentLog : [];
+    if (!rows.length) {
+      box.textContent = "No agent acts yet.";
+      return;
+    }
+    const esc = (s) => String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+    // Newest last — show chronological; scroll to bottom.
+    box.innerHTML = rows.map(function (e) {
+      const op = esc(e && e.op);
+      const summary = esc(e && e.summary);
+      return '<div class="agent-act"><span class="op">' + op + '</span>' + summary + '</div>';
+    }).join("");
+    box.scrollTop = box.scrollHeight;
+  }
+
   function render() {
     const s = sys(state.system);
     const h = hull();
@@ -1405,6 +1428,7 @@
     renderShipPanel();
     renderWaypointChrome();
     renderSkillsBox();
+    renderAgentActionLog();
     if (typeof syncGodUi === "function") syncGodUi();
     if (ui.tab === "chart") sizeMap();
     drawMap();
@@ -2025,6 +2049,7 @@
     syncPrefsUi();
     ui.targetId = null;
     render();
+    renderAgentActionLog();
     // Surface pending encounter from shared seat (once)
     if (data.pendingEncounter && currentPilot() === "human" && !encKind) {
       const pe = data.pendingEncounter;

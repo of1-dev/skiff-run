@@ -455,7 +455,6 @@ dialog::backdrop { background: rgba(0,0,0,.72); }
   font-weight: 600;
 }
 .pilot-banner[hidden] { display: none !important; }
-.shell.is-agent-pilot .tabbar .tab:not([data-tab="captain"]),
 .shell.is-agent-pilot #tab-market,
 .shell.is-agent-pilot #tab-chart .target-actions,
 .shell.is-agent-pilot #tab-yard .crew-actions,
@@ -471,6 +470,32 @@ dialog::backdrop { background: rgba(0,0,0,.72); }
   pointer-events: auto;
   opacity: 1;
 }
+
+/* Captain agent action log (spectator feed) */
+.agent-action-log {
+  max-height: 10rem;
+  overflow-y: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 8px;
+  margin: 6px 0 12px;
+  background: var(--wall);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.agent-action-log .agent-act {
+  margin: 0 0 4px;
+  color: var(--dim);
+}
+.agent-action-log .agent-act .op {
+  color: var(--type);
+  font-weight: 600;
+  margin-right: 6px;
+}
+
 
 /* Captain prefs */
 .pref-row {

@@ -80,6 +80,10 @@ function runOp(body) {
     case "buy": return game.buy(body.good, body.qty ?? 1);
     case "sell": return game.sell(body.good, body.qty ?? 1);
     case "sell_all": return game.sellAll();
+    case "fill_cheap": return game.fillCheap();
+    case "sell_expensive": return game.sellExpensive();
+    case "buy_press": return game.buyPress();
+    case "dock_work": return game.dockWork();
     case "refuel": return game.refuel();
     case "jump": return game.jump(body.system);
     case "encounter": return game.resolveEncounter(body.choice);
@@ -88,6 +92,7 @@ function runOp(body) {
     case "fire_crew": return game.fireCrew();
     case "retire": return game.retire();
     case "set_prefs": return game.setPrefs({ autoFuel: body.autoFuel });
+    case "grant_unbowed": return game.grantUnbowed();
     default: return { ok: false, error: "unknown_op", op };
   }
 }
@@ -128,6 +133,10 @@ const server = http.createServer(async (req, res) => {
     } finally {
       game.actorRole = "agent";
     }
+    // Spectator agent action log (shared save) — skip observe-only inside recordAgentAct.
+    const opName = body?.op;
+    const logAsAgent = body?.actor === "agent" || game.state?.pilot === "agent";
+    if (logAsAgent && opName) game.recordAgentAct(opName, result);
     persistGame(game);
     // Always return fresh packed state for the Fold client.
     const packed = packState();

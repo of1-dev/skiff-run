@@ -19,13 +19,21 @@ node mcp/bridge.mjs
 # or: cd mcp && npm run bridge
 ```
 
-Open **http://127.0.0.1:8787/?bridge=1**
+**Headless NUC / Tailscale (SoT for remote watch):**
+
+```bash
+SKIFF_BRIDGE_HOST=100.98.160.33 SKIFF_BRIDGE_PORT=8787 node mcp/bridge.mjs
+```
+
+Open **http://100.98.160.33:8787/?bridge=1** (MagicDNS: `http://nuc:8787/?bridge=1`).
+
+Local-only laptop bind still works as `http://127.0.0.1:8787/?bridge=1` when the browser is on the same machine.
 
 - `GET /api/state` — JSON `{ state, pendingEncounter, snapshot }` from the shared save
 - `POST /api/act` — `{ op, ... }` applied via the headless engine (Fold acts as **human**)
 - Static files: `index.html`, `game.js`, `style.css`, `assets/`
 
-Default bind: `127.0.0.1:8787`. Override with `SKIFF_BRIDGE_HOST` / `SKIFF_BRIDGE_PORT`.
+Default bind is localhost (`127.0.0.1:8787`) — useless on headless NUC. Override with `SKIFF_BRIDGE_HOST` / `SKIFF_BRIDGE_PORT` (use Tailscale IP or `0.0.0.0`).
 
 ## With MCP stdio
 
