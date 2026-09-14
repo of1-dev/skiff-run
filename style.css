@@ -515,3 +515,21 @@ body.bridge-mode #ver::after {
   max-height: 100dvh;
   box-sizing: border-box;
 }
+
+.press-edition .press-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  padding: 0.15rem 0;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.press-edition .press-link:hover,
+.press-edition .press-link:focus-visible {
+  color: var(--ember, #e8a06a);
+}

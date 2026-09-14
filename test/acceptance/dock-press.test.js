@@ -1,5 +1,5 @@
 /**
- * ATDD — Dock Press (ST newspaper homage).
+ * ATDD — Dock Press (ST newspaper homage) + deep-link tips.
  */
 "use strict";
 const { describe, it } = require("node:test");
@@ -68,5 +68,48 @@ describe("ATDD: Press edition tips", () => {
       rand: () => 0.5,
     });
     assert.match(edition.masthead, /Ash Meridian|Dock Press/i);
+  });
+
+  it("each tip has text + deep-link action", () => {
+    const edition = P.rollEdition({
+      hereId: "ember",
+      systems: SYSTEMS,
+      goods: GOODS,
+      priceFor: (s, g) => (s.id === "ash" ? g.base * 2 : g.base),
+      rand: (() => { let i = 0; const seq = [0.2, 0.1, 0.8, 0.3, 0.6, 0.4]; return () => seq[i++ % seq.length]; })(),
+    });
+    assert.ok(edition.tips.length >= 2);
+    edition.tips.forEach((t) => {
+      assert.equal(typeof t.text, "string");
+      assert.ok(t.action);
+      assert.ok(["chart", "market", "yard", "quest"].includes(t.action.type));
+    });
+  });
+
+  it("yard tip deep-links to yard + systemId", () => {
+    // Force yard branch: rnd for tip1 goods path, then rnd>=0.55 for yard (skip hot)
+    const edition = P.rollEdition({
+      hereId: "wisphollow",
+      systems: SYSTEMS,
+      goods: GOODS,
+      priceFor: () => 40,
+      rand: (() => {
+        let i = 0;
+        // pick good, sort path cheap (0.4), then tip2: hot check 0.9 (>=0.55 skip hot→yard), pick yard
+        const seq = [0.0, 0.4, 0.9, 0.0, 0.5, 0.2];
+        return () => seq[i++ % seq.length];
+      })(),
+    });
+    const yardTip = edition.tips.find((t) => t.action && t.action.type === "yard");
+    assert.ok(yardTip, "expected a yard tip");
+    assert.ok(yardTip.action.systemId);
+    assert.ok(["ember", "ash"].includes(yardTip.action.systemId));
+  });
+
+  it("normalizeEdition lifts legacy string lines", () => {
+    const n = P.normalizeEdition({ masthead: "x", lines: ["a", "b"] });
+    assert.equal(n.tips.length, 2);
+    assert.equal(n.tips[0].text, "a");
+    assert.equal(n.tips[0].action, null);
   });
 });
