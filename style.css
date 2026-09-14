@@ -551,3 +551,10 @@ body.bridge-mode #ver::after {
 
 .skills-box { display: flex; flex-wrap: wrap; gap: 0.35rem 0.75rem; margin: 0.35rem 0 0.75rem; }
 .skills-box span { white-space: nowrap; }
+
+.skill-bar { display: grid; grid-template-columns: 5.5rem 1fr 3.6rem; gap: 0.4rem; align-items: center; width: 100%; font-size: 0.78rem; }
+.skill-id { text-transform: capitalize; opacity: .85; }
+.skill-track { height: 7px; border-radius: 99px; background: color-mix(in srgb, currentColor 18%, transparent); overflow: hidden; }
+.skill-fill { display: block; height: 100%; border-radius: 99px; background: currentColor; }
+.skill-n { text-align: right; font-variant-numeric: tabular-nums; opacity: .8; }
+.crew-card { font-size: 0.78rem; opacity: .85; margin: 0.15rem 0; }

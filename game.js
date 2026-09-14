@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.14";
+  const VERSION = "0.9.15";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const bridgeOn = (() => {
@@ -218,6 +218,8 @@
   if (!WP) throw new Error("SkiffWaypoints missing — load js/waypoints.js before game.js");
   const SK = (typeof SkiffSkills !== "undefined") ? SkiffSkills : null;
   if (!SK) throw new Error("SkiffSkills missing — load js/skills.js before game.js");
+  const CR = (typeof SkiffCrew !== "undefined") ? SkiffCrew : null;
+  if (!CR) throw new Error("SkiffCrew missing — load js/crew.js before game.js");
   const TF = (typeof SkiffTradeFog !== "undefined") ? SkiffTradeFog : null;
   if (!TF) throw new Error("SkiffTradeFog missing — load js/trade-fog.js before game.js");
 
@@ -439,6 +441,7 @@
       prices: {},
       shipId: "skiff-7",
       crew: 0,
+      roster: [],
       epoch: 1,
       chart,
       visited: { ember: true },
@@ -496,6 +499,12 @@
       st.waypoints = WP.normalize(st.waypoints);
       st.skills = SK.normalize(st.skills);
       if (st.pilot !== "human" && st.pilot !== "agent") st.pilot = "human";
+      {
+        const hh = ship(st.shipId) || SHIPS[0];
+        if (!Array.isArray(st.roster)) st.roster = CR.migrateLegacy(st.crew | 0);
+        st.roster = CR.normalizeRoster(st.roster, hh.crewMax);
+        st.crew = CR.syncHeadcount(st.roster);
+      }
       st.prefs = st.prefs || { autoFuel: true };
       if (st.prefs.autoFuel == null) st.prefs.autoFuel = true;
       if (st.prefs.godMode == null) st.prefs.godMode = false;
@@ -1126,7 +1135,7 @@
     const hire = document.createElement("button");
     hire.type = "button";
     hire.className = "chip";
-    hire.textContent = "Hire crew (₩" + CREW_HIRE + ")";
+    hire.textContent = "Hire (₩" + CREW_HIRE + "+)";
     hire.disabled = state.crew >= h.crewMax || state.credits < CREW_HIRE;
     hire.onclick = doHireCrew;
     const fire = document.createElement("button");
@@ -1137,6 +1146,22 @@
     fire.onclick = doFireCrew;
     crewBox.appendChild(hire);
     crewBox.appendChild(fire);
+    const list = document.createElement("div");
+    list.className = "crew-roster";
+    (state.roster || []).forEach(function (card) {
+      const row = document.createElement("div");
+      row.className = "crew-card";
+      row.textContent = card.label + " — " + card.quirk +
+        " (P" + card.pilot + " F" + card.fighter + " T" + card.trader + " E" + card.engineer + ")";
+      list.appendChild(row);
+    });
+    if (!(state.roster || []).length) {
+      const row = document.createElement("div");
+      row.className = "crew-card hint";
+      row.textContent = "No hands aboard.";
+      list.appendChild(row);
+    }
+    crewBox.appendChild(list);
   }
 
   function render() {
@@ -1275,6 +1300,50 @@
     save(state);
   }
 
+
+  function tickSkill(id, announce) {
+    const r = SK.drift(state.skills, id);
+    state.skills = r.skills;
+    if (announce && r.gained) log(r.gained[0].toUpperCase() + r.gained.slice(1) + " ticked up.");
+  }
+
+  function renderSkillsBox() {
+    const box = el("skills-box");
+    if (!box) return;
+    const eff = CR.shipSkills(state.skills, state.roster || [], hull());
+    box.className = "skills-box";
+    box.innerHTML = "";
+    (SK.SKILL_IDS || ["pilot", "fighter", "trader", "engineer"]).forEach(function (id) {
+      const row = document.createElement("div");
+      row.className = "skill-bar";
+      const cap = (state.skills && state.skills[id]) | 0;
+      const val = eff.skills[id] | 0;
+      const boost = val - cap;
+      const fill = document.createElement("span");
+      fill.className = "skill-fill";
+      fill.style.width = (val * 10) + "%";
+      const track = document.createElement("span");
+      track.className = "skill-track";
+      track.appendChild(fill);
+      const name = document.createElement("span");
+      name.className = "skill-id";
+      name.textContent = id;
+      const num = document.createElement("span");
+      num.className = "skill-n";
+      num.textContent = String(val) + (boost > 0 ? (" +·crew") : "");
+      row.appendChild(name);
+      row.appendChild(track);
+      row.appendChild(num);
+      box.appendChild(row);
+    });
+    if (eff.notes && eff.notes.length) {
+      const n = document.createElement("p");
+      n.className = "hint";
+      n.textContent = "Fit: " + eff.notes.join(", ") + ".";
+      box.appendChild(n);
+    }
+  }
+
   function doBuy(id, qty) {
     if (bridgeOn) {
       if (currentPilot() === "agent") return log("Agent has the stick.");
@@ -1411,7 +1480,8 @@
     state.credits -= due;
     state.credits += surplus;
     state.shipId = next.id;
-    state.crew = Math.min(state.crew, next.crewMax);
+    state.roster = CR.normalizeRoster(state.roster || [], next.crewMax);
+    state.crew = CR.syncHeadcount(state.roster);
     if (state.fuel > next.fuelMax) state.fuel = next.fuelMax;
     let pay = "Paid ₩" + due.toLocaleString();
     if (surplus > 0) pay = "Scrap payout ₩" + surplus.toLocaleString();
@@ -1439,11 +1509,13 @@
       return void bridgeAct({ op: "hire_crew" });
     }
     const h = hull();
-    if (state.crew >= h.crewMax) return log("No bunks left.");
-    if (state.credits < CREW_HIRE) return log("Can't afford crew.");
-    state.credits -= CREW_HIRE;
-    state.crew += 1;
-    log("Hired hand. Crew " + state.crew + "/" + h.crewMax + ".");
+    const offer = CR.makeOffer();
+    const gate = CR.canHire(state.roster || [], h.crewMax, state.credits, offer);
+    if (!gate.ok) return log(gate.reason === "no_bunks" ? "No bunks left." : "Can't afford crew.");
+    state.credits -= gate.cost;
+    state.roster = CR.afterHire(state.roster || [], offer, h.crewMax);
+    state.crew = CR.syncHeadcount(state.roster);
+    log("Hired " + offer.label + " (— " + offer.quirk + ") for ₩" + gate.cost + ". Crew " + state.crew + "/" + h.crewMax + ".");
     render();
   }
 
@@ -1452,10 +1524,12 @@
       if (currentPilot() === "agent") return log("Agent has the stick.");
       return void bridgeAct({ op: "fire_crew" });
     }
-    if (state.crew < 1) return log("No crew to dismiss.");
-    state.crew -= 1;
-    state.credits += CREW_FIRE_REFUND;
-    log("Dismissed a hand. +₩" + CREW_FIRE_REFUND + ".");
+    const fired = CR.afterDismiss(state.roster || [], null);
+    if (!fired.ok) return log("No crew to dismiss.");
+    state.roster = fired.roster;
+    state.crew = CR.syncHeadcount(state.roster);
+    state.credits += fired.refund;
+    log("Dismissed a hand. +₩" + fired.refund + ".");
     render();
   }
 
