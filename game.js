@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.18";
+  const VERSION = "0.9.19";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const bridgeOn = (() => {
@@ -941,11 +941,11 @@
           : s.name;
         ctx.fillText(label, px + 8, py + 3);
       }
-      if (reach && s.id !== here.id && !full) {
+      if (showLabel && reach && s.id !== here.id && (selected || s.id === here.id)) {
         const cost = fuelCost(here.id, s.id);
         ctx.fillStyle = tc.mute;
         ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
-        ctx.fillText(cost + "f · P" + activityLabel(s.pirate).slice(0, 3), px + 9, py + 16);
+        ctx.fillText(cost + "f", px + 9, py + 16);
       }
       ctx.globalAlpha = 1;
     });

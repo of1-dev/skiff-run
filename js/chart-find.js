@@ -31,16 +31,29 @@
     return prefix || matches[0];
   }
 
-  /** local = all visible names. sector = here/target/pins + yards. full = here/target/pins only. */
+  /** Names only for here / selected / search hit / pins. Dots for the rest. */
   function shouldLabel(mode, s, ctx) {
     const c = ctx || {};
     if (!s) return false;
     if (s.id === c.hereId || s.id === c.targetId || s.id === c.hitId) return true;
     const wps = c.waypoints || [];
-    if (wps.indexOf(s.id) >= 0) return true;
-    if (mode === "full") return false;
-    if (mode === "sector") return !!(s.yard || s.retire);
-    return true;
+    return wps.indexOf(s.id) >= 0;
+  }
+
+  function pickLabels(cands, minDx, minDy) {
+    const dx = minDx == null ? 72 : minDx;
+    const dy = minDy == null ? 16 : minDy;
+    const sorted = (cands || []).slice().sort(function (a, b) {
+      return (b.priority | 0) - (a.priority | 0);
+    });
+    const kept = [];
+    sorted.forEach(function (c) {
+      const hit = kept.some(function (k) {
+        return Math.abs((c.x || 0) - (k.x || 0)) < dx && Math.abs((c.y || 0) - (k.y || 0)) < dy;
+      });
+      if (!hit) kept.push(c);
+    });
+    return kept;
   }
 
   /** Which chart mode to open for a Press/search lead. */
@@ -56,6 +69,7 @@
     findSystems: findSystems,
     pickBest: pickBest,
     shouldLabel: shouldLabel,
+    pickLabels: pickLabels,
     viewForLead: viewForLead,
   };
 });
