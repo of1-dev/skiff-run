@@ -14,16 +14,29 @@
 
   const GRANT_DEFAULT = 50000;
 
-  /** @param {string} search location.search */
+  const UNBOWED = {
+    id: "unbowed",
+    name: "Unbowed",
+    cargo: 12,
+    fuelMax: 16,
+    range: 36,
+    weapons: true,
+    crewMax: 3,
+    price: 0,
+    gated: true,
+  };
+
+  const PEAK_UNBOWED_CREW = [
+    { role: "helm", quirk: "steady hands", pilot: 9, fighter: 3, trader: 2, engineer: 3 },
+    { role: "guns", quirk: "hot temper", pilot: 3, fighter: 9, trader: 2, engineer: 3 },
+    { role: "wrench", quirk: "cloak-rated", pilot: 3, fighter: 3, trader: 2, engineer: 9, label: "Quiet Hands" },
+  ];
+
   function isDebugOn(search) {
     const q = String(search || "");
     return /(?:\?|&)(?:debug|god)=1(?:&|$)/.test(q) || /(?:\?|&)(?:debug|god)=true(?:&|$)/i.test(q);
   }
 
-  /**
-   * God tools available when URL debug OR Captain toggle.
-   * @param {{ search?: string, prefs?: { godMode?: boolean } }} opts
-   */
   function isGodEnabled(opts) {
     const o = opts || {};
     if (isDebugOn(o.search)) return true;
@@ -78,11 +91,43 @@
       }
       if (!dumped) break;
     }
-    return { ok: true, state: next, jettison };
+    return { ok: true, state: next, jettison: jettison };
+  }
+
+  function waspHands() {
+    const card = { role: "hand", quirk: "dock-smart", pilot: 7, fighter: 7, trader: 7, engineer: 7 };
+    return [Object.assign({}, card), Object.assign({}, card), Object.assign({}, card)];
+  }
+
+  function applyRoster(state, roster, crewMax) {
+    const next = Object.assign({}, state);
+    const max = crewMax | 0;
+    next.roster = (roster || []).slice(0, max);
+    next.crew = next.roster.length;
+    return next;
+  }
+
+  function grantHullKit(state, hullId, ships, goodsIds, roster) {
+    const r = setHull(state, hullId, ships, goodsIds);
+    if (!r.ok) return r;
+    const h = (ships || []).find((s) => s.id === hullId);
+    const next = applyRoster(r.state, roster, h && h.crewMax);
+    if (h) next.fuel = h.fuelMax | 0;
+    return { ok: true, state: next, jettison: r.jettison };
+  }
+
+  function grantUnbowed(state, ships, goodsIds) {
+    return grantHullKit(state, "unbowed", ships, goodsIds, PEAK_UNBOWED_CREW);
+  }
+
+  function grantWasp(state, ships, goodsIds) {
+    return grantHullKit(state, "wasp-prime", ships, goodsIds, waspHands());
   }
 
   return {
     GRANT_DEFAULT,
+    UNBOWED,
+    PEAK_UNBOWED_CREW,
     isDebugOn,
     isGodEnabled,
     grantCredits,
@@ -90,5 +135,10 @@
     unlockYard,
     effectiveStock,
     setHull,
+    waspHands,
+    applyRoster,
+    grantHullKit,
+    grantUnbowed,
+    grantWasp,
   };
 });

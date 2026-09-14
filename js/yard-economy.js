@@ -26,9 +26,17 @@
    * @param {"full"|"mite"|"none"} stock
    * @param {Array<{id:string}>} ships commons list (no Unbowed)
    */
+  function isYardStock(h) {
+    if (!h) return false;
+    if (h.gated) return false;
+    if (h.id === "unbowed") return false;
+    return true;
+  }
+
   function yardOffered(stock, ships) {
-    if (stock === "full") return ships.slice();
-    if (stock === "mite") return ships.filter((h) => h.id === "mite");
+    const list = (ships || []).filter(isYardStock);
+    if (stock === "full") return list.slice();
+    if (stock === "mite") return list.filter((h) => h.id === "mite");
     return [];
   }
 

@@ -65,7 +65,7 @@
     const cost = src.cost == null ? HIRE_BASE : Math.max(0, src.cost | 0);
     return {
       role: role,
-      label: roleLabel(role),
+      label: src.label ? String(src.label) : roleLabel(role),
       quirk: quirk,
       pilot: skills.pilot,
       fighter: skills.fighter,

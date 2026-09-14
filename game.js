@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.15";
+  const VERSION = "0.9.16";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const bridgeOn = (() => {
@@ -175,7 +175,7 @@
     { id: "ash-lance", name: "Ash Lance", cargo: 14, fuelMax: 18, range: 40, weapons: true, crewMax: 2, price: 15000 },
     { id: "quiet-ark", name: "Quiet Ark", cargo: 50, fuelMax: 22, range: 36, weapons: false, crewMax: 4, price: 22000 },
     { id: "wasp-prime", name: "Wasp Prime", cargo: 18, fuelMax: 20, range: 44, weapons: true, crewMax: 3, price: 28000 },
-    // Unbowed: HULL_SVG only — unlock later, never open yard stock.
+    { id: "unbowed", name: "Unbowed", cargo: 12, fuelMax: 16, range: 36, weapons: true, crewMax: 3, price: 0, gated: true },
   ];
 
   function sys(id) { return SYSTEMS.find((s) => s.id === id); }
@@ -1918,11 +1918,26 @@
     log("God: full yard unlocked at every dock.");
     save(state); render();
   });
+  wireGod("god-unbowed", () => {
+    const r = GOD.grantUnbowed(state, SHIPS, GOODS.map((x) => x.id));
+    if (!r.ok) return log("God: cannot grant Unbowed (" + r.reason + ").");
+    state = r.state;
+    if (typeof CR !== "undefined" && CR.normalizeRoster) {
+      state.roster = CR.normalizeRoster(state.roster, hull().crewMax);
+      state.crew = CR.syncHeadcount(state.roster);
+    }
+    log("Unbowed granted — peak crew aboard. Career unlock still locked." + (r.jettison ? (" Jettisoned " + r.jettison + " cargo.") : ""));
+    save(state); render();
+  });
   wireGod("god-wasp", () => {
-    const r = GOD.setHull(state, "wasp-prime", SHIPS, GOODS.map((x) => x.id));
+    const r = GOD.grantWasp(state, SHIPS, GOODS.map((x) => x.id));
     if (!r.ok) return log("God: cannot set Wasp Prime (" + r.reason + ").");
     state = r.state;
-    log("God: hull set to Wasp Prime" + (r.jettison ? (" — jettisoned " + r.jettison + " cargo.") : "."));
+    if (typeof CR !== "undefined" && CR.normalizeRoster) {
+      state.roster = CR.normalizeRoster(state.roster, hull().crewMax);
+      state.crew = CR.syncHeadcount(state.roster);
+    }
+    log("God: Wasp Prime + hands aboard" + (r.jettison ? (" — jettisoned " + r.jettison + " cargo.") : "."));
     save(state); render();
   });
 
