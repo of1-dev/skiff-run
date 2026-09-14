@@ -472,3 +472,17 @@ body.bridge-mode #ver::after {
   opacity: 0.65;
   font-weight: 500;
 }
+
+/* Dock Press */
+.press-edition {
+  margin-top: 10px;
+  font-size: 13px;
+  background: var(--wall);
+  border: 1px dashed var(--line);
+  padding: 10px;
+}
+.press-edition ul {
+  margin: 8px 0 0;
+  padding-left: 1.1em;
+}
+.press-edition li { margin-bottom: 6px; color: var(--type); }

@@ -31,7 +31,7 @@ Five tabs. Learn them like muscle memory:
 
 | Tab | What it’s for |
 |-----|----------------|
-| **Dock** | Where you are, the ship’s log, shortcuts, and — when you’re ready — retirement. |
+| **Dock** | Status, log, **Dock Press** (buyable tips), retire. |
 | **Market** | Buy and sell the six staples. Use **+/−** for quantity, then Buy/Sell. **Sell all** dumps the hold at local prices. |
 | **Chart** | See the Ember map, pick a target, **Jump**. Modes: Local · Sector · Full (see below). |
 | **Yard** | Hulls and bunks. Full commons at real yards; most docks scrap a **Mite**; a few dry docks sell none. Dock work pays once per stay. |
