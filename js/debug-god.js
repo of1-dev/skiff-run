@@ -1,6 +1,7 @@
 /**
  * Skiff Run — god / debug helpers (pure, ATDD).
- * Only active when URL has ?debug=1 (or ?god=1). Never the real play path.
+ * Enable via ?debug=1 / ?god=1 OR Captain prefs.godMode.
+ * Never the real career path — yard toys only.
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
@@ -19,6 +20,16 @@
     return /(?:\?|&)(?:debug|god)=1(?:&|$)/.test(q) || /(?:\?|&)(?:debug|god)=true(?:&|$)/i.test(q);
   }
 
+  /**
+   * God tools available when URL debug OR Captain toggle.
+   * @param {{ search?: string, prefs?: { godMode?: boolean } }} opts
+   */
+  function isGodEnabled(opts) {
+    const o = opts || {};
+    if (isDebugOn(o.search)) return true;
+    return !!(o.prefs && o.prefs.godMode);
+  }
+
   function grantCredits(state, amount) {
     const n = amount == null ? GRANT_DEFAULT : (amount | 0);
     const next = Object.assign({}, state);
@@ -32,26 +43,16 @@
     return next;
   }
 
-  /** Unlock full yard commons at any dock (still no Unbowed unless in ships list). */
   function unlockYard(state) {
     const next = Object.assign({}, state);
     next.godYard = true;
     return next;
   }
 
-  /**
-   * When godYard, treat stock as full for offering.
-   * @param {boolean} godYard
-   * @param {"full"|"mite"|"none"} stock
-   */
   function effectiveStock(godYard, stock) {
     return godYard ? "full" : stock;
   }
 
-  /**
-   * Direct hull set — dump overflow cargo; clamp fuel/crew.
-   * @returns {{ ok:boolean, state?:object, reason?:string, jettison?:number }}
-   */
   function setHull(state, hullId, ships, goodsIds) {
     const h = (ships || []).find((s) => s.id === hullId);
     if (!h) return { ok: false, reason: "unknown_hull" };
@@ -83,6 +84,7 @@
   return {
     GRANT_DEFAULT,
     isDebugOn,
+    isGodEnabled,
     grantCredits,
     fillFuel,
     unlockYard,
