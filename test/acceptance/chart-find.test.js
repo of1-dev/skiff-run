@@ -38,12 +38,17 @@ describe("ATDD: label policy", () => {
     assert.equal(F.shouldLabel("full", SYSTEMS[2], ctx), false);
     assert.equal(F.shouldLabel("full", SYSTEMS[4], ctx), false);
   });
-  it("sector labels yards + retire plus pins", () => {
-    assert.equal(F.shouldLabel("sector", SYSTEMS[2], ctx), true);
-    assert.equal(F.shouldLabel("sector", SYSTEMS[4], ctx), false);
+  it("sector/local also hide unmarked docks", () => {
+    assert.equal(F.shouldLabel("sector", SYSTEMS[2], ctx), false);
+    assert.equal(F.shouldLabel("local", SYSTEMS[4], ctx), false);
   });
-  it("local labels everyone", () => {
-    assert.equal(F.shouldLabel("local", SYSTEMS[4], ctx), true);
+  it("pickLabels drops the overlapping low-priority name", () => {
+    const kept = F.pickLabels([
+      { id: "a", x: 10, y: 10, priority: 3 },
+      { id: "b", x: 12, y: 11, priority: 0 },
+      { id: "c", x: 200, y: 10, priority: 0 },
+    ], 72, 16);
+    assert.deepEqual(kept.map((k) => k.id), ["a", "c"]);
   });
 });
 
