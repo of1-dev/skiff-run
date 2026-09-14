@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.7";
+  const VERSION = "0.9.8";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const bridgeOn = (() => {
@@ -1181,9 +1181,19 @@
         paper.className = "press-edition";
         paper.innerHTML = "<strong>" + edition.masthead + "</strong>";
         const ul = document.createElement("ul");
-        edition.lines.forEach((line) => {
+        const norm = SP.normalizeEdition(edition);
+        (norm.tips || []).forEach((t) => {
           const li = document.createElement("li");
-          li.textContent = line;
+          if (t.action && t.action.type) {
+            const a = document.createElement("button");
+            a.type = "button";
+            a.className = "press-link";
+            a.textContent = t.text;
+            a.onclick = () => followPressTip(t.action);
+            li.appendChild(a);
+          } else {
+            li.textContent = t.text;
+          }
           ul.appendChild(li);
         });
         paper.appendChild(ul);
