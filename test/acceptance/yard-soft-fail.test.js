@@ -14,14 +14,16 @@ const SHIPS = [
   { id: "hold-barge", price: 9000, cargo: 40 },
   { id: "ember-cutter", price: 12000, cargo: 16 },
   { id: "wasp-prime", price: 28000, cargo: 18 },
+  { id: "unbowed", price: 0, cargo: 12, gated: true },
 ];
 
 describe("ATDD: hull stock depth", () => {
   it("full yard systems offer all commons", () => {
     assert.equal(Y.hullStock({ yard: true, tech: 2, pirate: 6 }), "full");
     const offered = Y.yardOffered("full", SHIPS);
-    assert.equal(offered.length, SHIPS.length);
+    assert.equal(offered.length, SHIPS.filter((s) => !s.gated && s.id !== "unbowed").length);
     assert.ok(offered.some((s) => s.id === "wasp-prime"));
+    assert.ok(!offered.some((s) => s.id === "unbowed"));
   });
 
   it("most hospitable non-yard docks offer Mite scrap only", () => {
