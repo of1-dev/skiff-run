@@ -113,7 +113,7 @@
     const ratio = localPrice / avg;
     if (ratio <= 0.92) return { tone: "buy", label: "Cheap — buy", ratio };
     if (ratio >= 1.08) {
-      return { tone: "avoid", label: (have | 0) > 0 ? "Dear — sell" : "Dear — skip", ratio };
+      return { tone: "avoid", label: (have | 0) > 0 ? "Expensive — sell" : "Expensive — skip", ratio };
     }
     return { tone: "fair", label: "Fair", ratio };
   }

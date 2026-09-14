@@ -47,12 +47,12 @@
       if (rnd() < 0.5) {
         const cheap = ranked[0];
         lines.push(
-          "Traders whisper " + g.name + " is soft at " + cheap.s.name + " (list ~₩" + cheap.p + ")."
+          "Traders whisper " + g.name + " is cheap at " + cheap.s.name + " (list ~₩" + cheap.p + ")."
         );
       } else {
         const dear = ranked[ranked.length - 1];
         lines.push(
-          "Bulletin: " + g.name + " runs dear at " + dear.s.name + " (list ~₩" + dear.p + ")."
+          "Bulletin: " + g.name + " runs expensive at " + dear.s.name + " (list ~₩" + dear.p + ")."
         );
       }
     }
