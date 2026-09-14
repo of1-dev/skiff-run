@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.19";
+  const VERSION = "0.9.20";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const bridgeOn = (() => {
@@ -158,7 +158,55 @@
     { id: "farember", name: "Far Ember", mods: { spice: 0.71, grain: 1.3099999999999998, meds: 1.1600000000000001 },
       tech: 4, size: 1, gov: "Far Compact", police: 2, pirate: 5 },
     { id: "gutterwake", name: "Gutter Wake", mods: { scrap: 0.71, grain: 1.26, meds: 1.1600000000000001 },
-      tech: 2, size: 1, gov: "Wake Freehold", police: 1, pirate: 6 }
+      tech: 2, size: 1, gov: "Wake Freehold", police: 1, pirate: 6 },
+    { id: "slagfen", name: "Slag Fen", mods: { scrap: 0.62, ore: 1.18, grain: 1.08 },
+      tech: 2, size: 2, gov: "Slag Compact", police: 2, pirate: 5 },
+    { id: "tinmouth", name: "Tinmouth", mods: { ore: 0.66, scrap: 1.22, meds: 1.1 },
+      tech: 3, size: 2, gov: "Mouth League", police: 3, pirate: 3 },
+    { id: "cinderquay", name: "Cinder Quay", mods: { spice: 0.68, scrap: 1.2, grain: 1.12 }, yard: true,
+      tech: 4, size: 2, gov: "Cinder Compact", police: 3, pirate: 4 },
+    { id: "paleharbor", name: "Pale Harbor", mods: { meds: 0.7, optics: 1.18, grain: 1.1 },
+      tech: 5, size: 3, gov: "Pale Freehold", police: 4, pirate: 2 },
+    { id: "hookbasin", name: "Hook Basin", mods: { grain: 0.64, spice: 1.24, ore: 1.08 },
+      tech: 3, size: 2, gov: "Hook League", police: 2, pirate: 4 },
+    { id: "rivenkiln", name: "Riven Kiln", mods: { ore: 0.63, spice: 1.21, scrap: 1.14 },
+      tech: 4, size: 1, gov: "Kiln Protectorate", police: 3, pirate: 4 },
+    { id: "lowspindle", name: "Low Spindle", mods: { optics: 0.72, scrap: 1.16, grain: 1.12 },
+      tech: 5, size: 2, gov: "Spindle Syndicate", police: 5, pirate: 2 },
+    { id: "ashwake", name: "Ashwake", mods: { scrap: 0.6, grain: 1.28, meds: 1.08 },
+      tech: 2, size: 1, gov: "Wake Compact", police: 1, pirate: 6 },
+    { id: "saltfold", name: "Saltfold", mods: { grain: 0.62, meds: 1.2, spice: 1.12 },
+      tech: 3, size: 2, gov: "Fold Freehold", police: 3, pirate: 3 },
+    { id: "brineorchard", name: "Brine Orchard", mods: { grain: 0.58, spice: 1.3, optics: 1.06 },
+      tech: 3, size: 2, gov: "Orchard League", police: 2, pirate: 3 },
+    { id: "farquay", name: "Far Quay", mods: { scrap: 0.7, ore: 1.16, meds: 1.14 },
+      tech: 4, size: 2, gov: "Far Quay Compact", police: 3, pirate: 4 },
+    { id: "nightbasin", name: "Night Basin", mods: { optics: 0.66, meds: 1.22, scrap: 1.1 },
+      tech: 6, size: 2, gov: "Night Syndicate", police: 5, pirate: 1 },
+    { id: "emberledge", name: "Emberledge", mods: { spice: 0.7, ore: 1.14, grain: 1.16 },
+      tech: 4, size: 1, gov: "Ledge Compact", police: 2, pirate: 5 },
+    { id: "quietspur", name: "Quiet Spur", mods: { grain: 1.12, spice: 1.12, scrap: 1.12 },
+      tech: 3, size: 1, gov: "Spur Protectorate", police: 4, pirate: 2 },
+    { id: "ironfold", name: "Ironfold", mods: { ore: 0.61, scrap: 1.26, meds: 1.08 }, yard: true,
+      tech: 5, size: 3, gov: "Ironfold Compact", police: 4, pirate: 3 },
+    { id: "mossreach", name: "Moss Reach", mods: { grain: 0.67, meds: 1.18, optics: 1.1 },
+      tech: 3, size: 2, gov: "Moss League", police: 3, pirate: 3 },
+    { id: "shaleharbor", name: "Shale Harbor", mods: { scrap: 0.64, ore: 1.2, grain: 1.1 },
+      tech: 4, size: 2, gov: "Shale Freehold", police: 3, pirate: 3 },
+    { id: "coldledger", name: "Cold Ledger", mods: { optics: 0.68, meds: 1.24, scrap: 1.14 },
+      tech: 6, size: 2, gov: "Ledger Syndicate", police: 5, pirate: 2 },
+    { id: "wickgate", name: "Wick Gate", mods: { spice: 0.66, grain: 1.22, ore: 1.12 },
+      tech: 3, size: 2, gov: "Wick Compact", police: 2, pirate: 4 },
+    { id: "longwake", name: "Long Wake", mods: { scrap: 0.63, grain: 1.24, meds: 1.1 },
+      tech: 2, size: 2, gov: "Long Wake Freehold", police: 1, pirate: 5 },
+    { id: "redkiln", name: "Red Kiln", mods: { ore: 0.65, spice: 1.26, scrap: 1.12 },
+      tech: 4, size: 2, gov: "Red Kiln League", police: 3, pirate: 4 },
+    { id: "silverfen", name: "Silver Fen", mods: { meds: 0.68, optics: 1.2, grain: 1.08 },
+      tech: 5, size: 2, gov: "Fen Protectorate", police: 4, pirate: 2 },
+    { id: "dryorchard", name: "Dry Orchard", mods: { grain: 0.6, spice: 1.28, scrap: 1.1 },
+      tech: 3, size: 2, gov: "Dry Freehold", police: 2, pirate: 3 },
+    { id: "westcinder", name: "West Cinder", mods: { spice: 0.72, scrap: 1.18, ore: 1.14 },
+      tech: 4, size: 1, gov: "West Compact", police: 2, pirate: 5 }
   ];
   let SYSTEMS = SYSTEM_DEFS.map((s) => Object.assign({ x: 50, y: 50 }, s));
 
@@ -222,6 +270,9 @@
   if (!CR) throw new Error("SkiffCrew missing — load js/crew.js before game.js");
   const CF = (typeof SkiffChartFind !== "undefined") ? SkiffChartFind : null;
   if (!CF) throw new Error("SkiffChartFind missing — load js/chart-find.js before game.js");
+  const RT = (typeof SkiffRoute !== "undefined") ? SkiffRoute : null;
+  if (!RT) throw new Error("SkiffRoute missing — load js/route.js before game.js");
+  const WORLD = 160;
   const TF = (typeof SkiffTradeFog !== "undefined") ? SkiffTradeFog : null;
   if (!TF) throw new Error("SkiffTradeFog missing — load js/trade-fog.js before game.js");
 
@@ -266,7 +317,7 @@
   function buildChart(seed) {
     seed = (seed >>> 0) || (Math.floor(Math.random() * 0xffffffff) || 1);
     const rand = mulberry32(seed);
-    const minD = 7;
+    const minD = 10;
     const pad = 6;
     const pos = {};
 
@@ -279,16 +330,16 @@
         } else if (attempt < 40) {
           // bias into quadrants in roster order
           const qi = SYSTEM_DEFS.findIndex((s) => s.id === id) % 4;
-          const qx = qi % 2 === 0 ? pad + 8 : 55;
-          const qy = qi < 2 ? pad + 8 : 55;
-          x = qx + rand() * 32;
-          y = qy + rand() * 32;
+          const qx = qi % 2 === 0 ? pad + 8 : WORLD * 0.52;
+          const qy = qi < 2 ? pad + 8 : WORLD * 0.52;
+          x = qx + rand() * (WORLD * 0.38);
+          y = qy + rand() * (WORLD * 0.38);
         } else {
-          x = pad + rand() * (100 - pad * 2);
-          y = pad + rand() * (100 - pad * 2);
+          x = pad + rand() * (WORLD - pad * 2);
+          y = pad + rand() * (WORLD - pad * 2);
         }
-        x = Math.max(pad, Math.min(100 - pad, x));
-        y = Math.max(pad, Math.min(100 - pad, y));
+        x = Math.max(pad, Math.min(WORLD - pad, x));
+        y = Math.max(pad, Math.min(WORLD - pad, y));
         let ok = true;
         for (const other of Object.values(pos)) {
           const dx = other.x - x;
@@ -300,7 +351,7 @@
           return;
         }
       }
-      pos[id] = { x: pad + rand() * (100 - pad * 2), y: pad + rand() * (100 - pad * 2) };
+      pos[id] = { x: pad + rand() * (WORLD - pad * 2), y: pad + rand() * (WORLD - pad * 2) };
     }
 
     // Ember near-ish center-left so early jumps exist; others fill out.
@@ -350,13 +401,13 @@
       const anchor = SYSTEMS[Math.floor(rand() * SYSTEMS.length)];
       const ang = rand() * Math.PI * 2;
       const rad = maxRange * (0.55 + rand() * 0.35);
-      orphan.x = Math.max(pad, Math.min(100 - pad, anchor.x + Math.cos(ang) * rad));
-      orphan.y = Math.max(pad, Math.min(100 - pad, anchor.y + Math.sin(ang) * rad));
+      orphan.x = Math.max(pad, Math.min(WORLD - pad, anchor.x + Math.cos(ang) * rad));
+      orphan.y = Math.max(pad, Math.min(WORLD - pad, anchor.y + Math.sin(ang) * rad));
       pos[orphan.id] = { x: Math.round(orphan.x * 10) / 10, y: Math.round(orphan.y * 10) / 10 };
       applyChart({ seed, pos });
     }
 
-    return { seed, pos };
+    return { seed, pos, world: WORLD };
   }
 
   function hash32(str) { return SM.hash32(str); }
@@ -527,9 +578,9 @@
       if (!st.chart || !st.chart.pos) st.chart = buildChart(hash32("legacy:" + (st.system || "ember")));
       // Roster grew (e.g. 0.8 → 0.9 galaxy): keep seed, reshuffle full named set.
       const posKeys = Object.keys(st.chart.pos || {});
-      if (posKeys.length < SYSTEM_DEFS.length) {
+      if (posKeys.length < SYSTEM_DEFS.length || st.chart.world !== WORLD) {
         st.chart = buildChart(st.chart.seed || hash32("expand:" + (st.system || "ember")));
-        st.log = (st.log ? st.log + " " : "") + "Chart expanded — full galaxy remapped from seed.";
+        st.log = (st.log ? st.log + " " : "") + "Chart remapped — farther Ember sky.";
       }
       applyChart(st.chart);
       if (!sys(st.system)) st.system = "ember";
@@ -684,7 +735,7 @@
     let minX, minY, maxX, maxY;
 
     if (mode === "full") {
-      minX = -2; minY = -2; maxX = 102; maxY = 102;
+      minX = -2; minY = -2; maxX = WORLD + 2; maxY = WORLD + 2;
     } else {
       const pts = [{ x: here.x, y: here.y }];
       if (mode === "local") {
@@ -760,6 +811,7 @@
     chartMode: "local", // local | sector | full
     targetId: null,
     searchHitId: null,
+    courseDest: null,
   };
 
   function showTab(name) {
@@ -1094,8 +1146,13 @@
     peekEl.textContent = tradeOk
       ? GOODS.map((g) => g.name.split(" ").pop() + " ₩" + peek[g.id]).join(" · ")
       : "Prices fogged — leave sector to scout, or read the Press.";
-    warp.disabled = !reach;
-    warp.textContent = reach ? ("Jump −" + cost + " fuel") : (!hullOk ? "Out of range" : "Need fuel");
+    const plan = !reach ? coursePlan(id) : null;
+    const hop = plan && plan.ok && plan.next ? sys(plan.next) : null;
+    const hopOk = !!(hop && canJumpTo(state.system, hop.id));
+    warp.disabled = !(reach || hopOk);
+    if (reach) warp.textContent = "Jump −" + cost + " fuel";
+    else if (hopOk) warp.textContent = "Hop via " + hop.name + " · " + plan.jumps + " jumps";
+    else warp.textContent = !hullOk ? "Out of range" : "Need fuel";
   }
 
   function renderShipPanel() {
@@ -1479,26 +1536,58 @@
     applyRefuelInternal("Auto-refuel");
   }
 
+  function courseDest() {
+    const pins = WP.normalize(state.waypoints);
+    const far = pins.find(function (id) { return id && id !== state.system; });
+    if (far) return far;
+    if (ui.courseDest && ui.courseDest !== state.system) return ui.courseDest;
+    if (ui.targetId && ui.targetId !== state.system) return ui.targetId;
+    return null;
+  }
+
+  function coursePlan(destId) {
+    if (!destId) return null;
+    return RT.shortestPath(state.system, destId, SYSTEMS, hull().range);
+  }
+
   function doTravel(toId) {
     if (bridgeOn) {
       if (currentPilot() === "agent") return log("Agent has the stick.");
       return void bridgeAct({ op: "jump", system: toId });
     }
-    if (!inRange(state.system, toId)) return log("Out of jump range.");
-    const cost = fuelCost(state.system, toId);
+    let dest = toId;
+    const goal = courseDest();
+    if (!inRange(state.system, dest)) {
+      const plan = coursePlan(dest);
+      if (!plan || !plan.ok || !plan.next) return log("Out of jump range.");
+      dest = plan.next;
+      ui.courseDest = goal || toId;
+    }
+    if (!inRange(state.system, dest)) return log("Out of jump range.");
+    const cost = fuelCost(state.system, dest);
     if (state.fuel < cost) return log("Need " + cost + " fuel.");
     state.fuel -= cost;
-    state.system = toId;
-    markVisited(toId);
+    state.system = dest;
+    markVisited(dest);
     state.dockWorkAt = null;
     state.pressBoughtAt = null;
-    ui.targetId = null;
     rollMarket(state);
-    log("Arrived " + sys(toId).name + " (−" + cost + " fuel).");
+    const still = (goal && goal !== dest) ? goal : courseDest();
+    if (still && still !== dest) {
+      ui.courseDest = still;
+      const plan = coursePlan(still);
+      ui.targetId = (plan && plan.next) ? plan.next : still;
+      const left = plan && plan.jumps ? plan.jumps : "?";
+      log("Arrived " + sys(dest).name + " (−" + cost + " fuel). Course still " + (sys(still) || {}).name + " — " + left + " jumps.");
+    } else {
+      ui.courseDest = null;
+      ui.targetId = null;
+      log("Arrived " + sys(dest).name + " (−" + cost + " fuel).");
+    }
     maybeAutoRefuel();
     render();
     tickSkill("pilot", true);
-    maybeEncounter(toId);
+    maybeEncounter(dest);
   }
   function doRefuel() {
     if (bridgeOn) {
