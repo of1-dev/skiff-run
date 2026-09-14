@@ -68,6 +68,10 @@
           </div>
         </div>
         <p class="hint" id="chart-hint">Tap a system in range to target it, then jump.</p>
+        <form id="chart-find-form" class="chart-find" autocomplete="off">
+          <input id="chart-search" type="search" placeholder="Find a dock…" enterkeyhint="search" />
+          <button type="submit" class="chip">Find</button>
+        </form>
         <div class="map-wrap">
           <canvas id="map" width="720" height="720" aria-label="System chart"></canvas>
         </div>
@@ -175,6 +179,7 @@
   <script src="js/dock-press.js"></script>
   <script src="js/debug-god.js"></script>
   <script src="js/waypoints.js"></script>
+  <script src="js/chart-find.js"></script>
   <script src="js/skills.js"></script>
   <script src="js/crew.js"></script>
   <script src="js/trade-fog.js"></script>

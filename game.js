@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.16";
+  const VERSION = "0.9.17";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const bridgeOn = (() => {
@@ -220,6 +220,8 @@
   if (!SK) throw new Error("SkiffSkills missing — load js/skills.js before game.js");
   const CR = (typeof SkiffCrew !== "undefined") ? SkiffCrew : null;
   if (!CR) throw new Error("SkiffCrew missing — load js/crew.js before game.js");
+  const CF = (typeof SkiffChartFind !== "undefined") ? SkiffChartFind : null;
+  if (!CF) throw new Error("SkiffChartFind missing — load js/chart-find.js before game.js");
   const TF = (typeof SkiffTradeFog !== "undefined") ? SkiffTradeFog : null;
   if (!TF) throw new Error("SkiffTradeFog missing — load js/trade-fog.js before game.js");
 
@@ -654,6 +656,7 @@
 
   function chartVisible(s, hereId, mode) {
     if (s.id === hereId) return true;
+    if (ui.targetId && s.id === ui.targetId) return true;
     if (mode === "local") return canJumpTo(hereId, s.id);
     if (mode === "sector") return inSector(hereId, s.id);
     return true; // full / galaxy
@@ -689,6 +692,10 @@
         SYSTEMS.forEach((s) => {
           if (s.id === here.id || canJumpTo(here.id, s.id)) pts.push(s);
         });
+        if (ui.targetId) {
+          const pin = sys(ui.targetId);
+          if (pin) pts.push(pin);
+        }
         pts.push({ x: here.x - r, y: here.y }, { x: here.x + r, y: here.y });
         pts.push({ x: here.x, y: here.y - r }, { x: here.x, y: here.y + r });
       } else {
@@ -696,6 +703,10 @@
         SYSTEMS.forEach((s) => {
           if (chartVisible(s, here.id, "sector")) pts.push(s);
         });
+        if (ui.targetId) {
+          const pin = sys(ui.targetId);
+          if (pin) pts.push(pin);
+        }
       }
 
       minX = Math.min(...pts.map((p) => p.x));
@@ -748,6 +759,7 @@
     tab: "dock",
     chartMode: "local", // local | sector | full
     targetId: null,
+    searchHitId: null,
   };
 
   function showTab(name) {
@@ -914,7 +926,12 @@
         ctx.fillText(String(wpIdx + 1), px, py - r - 3);
         ctx.textAlign = "start";
       }
-      const showLabel = !full || reach || selected || s.yard || s.retire || visited;
+      const showLabel = CF.shouldLabel(mode, s, {
+        hereId: here.id,
+        targetId: ui.targetId,
+        hitId: ui.searchHitId || null,
+        waypoints: state.waypoints || [],
+      });
       if (showLabel) {
         ctx.fillStyle = visited ? tc.label : tc.mute;
         ctx.font = (full && !reach && !selected ? "500 9px" : "600 12px") +
@@ -1538,10 +1555,45 @@
 
   function followPressTip(action) {
     const r = SP.resolvePressAction(action, { hereId: state.system });
-    if (r.log) log(r.log);
-    if (r.targetId) ui.targetId = r.targetId;
-    if (r.chartMode) setChartMode(r.chartMode);
+    if (r.targetId) {
+      ui.targetId = r.targetId;
+      ui.searchHitId = r.targetId;
+      const dest = sys(r.targetId);
+      const mode = CF.viewForLead({
+        hereId: state.system,
+        targetId: r.targetId,
+        canJump: !!(dest && canJumpTo(state.system, r.targetId)),
+        inSector: !!(dest && inSector(state.system, r.targetId)),
+      });
+      setChartMode(mode);
+      const nm = dest ? dest.name : r.targetId;
+      log((r.log || "Press lead") + " → " + nm + ".");
+    } else if (r.log) {
+      log(r.log);
+    }
     if (r.tab) showTab(r.tab);
+    render();
+  }
+
+  function runChartSearch(raw) {
+    const hits = CF.findSystems(SYSTEMS, raw);
+    const best = CF.pickBest(hits, raw);
+    if (!best) {
+      log("No dock matches “" + String(raw || "").trim() + "”.");
+      return;
+    }
+    ui.targetId = best.id;
+    ui.searchHitId = best.id;
+    const mode = CF.viewForLead({
+      hereId: state.system,
+      targetId: best.id,
+      canJump: canJumpTo(state.system, best.id),
+      inSector: inSector(state.system, best.id),
+    });
+    setChartMode(mode);
+    const extra = hits.length > 1 ? (" (— " + hits.length + " hits)") : "";
+    log("Chart found " + best.name + extra + ".");
+    showTab("chart");
     render();
   }
 
@@ -1732,6 +1784,13 @@
   el("mode-local").onclick = () => setChartMode("local");
   el("mode-sector").onclick = () => setChartMode("sector");
   if (el("mode-full")) el("mode-full").onclick = () => setChartMode("full");
+  const findForm = el("chart-find-form");
+  if (findForm) {
+    findForm.onsubmit = (e) => {
+      e.preventDefault();
+      runChartSearch((el("chart-search") || {}).value || "");
+    };
+  }
 
   el("map").addEventListener("pointerdown", (e) => {
     const s = pickSystemAt(e.clientX, e.clientY);
