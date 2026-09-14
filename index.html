@@ -123,6 +123,18 @@
           <p class="hint" id="theme-hint">Cobalt is the default hull console look.</p>
         </div>
         <button type="button" id="btn-reset" class="btn ghost">New game</button>
+        <h3 class="sub">Captain&rsquo;s Notes</h3>
+        <p class="hint"><a id="guide-link" href="GUIDE.md" target="_blank" rel="noopener">Open the in-game Guide</a> (same pamphlet as GUIDE.md).</p>
+        <div id="god-panel" class="card-block" hidden>
+          <h3 class="sub">God mode</h3>
+          <p class="hint">Dev only — URL has <code>?debug=1</code>. Not the real play path.</p>
+          <div class="dock-actions">
+            <button type="button" id="god-credits" class="btn ember">+₩50k</button>
+            <button type="button" id="god-fuel" class="btn ghost">Fill fuel</button>
+            <button type="button" id="god-yard" class="btn ghost">Unlock yard</button>
+            <button type="button" id="god-wasp" class="btn ghost">Set Wasp Prime</button>
+          </div>
+        </div>
         <h3 class="sub">Credits</h3>
         <p class="disclaimer">Skiff Run · of1. Mechanics inspired by <strong>Space Trader</strong> by Pieter Spronck (GPL). See CREDITS.md.</p>
       </section>
@@ -150,6 +162,7 @@
   <script src="js/market.js"></script>
   <script src="js/encounter.js"></script>
   <script src="js/dock-press.js"></script>
+  <script src="js/debug-god.js"></script>
   <script src="game.js"></script>
 </body>
 </html>

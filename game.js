@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.6";
+  const VERSION = "0.9.7";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const bridgeOn = (() => {
@@ -197,9 +197,16 @@
   // Yard economy — pure logic in js/yard-economy.js (ATDD). Thin adapters only.
   const YE = globalThis.SkiffYardEconomy;
   if (!YE) throw new Error("SkiffYardEconomy missing — load js/yard-economy.js before game.js");
+  const GOD = (typeof SkiffDebugGod !== "undefined") ? SkiffDebugGod : null;
+  if (!GOD) throw new Error("SkiffDebugGod missing — load js/debug-god.js before game.js");
+  const debugOn = GOD.isDebugOn(typeof location !== "undefined" ? location.search : "");
+
   const DOCK_WORK_PAY = YE.DOCK_WORK_PAY;
   function hullStock(s) { return YE.hullStock(s); }
-  function yardOffered() { return YE.yardOffered(hullStock(sys(state.system)), SHIPS); }
+  function yardOffered() {
+    const stock = GOD.effectiveStock(!!state.godYard, hullStock(sys(state.system)));
+    return YE.yardOffered(stock, SHIPS);
+  }
   function dumpToFit(maxCargo) {
     const ids = GOODS.map((g) => g.id);
     const r = YE.dumpToFit(state.cargo, ids, maxCargo);
@@ -1293,7 +1300,40 @@
     rollMarket(state);
     log("Arrived " + sys(toId).name + " (−" + cost + " fuel).");
     maybeAutoRefuel();
-    showTab("dock");
+  
+  // God / debug panel (?debug=1)
+  const godPanel = el("god-panel");
+  if (godPanel) godPanel.hidden = !debugOn;
+  if (debugOn) {
+    const gc = el("god-credits");
+    if (gc) gc.onclick = () => {
+      state = GOD.grantCredits(state, GOD.GRANT_DEFAULT);
+      log("God: +₩" + GOD.GRANT_DEFAULT.toLocaleString() + ".");
+      save(state); render();
+    };
+    const gf = el("god-fuel");
+    if (gf) gf.onclick = () => {
+      state = GOD.fillFuel(state, hull().fuelMax);
+      log("God: tanks topped.");
+      save(state); render();
+    };
+    const gy = el("god-yard");
+    if (gy) gy.onclick = () => {
+      state = GOD.unlockYard(state);
+      log("God: full yard unlocked at every dock.");
+      save(state); render();
+    };
+    const gw = el("god-wasp");
+    if (gw) gw.onclick = () => {
+      const r = GOD.setHull(state, "wasp-prime", SHIPS, GOODS.map((x) => x.id));
+      if (!r.ok) return log("God: cannot set Wasp Prime (" + r.reason + ").");
+      state = r.state;
+      log("God: hull set to Wasp Prime" + (r.jettison ? (" — jettisoned " + r.jettison + " cargo.") : "."));
+      save(state); render();
+    };
+  }
+
+  showTab("dock");
     render();
     maybeEncounter(toId);
   }
