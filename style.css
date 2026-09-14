@@ -538,3 +538,6 @@ body.bridge-mode #ver::after {
 .waypoint-list button.wp-jump {
   margin: 0 0.25rem 0.25rem 0;
 }
+
+.skills-box { display: flex; flex-wrap: wrap; gap: 0.35rem 0.75rem; margin: 0.35rem 0 0.75rem; }
+.skills-box span { white-space: nowrap; }

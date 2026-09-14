@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.9";
+  const VERSION = "0.9.10";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const bridgeOn = (() => {
@@ -202,6 +202,8 @@
   const debugOn = GOD.isDebugOn(typeof location !== "undefined" ? location.search : "");
   const WP = (typeof SkiffWaypoints !== "undefined") ? SkiffWaypoints : null;
   if (!WP) throw new Error("SkiffWaypoints missing — load js/waypoints.js before game.js");
+  const SK = (typeof SkiffSkills !== "undefined") ? SkiffSkills : null;
+  if (!SK) throw new Error("SkiffSkills missing — load js/skills.js before game.js");
 
   const DOCK_WORK_PAY = YE.DOCK_WORK_PAY;
   function hullStock(s) { return YE.hullStock(s); }
@@ -429,7 +431,9 @@
       dockWorkAt: null,
       pressBoughtAt: null,
       lastPress: null,
+      godYard: false,
       waypoints: [],
+      skills: SK.normalize(null),
       log: "Skiff-7 cleared Ember Reach. New chart this run — same systems, new lanes.",
     };
   }
@@ -472,6 +476,9 @@
       if (st.dockWorkAt === undefined) st.dockWorkAt = null;
       if (st.pressBoughtAt === undefined) st.pressBoughtAt = null;
       if (st.lastPress === undefined) st.lastPress = null;
+      if (st.godYard === undefined) st.godYard = false;
+      st.waypoints = WP.normalize(st.waypoints);
+      st.skills = SK.normalize(st.skills);
       if (st.pilot !== "human" && st.pilot !== "agent") st.pilot = "human";
       st.prefs = st.prefs || { autoFuel: true };
       if (st.prefs.autoFuel == null) st.prefs.autoFuel = true;
@@ -1225,6 +1232,7 @@
     }
     renderShipPanel();
     renderWaypointChrome();
+    renderSkillsBox();
     if (ui.tab === "chart") sizeMap();
     drawMap();
     renderTarget();
@@ -1250,6 +1258,7 @@
     state.cargo = r.cargo;
     const p = state.prices[id];
     log("Bought " + r.n + " " + GOODS.find((g) => g.id === id).name + " for ₩" + (p * r.n) + ".");
+    tickSkill("trader", true);
     render();
   }
 
@@ -1267,6 +1276,7 @@
     state.cargo = r.cargo;
     const p = state.prices[id];
     log("Sold " + r.n + " " + GOODS.find((g) => g.id === id).name + " for ₩" + (p * r.n) + ".");
+    tickSkill("trader", true);
     render();
   }
 
@@ -1380,6 +1390,7 @@
 
   showTab("dock");
     render();
+    tickSkill("pilot", true);
     maybeEncounter(toId);
   }
 
@@ -1392,6 +1403,7 @@
     if (need <= 0) return log("Tanks full.");
     if (!applyRefuelInternal(null)) return;
     // rewrite last log for manual (non-auto) wording when full/partial already logged
+    tickSkill("engineer", true);
     render();
   }
 
@@ -1554,6 +1566,7 @@
         state.credits -= fine;
         log("Paid Wardens ₩" + fine + ".");
       } else if (Math.random() < 0.55) {
+        tickSkill("fighter", true);
         log("Bluff held. Wardens wave you on.");
       } else {
         const fine = Math.min(state.credits, 700);
@@ -1570,6 +1583,7 @@
           const p = Math.round((state.prices[id] || GOODS.find((g) => g.id === id).base) * 1.12);
           state.cargo[id] -= 1;
           state.credits += p;
+          tickSkill("trader", true);
           log("Trader bought 1 " + GOODS.find((g) => g.id === id).name + " for ₩" + p + ".");
         } else {
           const g = GOODS[Math.floor(Math.random() * GOODS.length)];
@@ -1590,10 +1604,12 @@
       if (Math.random() < odds) {
         const prize = 350 + state.crew * 150 + pir * 40;
         state.credits += prize;
+        tickSkill("fighter", false);
         log("Corsairs broke off. Salvage ₩" + prize + ".");
       } else {
         const loss = 400 + pir * 50;
         state.credits = Math.max(0, state.credits - loss);
+        tickSkill("fighter", true);
         log("Fight went bad. −₩" + loss + " repairs.");
       }
     } else if (choice === "a") {
