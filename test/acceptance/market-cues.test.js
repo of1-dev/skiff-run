@@ -31,12 +31,12 @@ describe("ATDD: marketCue tone", () => {
     assert.equal(c.tone, "buy");
     assert.match(c.label, /buy|cheap/i);
   });
-  it("marks dear local price as avoid (≥ 108% of avg)", () => {
+  it("marks expensive local price as avoid (≥ 108% of avg)", () => {
     const c = M.marketCue(108, 100, 0);
     assert.equal(c.tone, "avoid");
-    assert.match(c.label, /skip|dear|avoid/i);
+    assert.match(c.label, /skip|expensive|avoid/i);
   });
-  it("when dear and holding stock, cue says sell", () => {
+  it("when expensive and holding stock, cue says sell", () => {
     const c = M.marketCue(120, 100, 3);
     assert.equal(c.tone, "avoid");
     assert.match(c.label, /sell/i);
