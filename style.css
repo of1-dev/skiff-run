@@ -558,3 +558,14 @@ body.bridge-mode #ver::after {
 .skill-fill { display: block; height: 100%; border-radius: 99px; background: currentColor; }
 .skill-n { text-align: right; font-variant-numeric: tabular-nums; opacity: .8; }
 .crew-card { font-size: 0.78rem; opacity: .85; margin: 0.15rem 0; }
+
+.chart-find { display: flex; gap: 8px; margin: 0 0 8px; }
+.chart-find input {
+  flex: 1; min-width: 0; padding: 8px 10px; border-radius: 8px;
+  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  color: inherit; font: inherit;
+}
+@media (min-height: 780px) {
+  .map-wrap { min-height: min(46dvh, 560px); }
+}
