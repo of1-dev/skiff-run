@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.4";
+  const VERSION = "0.9.5";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const bridgeOn = (() => {
@@ -1101,15 +1101,24 @@
 
     const market = el("market");
     market.innerHTML = "";
+    const avgCache = Object.fromEntries(
+      GOODS.map((g) => [g.id, SM.galaxyAveragePrice(SYSTEMS, g)])
+    );
     GOODS.forEach((g) => {
       const p = state.prices[g.id];
       const have = state.cargo[g.id] || 0;
       const qty = qtyFor(g.id);
+      const avg = avgCache[g.id];
+      const cue = SM.marketCue(p, avg, have);
+      const vs = SM.formatVsAvg(p, avg);
       const row = document.createElement("div");
-      row.className = "row";
+      row.className = "row cue-" + cue.tone;
       const info = document.createElement("div");
       info.className = "good";
-      info.innerHTML = "<strong>" + g.name + "</strong><div class=\"have\">have " + have + " · ₩" + p + "</div>";
+      info.innerHTML =
+        "<strong>" + g.name + "</strong>" +
+        "<div class=\"have\">have " + have + " · ₩" + p + " · " + vs + "</div>" +
+        "<div class=\"cue-label cue-label--" + cue.tone + "\">" + cue.label + "</div>";
       const steppers = document.createElement("div");
       steppers.className = "qty";
       const minus = document.createElement("button");

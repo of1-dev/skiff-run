@@ -32,7 +32,7 @@ Five tabs. Learn them like muscle memory:
 | Tab | What it’s for |
 |-----|----------------|
 | **Dock** | Status, log, **Dock Press** (buyable tips), retire. |
-| **Market** | Buy and sell the six staples. Use **+/−** for quantity, then Buy/Sell. **Sell all** dumps the hold at local prices. |
+| **Market** | Buy & sell. Row cues: **Cheap — buy** / Fair / **Dear — skip or sell** vs galaxy average. |
 | **Chart** | See the Ember map, pick a target, **Jump**. Modes: Local · Sector · Full (see below). |
 | **Yard** | Hulls and bunks. Full commons at real yards; most docks scrap a **Mite**; a few dry docks sell none. Dock work pays once per stay. |
 | **Captain** | Pilot handoff, jump prefs, theme packs, **New game**. |

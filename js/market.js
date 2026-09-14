@@ -100,8 +100,36 @@
     return best.name + " +" + best.edge + "₩";
   }
 
+
+  function galaxyAveragePrice(systems, good) {
+    if (!systems || !systems.length) return good.base;
+    let sum = 0;
+    for (let i = 0; i < systems.length; i++) sum += priceFor(systems[i], good);
+    return sum / systems.length;
+  }
+
+  function marketCue(localPrice, avgPrice, have) {
+    const avg = avgPrice || 1;
+    const ratio = localPrice / avg;
+    if (ratio <= 0.92) return { tone: "buy", label: "Cheap — buy", ratio };
+    if (ratio >= 1.08) {
+      return { tone: "avoid", label: (have | 0) > 0 ? "Dear — sell" : "Dear — skip", ratio };
+    }
+    return { tone: "fair", label: "Fair", ratio };
+  }
+
+  function formatVsAvg(localPrice, avgPrice) {
+    const avg = avgPrice || 1;
+    const pct = Math.round(((localPrice - avg) / avg) * 100);
+    if (pct === 0) return "at avg";
+    return (pct > 0 ? "+" : "−") + Math.abs(pct) + "% vs avg";
+  }
+
   return {
     RETIRE_NET,
+    galaxyAveragePrice,
+    marketCue,
+    formatVsAvg,
     hash32,
     priceFor,
     cargoUsed,
