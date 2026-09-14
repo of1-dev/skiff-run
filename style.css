@@ -374,20 +374,33 @@ dialog::backdrop { background: rgba(0,0,0,.72); }
   border-color: var(--ember);
 }
 
-.ship-art { margin: 0 0 8px; color: var(--ember); }
+.ship-art {
+  margin: 0 0 12px;
+  color: var(--ember);
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ember) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ember) 35%, transparent);
+}
 .hull-art {
   color: var(--ember);
   line-height: 0;
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--ember) 45%, transparent));
 }
 .hull-art .hull-svg {
   width: 100%;
-  max-width: 220px;
+  max-width: 280px;
   height: auto;
   display: block;
   color: inherit;
 }
-.hull-art--owned .hull-svg { max-width: 260px; }
-.hull-art--thumb .hull-svg { max-width: 120px; }
+.hull-art--owned .hull-svg { max-width: 320px; }
+.hull-art--thumb {
+  padding: 6px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ember) 10%, transparent);
+}
+.hull-art--thumb .hull-svg { max-width: 128px; }
 .yard-row {
   grid-template-columns: 1fr auto;
 }
