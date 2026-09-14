@@ -346,8 +346,15 @@ dialog::backdrop { background: rgba(0,0,0,.72); }
   justify-content: space-between;
   gap: 0.75rem;
   margin-bottom: 0.5rem;
+  flex-wrap: wrap;
 }
 .panel-head h2 { margin: 0; }
+.market-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
 
 /* theme surface radius */
 .status-strip, .log, .row, .yard-row, .target-card, .card-block, .btn, .chip, .tab, dialog {

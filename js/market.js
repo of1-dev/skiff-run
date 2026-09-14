@@ -85,6 +85,118 @@
     return { ok: true, cargo, credits: opts.credits + total, total, units };
   }
 
+  function pickFillCheap(opts) {
+    const goods = opts.goods || [];
+    const prices = opts.prices || {};
+    const avgs = opts.avgs || {};
+    const cargo = opts.cargo || {};
+    const credits = opts.credits | 0;
+    const holdMax = opts.holdMax | 0;
+    const room = holdMax - cargoUsed(cargo);
+    if (room < 1) return { ok: false, reason: "nothing_cheap" };
+    let best = null;
+    goods.forEach((g) => {
+      const local = prices[g.id];
+      const avg = avgs[g.id];
+      if (local == null || avg == null) return;
+      const cue = marketCue(local, avg, cargo[g.id] || 0);
+      if (cue.tone !== "buy") return;
+      const n = Math.min(room, Math.floor(credits / local));
+      if (n < 1) return;
+      const savedPer = avg - local;
+      const cand = { ok: true, id: g.id, name: g.name, n, price: local, savedPer };
+      if (!best) {
+        best = cand;
+        return;
+      }
+      if (savedPer > best.savedPer || (savedPer === best.savedPer && n > best.n)) best = cand;
+    });
+    return best || { ok: false, reason: "nothing_cheap" };
+  }
+
+  function applyFillCheap(opts) {
+    const pick = pickFillCheap(opts);
+    if (!pick.ok) {
+      return {
+        ok: false,
+        reason: pick.reason,
+        cargo: opts.cargo,
+        credits: opts.credits,
+      };
+    }
+    const r = applyBuy({
+      cargo: opts.cargo,
+      credits: opts.credits,
+      prices: opts.prices,
+      holdMax: opts.holdMax,
+      id: pick.id,
+      qty: pick.n,
+    });
+    if (!r.ok) return r;
+    return {
+      ok: true,
+      id: pick.id,
+      name: pick.name,
+      n: r.n,
+      price: pick.price,
+      savedPer: pick.savedPer,
+      spent: pick.price * r.n,
+      cargo: r.cargo,
+      credits: r.credits,
+    };
+  }
+
+  function applySellExpensive(opts) {
+    const goods = opts.goods || [];
+    const prices = opts.prices || {};
+    const avgs = opts.avgs || {};
+    let cargo = Object.assign({}, opts.cargo);
+    let credits = opts.credits | 0;
+    const sold = [];
+    let total = 0;
+    let units = 0;
+    goods.forEach((g) => {
+      const have = cargo[g.id] || 0;
+      if (have < 1) return;
+      const local = prices[g.id];
+      const avg = avgs[g.id];
+      if (local == null || avg == null) return;
+      const cue = marketCue(local, avg, have);
+      if (cue.tone !== "avoid") return;
+      const r = applySell({ cargo, credits, prices, id: g.id, qty: have });
+      if (!r.ok) return;
+      cargo = r.cargo;
+      credits = r.credits;
+      const lineTotal = local * r.n;
+      sold.push({ id: g.id, name: g.name, n: r.n, total: lineTotal });
+      total += lineTotal;
+      units += r.n;
+    });
+    if (units < 1) {
+      return {
+        ok: false,
+        reason: "nothing_expensive",
+        cargo: opts.cargo,
+        credits: opts.credits,
+        sold: [],
+        total: 0,
+        units: 0,
+      };
+    }
+    return { ok: true, cargo, credits, sold, total, units };
+  }
+
+  function fillCheapLog(result) {
+    if (!result || !result.ok) return "Nothing cheap here.";
+    return "Filled cheap: " + result.n + " " + result.name + " for ₩" + result.spent + ".";
+  }
+
+  function sellExpensiveLog(result) {
+    if (!result || !result.ok) return "Nothing expensive in hold.";
+    const names = (result.sold || []).map((s) => s.n + " " + s.name).join(", ");
+    return "Sold expensive: " + names + " for ₩" + result.total + ".";
+  }
+
   function bestLaneEdge(herePrices, therePrices, goods) {
     let best = null;
     goods.forEach((g) => {
@@ -139,6 +251,11 @@
     applyBuy,
     applySell,
     applySellAll,
+    pickFillCheap,
+    applyFillCheap,
+    applySellExpensive,
+    fillCheapLog,
+    sellExpensiveLog,
     bestLaneEdge,
     bestDealHint,
   };
