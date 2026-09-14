@@ -24,6 +24,7 @@ npm test
 | Yard stock + soft-fail | `js/yard-economy.js` | `test/acceptance/yard-soft-fail.test.js` |
 | Fuel / jump / refuel | `js/fuel.js` | `test/acceptance/fuel.test.js` |
 | Market buy/sell / net / prices | `js/market.js` | `test/acceptance/market.test.js` |
+| Market buy/avoid cues | `js/market.js` (`marketCue`) | `test/acceptance/market-cues.test.js` |
 | Encounter odds + quiet hull | `js/encounter.js` | `test/acceptance/encounter.test.js` |
 | Dock Press (newspaper) | `js/dock-press.js` | `test/acceptance/dock-press.test.js` |
 
