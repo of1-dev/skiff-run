@@ -24,6 +24,11 @@ describe("ATDD: debug gate", () => {
     assert.equal(G.isDebugOn("?god=1"), true);
     assert.equal(G.isDebugOn("?x=1&debug=1"), true);
   });
+  it("Captain prefs.godMode enables without URL", () => {
+    assert.equal(G.isGodEnabled({ search: "", prefs: {} }), false);
+    assert.equal(G.isGodEnabled({ search: "", prefs: { godMode: true } }), true);
+    assert.equal(G.isGodEnabled({ search: "?debug=1", prefs: {} }), true);
+  });
 });
 
 describe("ATDD: god grants", () => {

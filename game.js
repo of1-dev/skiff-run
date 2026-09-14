@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.12";
+  const VERSION = "0.9.13";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const bridgeOn = (() => {
@@ -208,7 +208,12 @@
   if (!YE) throw new Error("SkiffYardEconomy missing — load js/yard-economy.js before game.js");
   const GOD = (typeof SkiffDebugGod !== "undefined") ? SkiffDebugGod : null;
   if (!GOD) throw new Error("SkiffDebugGod missing — load js/debug-god.js before game.js");
-  const debugOn = GOD.isDebugOn(typeof location !== "undefined" ? location.search : "");
+  function godEnabled() {
+    return GOD.isGodEnabled({
+      search: typeof location !== "undefined" ? location.search : "",
+      prefs: (state && state.prefs) || {},
+    });
+  }
   const WP = (typeof SkiffWaypoints !== "undefined") ? SkiffWaypoints : null;
   if (!WP) throw new Error("SkiffWaypoints missing — load js/waypoints.js before game.js");
   const SK = (typeof SkiffSkills !== "undefined") ? SkiffSkills : null;
@@ -438,7 +443,7 @@
       chart,
       visited: { ember: true },
       pilot: "human",
-      prefs: { autoFuel: true },
+      prefs: { autoFuel: true, godMode: false },
       dockWorkAt: null,
       pressBoughtAt: null,
       lastPress: null,
@@ -493,6 +498,7 @@
       if (st.pilot !== "human" && st.pilot !== "agent") st.pilot = "human";
       st.prefs = st.prefs || { autoFuel: true };
       if (st.prefs.autoFuel == null) st.prefs.autoFuel = true;
+      if (st.prefs.godMode == null) st.prefs.godMode = false;
       const h = ship(st.shipId) || SHIPS[0];
       st.shipId = h.id;
       st.crew = Math.min(st.crew, h.crewMax);
@@ -1257,6 +1263,7 @@
     renderShipPanel();
     renderWaypointChrome();
     renderSkillsBox();
+    if (typeof syncGodUi === "function") syncGodUi();
     if (ui.tab === "chart") sizeMap();
     drawMap();
     renderTarget();
@@ -1361,475 +1368,66 @@
     log("Arrived " + sys(toId).name + " (−" + cost + " fuel).");
     maybeAutoRefuel();
   
-  // God / debug panel (?debug=1)
+  function syncGodUi() {
+    const on = godEnabled();
+    const godPanel = el("god-panel");
+    if (godPanel) godPanel.hidden = !on;
+    const box = el("pref-godmode");
+    if (box) {
+      state.prefs = state.prefs || {};
+      box.checked = !!state.prefs.godMode || GOD.isDebugOn(typeof location !== "undefined" ? location.search : "");
+      // URL debug forces tools on; checkbox still reflects save preference
+      if (GOD.isDebugOn(typeof location !== "undefined" ? location.search : "")) {
+        box.checked = true;
+      } else {
+        box.checked = !!state.prefs.godMode;
+      }
+    }
+  }
+
+  const godPref = el("pref-godmode");
+  if (godPref) {
+    godPref.onchange = () => {
+      state.prefs = state.prefs || {};
+      state.prefs.godMode = !!godPref.checked;
+      log(state.prefs.godMode ? "God mode ON — tools unlocked." : "God mode OFF.");
+      save(state);
+      syncGodUi();
+      render();
+    };
+  }
+
   const godPanel = el("god-panel");
-  if (godPanel) godPanel.hidden = !debugOn;
-  if (debugOn) {
-    const gc = el("god-credits");
-    if (gc) gc.onclick = () => {
-      state = GOD.grantCredits(state, GOD.GRANT_DEFAULT);
-      log("God: +₩" + GOD.GRANT_DEFAULT.toLocaleString() + ".");
-      save(state); render();
+  const wireGod = (id, fn) => {
+    const b = el(id);
+    if (b) b.onclick = () => {
+      if (!godEnabled()) return log("Enable God mode on Captain first.");
+      fn();
     };
-    const gf = el("god-fuel");
-    if (gf) gf.onclick = () => {
-      state = GOD.fillFuel(state, hull().fuelMax);
-      log("God: tanks topped.");
-      save(state); render();
-    };
-    const gy = el("god-yard");
-    if (gy) gy.onclick = () => {
-      state = GOD.unlockYard(state);
-      log("God: full yard unlocked at every dock.");
-      save(state); render();
-    };
-    const gw = el("god-wasp");
-    if (gw) gw.onclick = () => {
-      const r = GOD.setHull(state, "wasp-prime", SHIPS, GOODS.map((x) => x.id));
-      if (!r.ok) return log("God: cannot set Wasp Prime (" + r.reason + ").");
-      state = r.state;
-      log("God: hull set to Wasp Prime" + (r.jettison ? (" — jettisoned " + r.jettison + " cargo.") : "."));
-      save(state); render();
-    };
-  }
-
-
-  const pinBtn = el("btn-waypoint");
-  if (pinBtn) pinBtn.onclick = () => {
-    const id = ui.targetId;
-    if (!id || id === state.system) return;
-    const r = WP.toggle(state.waypoints, id);
-    state.waypoints = r.list;
-    if (r.full) log("Waypoint list full (" + WP.MAX_WAYPOINTS + "). Unpin one first.");
-    else if (r.added) log("Pinned " + (sys(id) || {}).name + " (#" + r.list.length + ").");
-    else if (r.removed) log("Unpinned " + (sys(id) || {}).name + ".");
+  };
+  wireGod("god-credits", () => {
+    state = GOD.grantCredits(state, GOD.GRANT_DEFAULT);
+    log("God: +₩" + GOD.GRANT_DEFAULT.toLocaleString() + ".");
     save(state); render();
-  };
-  const wpClear = el("btn-wp-clear");
-  if (wpClear) wpClear.onclick = () => {
-    state.waypoints = WP.clear(state.waypoints);
-    log("Waypoints cleared.");
+  });
+  wireGod("god-fuel", () => {
+    state = GOD.fillFuel(state, hull().fuelMax);
+    log("God: tanks topped.");
     save(state); render();
-  };
-
-  showTab("dock");
-    render();
-    tickSkill("pilot", true);
-    maybeEncounter(toId);
-  }
-
-  function doRefuel() {
-    if (bridgeOn) {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct({ op: "refuel" });
-    }
-    const need = hull().fuelMax - state.fuel;
-    if (need <= 0) return log("Tanks full.");
-    if (!applyRefuelInternal(null)) return;
-    // rewrite last log for manual (non-auto) wording when full/partial already logged
-    tickSkill("engineer", true);
-    render();
-  }
-
-  function doBuyShip(id) {
-    if (bridgeOn) {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct({ op: "buy_ship", ship: id });
-    }
-    const next = ship(id);
-    if (!next) return;
-    const stock = hullStock(sys(state.system));
-    if (!yardOffered().some((s) => s.id === id)) {
-      return log(stock === "none" ? "Dry dock — no hull stock here." : "That hull isn't on this pad.");
-    }
-    if (cargoUsed(state) > next.cargo) {
-      if (next.id === "mite") {
-        const n = dumpToFit(next.cargo);
-        if (cargoUsed(state) > next.cargo) return log("Can't lighten enough for a Mite.");
-        log("Jettisoned " + n + " cargo to squeeze into a Mite.");
-      } else {
-        return log("Dump cargo before taking a smaller hold.");
-      }
-    }
-    const delta = YE.tradeDelta(hull().price || 0, next.price);
-    const due = YE.tradeDue(delta);
-    const surplus = YE.tradeSurplus(delta);
-    if (state.credits < due) return log("Need ₩" + due.toLocaleString() + " after trade-in.");
-    state.credits -= due;
-    state.credits += surplus;
-    state.shipId = next.id;
-    state.crew = Math.min(state.crew, next.crewMax);
-    if (state.fuel > next.fuelMax) state.fuel = next.fuelMax;
-    let pay = "Paid ₩" + due.toLocaleString();
-    if (surplus > 0) pay = "Scrap payout ₩" + surplus.toLocaleString();
-    else if (due === 0) pay = "No cash due";
-    log("Signed for " + next.name + (next.weapons ? " (armed)" : "") + ". " + pay + ".");
-    render();
-  }
-
-  function doDockWork() {
-    if (bridgeOn) {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct({ op: "dock_work" });
-    }
-    const shift = YE.afterDockWork(state.dockWorkAt, state.system, state.credits);
-    if (!shift.ok) return log("Already worked this stay.");
-    state.dockWorkAt = shift.dockWorkAt;
-    state.credits = shift.credits;
-    log("Dock shift done. +₩" + shift.pay + " — limp stake toward a Mite or yard.");
-    render();
-  }
-
-  function doHireCrew() {
-    if (bridgeOn) {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct({ op: "hire_crew" });
-    }
-    const h = hull();
-    if (state.crew >= h.crewMax) return log("No bunks left.");
-    if (state.credits < CREW_HIRE) return log("Can't afford crew.");
-    state.credits -= CREW_HIRE;
-    state.crew += 1;
-    log("Hired hand. Crew " + state.crew + "/" + h.crewMax + ".");
-    render();
-  }
-
-  function doFireCrew() {
-    if (bridgeOn) {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct({ op: "fire_crew" });
-    }
-    if (state.crew < 1) return log("No crew to dismiss.");
-    state.crew -= 1;
-    state.credits += CREW_FIRE_REFUND;
-    log("Dismissed a hand. +₩" + CREW_FIRE_REFUND + ".");
-    render();
-  }
-
-  // Thin encounters: chance scales with destination police/pirate; small hulls quieter.
-
-  function doBuyPress() {
-    if (bridgeOn) {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct({ op: "buy_press" });
-    }
-    const buy = SP.buyPress({
-      credits: state.credits,
-      pressBoughtAt: state.pressBoughtAt,
-      systemId: state.system,
-    });
-    if (!buy.ok) {
-      return log(buy.reason === "already"
-        ? "Already bought today's Press at this dock."
-        : "Need ₩" + SP.PRESS_PRICE + " for the Dock Press.");
-    }
-    state.credits = buy.credits;
-    state.pressBoughtAt = buy.pressBoughtAt;
-    const edition = SP.rollEdition({
-      hereId: state.system,
-      systems: SYSTEMS,
-      goods: GOODS,
-      priceFor: priceFor,
-    });
-    state.lastPress = edition;
-    log("Dock Press ₩" + buy.paid + " — " + edition.masthead);
-    render();
-  }
-
-  function maybeEncounter(toId) {
-    const dest = sys(toId) || sys(state.system);
-    const kind = SE.pickEncounter(SE.encounterOdds(dest, hull()), Math.random);
-    if (kind !== "none") openEncounter(kind, dest);
-  }
-
-  const dlg = el("encounter");
-  let encKind = null;
-  let encDest = null;
-
-  function openEncounter(kind, dest) {
-    encKind = kind;
-    encDest = dest || sys(state.system);
-    const armed = hull().weapons && state.crew > 0;
-    const pir = activityLabel(encDest.pirate);
-    const pol = activityLabel(encDest.police);
-    if (kind === "warden") {
-      el("enc-title").textContent = "Ledger Wardens";
-      el("enc-body").textContent =
-        "Patrol lock inbound (" + encDest.name + " · police " + pol + "). Inspection fine ₩400 — or bluff.";
-      el("enc-a").textContent = "Pay fine";
-      el("enc-b").textContent = "Bluff";
-    } else if (kind === "trader") {
-      el("enc-title").textContent = "Lane trader";
-      el("enc-body").textContent =
-        "A free hauler pings you near " + encDest.name + ". Hail for a quick deal, or wave them off.";
-      el("enc-a").textContent = "Hail";
-      el("enc-b").textContent = "Wave off";
-    } else {
-      el("enc-title").textContent = "Ash Corsairs";
-      if (armed) {
-        el("enc-body").textContent =
-          "Raiders on the lane to " + encDest.name + " (pirates " + pir + "). Fight or burn fuel fleeing.";
-        el("enc-a").textContent = "Fight";
-        el("enc-b").textContent = "Flee (−fuel)";
-      } else {
-        el("enc-body").textContent =
-          "Raiders on the lane to " + encDest.name + " (pirates " + pir + "). Dump cargo or flee.";
-        el("enc-a").textContent = "Dump cargo";
-        el("enc-b").textContent = "Flee (−fuel)";
-      }
-    }
-    dlg.showModal();
-  }
-
-  function resolveEncounter(choice) {
-    dlg.close();
-    const armed = hull().weapons && state.crew > 0;
-    if (encKind === "warden") {
-      if (choice === "a") {
-        const fine = Math.min(state.credits, 400);
-        state.credits -= fine;
-        log("Paid Wardens ₩" + fine + ".");
-      } else if (Math.random() < 0.55) {
-        tickSkill("fighter", true);
-        log("Bluff held. Wardens wave you on.");
-      } else {
-        const fine = Math.min(state.credits, 700);
-        state.credits -= fine;
-        log("Bluff failed. Fine ₩" + fine + ".");
-      }
-    } else if (encKind === "trader") {
-      if (choice === "b") {
-        log("Waved the trader off.");
-      } else {
-        const held = GOODS.map((g) => g.id).filter((id) => (state.cargo[id] || 0) > 0);
-        if (held.length && Math.random() < 0.55) {
-          const id = held[Math.floor(Math.random() * held.length)];
-          const p = Math.round((state.prices[id] || GOODS.find((g) => g.id === id).base) * 1.12);
-          state.cargo[id] -= 1;
-          state.credits += p;
-          tickSkill("trader", true);
-          log("Trader bought 1 " + GOODS.find((g) => g.id === id).name + " for ₩" + p + ".");
-        } else {
-          const g = GOODS[Math.floor(Math.random() * GOODS.length)];
-          const room = hull().cargo - cargoUsed(state);
-          const p = Math.round((state.prices[g.id] || g.base) * 0.88);
-          if (room >= 1 && state.credits >= p) {
-            state.credits -= p;
-            state.cargo[g.id] = (state.cargo[g.id] || 0) + 1;
-            log("Bought 1 " + g.name + " off a trader for ₩" + p + ".");
-          } else {
-            log("Trader had nothing you could take. Fair skies.");
-          }
-        }
-      }
-    } else if (armed && choice === "a") {
-      const pir = (encDest && encDest.pirate) || 3;
-      const odds = 0.55 + state.crew * 0.06 - pir * 0.03;
-      if (Math.random() < odds) {
-        const prize = 350 + state.crew * 150 + pir * 40;
-        state.credits += prize;
-        tickSkill("fighter", false);
-        log("Corsairs broke off. Salvage ₩" + prize + ".");
-      } else {
-        const loss = 400 + pir * 50;
-        state.credits = Math.max(0, state.credits - loss);
-        tickSkill("fighter", true);
-        log("Fight went bad. −₩" + loss + " repairs.");
-      }
-    } else if (choice === "a") {
-      let dumped = 0;
-      const ids = GOODS.map((g) => g.id);
-      const take = Math.min(3, 1 + Math.floor(((encDest && encDest.pirate) || 3) / 3));
-      while (dumped < take) {
-        const held = ids.filter((id) => state.cargo[id] > 0);
-        if (!held.length) break;
-        const id = held[Math.floor(Math.random() * held.length)];
-        state.cargo[id] -= 1;
-        dumped += 1;
-      }
-      log(dumped ? ("Corsairs took " + dumped + " cargo.") : "Hold empty — they laugh and leave.");
-    } else {
-      const burn = Math.min(state.fuel, 1 + (Math.random() < 0.35 ? 1 : 0));
-      if (state.fuel >= 1) {
-        state.fuel -= burn;
-        log("Fled. −" + burn + " fuel.");
-      } else {
-        state.credits = Math.max(0, state.credits - 250);
-        log("No fuel to flee. They shake you down ₩250.");
-      }
-    }
-    encKind = null;
-    encDest = null;
-    render();
-  }
-
-  el("enc-a").onclick = () => resolveEncounter("a");
-  el("enc-b").onclick = () => resolveEncounter("b");
-  el("btn-refuel").onclick = doRefuel;
-  el("btn-sell-all").onclick = doSellAll;
-  el("btn-warp").onclick = () => {
-    if (!ui.targetId || ui.targetId === state.system) return;
-    doTravel(ui.targetId);
-  };
-  el("btn-retire").onclick = () => {
-    if (!(sys(state.system).retire && netWorth(state) >= RETIRE_NET)) return;
-    log("Retired on Quiet Moon. Net ₩" + netWorth(state).toLocaleString() + ". Victory.");
-    alert("You retire on Quiet Moon. Game clear — New starts a fresh captain.");
-  };
-  el("btn-reset").onclick = () => {
-    if (!confirm("Wipe save and start fresh?")) return;
-    state = fresh();
-    ui.targetId = null;
-    rollMarket(state);
-    applyPilot("human", false);
-    showTab("dock");
-    render();
-  };
-
-  document.querySelectorAll(".tabbar .tab").forEach((b) => {
-    b.onclick = () => showTab(b.dataset.tab);
   });
-  document.querySelectorAll("[data-goto]").forEach((b) => {
-    b.onclick = () => showTab(b.dataset.goto);
+  wireGod("god-yard", () => {
+    state = GOD.unlockYard(state);
+    log("God: full yard unlocked at every dock.");
+    save(state); render();
   });
-  el("mode-local").onclick = () => setChartMode("local");
-  el("mode-sector").onclick = () => setChartMode("sector");
-  if (el("mode-full")) el("mode-full").onclick = () => setChartMode("full");
-
-  el("map").addEventListener("pointerdown", (e) => {
-    const s = pickSystemAt(e.clientX, e.clientY);
-    if (!s) return;
-    if (s.id === state.system) {
-      ui.targetId = null;
-    } else {
-      ui.targetId = s.id;
-      if ((ui.chartMode === "sector" || ui.chartMode === "full") && !inRange(state.system, s.id)) {
-        // allow select out of range to show distance; Jump stays disabled
-      }
-    }
-    drawMap();
-    renderTarget();
+  wireGod("god-wasp", () => {
+    const r = GOD.setHull(state, "wasp-prime", SHIPS, GOODS.map((x) => x.id));
+    if (!r.ok) return log("God: cannot set Wasp Prime (" + r.reason + ").");
+    state = r.state;
+    log("God: hull set to Wasp Prime" + (r.jettison ? (" — jettisoned " + r.jettison + " cargo.") : "."));
+    save(state); render();
   });
-
-  window.addEventListener("resize", () => {
-    if (ui.tab !== "chart") return;
-    sizeMap();
-    drawMap();
-  });
-
-  document.querySelectorAll("[data-theme-pick]").forEach((b) => {
-    b.onclick = () => applyTheme(b.dataset.themePick, true);
-  });
-  document.querySelectorAll("[data-pilot-pick]").forEach((b) => {
-    b.onclick = () => applyPilot(b.dataset.pilotPick, true);
-  });
-  const takeStick = el("btn-take-stick");
-  if (takeStick) takeStick.onclick = () => applyPilot("human", true);
-  loadTheme();
-  applyPilot(state.pilot || "human", false);
-
-  function syncPrefsUi() {
-    const box = el("pref-autofuel");
-    if (!box) return;
-    state.prefs = state.prefs || { autoFuel: true };
-    box.checked = !!state.prefs.autoFuel;
-  }
-
-  function applyBridgePayload(data) {
-    if (!data || !data.state) return;
-    state = data.state;
-    state.prefs = state.prefs || { autoFuel: true };
-    if (state.prefs.autoFuel == null) state.prefs.autoFuel = true;
-    if (state.chart) applyChart(state.chart);
-    if (!state.prices || !Object.keys(state.prices).length) rollMarket(state);
-    applyPilot(state.pilot || "human", false);
-    syncPrefsUi();
-    ui.targetId = null;
-    render();
-    // Surface pending encounter from shared seat (once)
-    if (data.pendingEncounter && currentPilot() === "human" && !encKind) {
-      const pe = data.pendingEncounter;
-      const dest = sys(pe.systemId) || sys(state.system);
-      if (pe.kind && dest) openEncounter(pe.kind, dest);
-    } else if (!data.pendingEncounter && encKind && dlg && dlg.open) {
-      /* keep local dialog until resolved via act */
-    }
-  }
-
-  async function bridgeAct(body) {
-    try {
-      const r = await fetch("/api/act", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body || {}),
-      });
-      const data = await r.json();
-      applyBridgePayload(data);
-      if (data.result && data.result.ok === false && data.result.error) {
-        log(String(data.result.error) + (data.result.hint ? (" — " + data.result.hint) : ""));
-      }
-      return data;
-    } catch (e) {
-      log("Bridge act failed: " + e);
-      return null;
-    }
-  }
-
-  async function bridgePoll() {
-    try {
-      const r = await fetch("/api/state", { cache: "no-store" });
-      const data = await r.json();
-      applyBridgePayload(data);
-    } catch (e) {
-      /* bridge down — keep last frame */
-    }
-  }
-
-  const prefBox = el("pref-autofuel");
-  if (prefBox) {
-    syncPrefsUi();
-    prefBox.onchange = () => {
-      state.prefs = state.prefs || { autoFuel: true };
-      state.prefs.autoFuel = !!prefBox.checked;
-      if (bridgeOn) {
-        bridgeAct({ op: "set_prefs", autoFuel: state.prefs.autoFuel });
-      } else {
-        log(state.prefs.autoFuel ? "Auto-refuel on arrive: ON." : "Auto-refuel on arrive: OFF.");
-        save(state);
-        render();
-      }
-    };
-  }
-
-  // Bridge mode: Take stick / pilot picks go through /api/act
-  if (bridgeOn) {
-    document.querySelectorAll("[data-pilot-pick]").forEach((b) => {
-      b.onclick = () => {
-        const who = b.dataset.pilotPick;
-        if (who === "human") bridgeAct({ op: "take_stick" });
-        else bridgeAct({ op: "claim" });
-      };
-    });
-    const takeStickBtn = el("btn-take-stick");
-    if (takeStickBtn) takeStickBtn.onclick = () => bridgeAct({ op: "take_stick" });
-    // Wrap common market/yard actions when human has stick
-    const wrapHuman = (fn, bodyFn) => function () {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct(bodyFn.apply(null, arguments));
-    };
-    el("btn-sell-all").onclick = wrapHuman(null, () => ({ op: "sell_all" }));
-    el("btn-retire").onclick = wrapHuman(null, () => ({ op: "retire" }));
-    el("btn-reset").onclick = () => {
-      if (!confirm("Wipe save and start fresh on the shared seat?")) return;
-      bridgeAct({ op: "new_game" });
-    };
-    // Encounter choices via bridge
-    el("enc-a").onclick = () => bridgeAct({ op: "encounter", choice: "a" });
-    el("enc-b").onclick = () => bridgeAct({ op: "encounter", choice: "b" });
-    document.body.classList.add("bridge-mode");
-    bridgePoll();
-    setInterval(bridgePoll, 500);
-  }
+  syncGodUi();
 
   showTab("dock");
   render();
