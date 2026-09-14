@@ -117,5 +117,34 @@
     return Object.assign({}, edition, { tips, lines: tips.map((t) => t.text) });
   }
 
-  return { PRESS_PRICE, buyPress, rollEdition, tip, normalizeEdition };
+
+  /** Map a tip action to a UI command. Pure — no DOM. */
+  function resolvePressAction(action, opts) {
+    const o = opts || {};
+    const hereId = o.hereId || null;
+    const act = action && typeof action === "object" ? action : null;
+    if (!act || !act.type) {
+      return { ok: false, reason: "dead", tab: null, targetId: null, chartMode: null, log: "That lead is dead ink." };
+    }
+    const sid = act.systemId || null;
+    if (act.type === "market") {
+      return { ok: true, tab: "dock", targetId: null, chartMode: null, log: "Press sent you back to the market board." };
+    }
+    if (act.type === "yard") {
+      if (sid && hereId && sid === hereId) {
+        return { ok: true, tab: "yard", targetId: null, chartMode: null, log: "Yard slips — this dock." };
+      }
+      return { ok: true, tab: "chart", targetId: sid, chartMode: "sector", log: sid ? ("Yard lead pinned. Jump to trade hulls.") : "Yard lead, no dock named." };
+    }
+    if (act.type === "chart" || act.type === "quest") {
+      if (!sid) {
+        return { ok: false, reason: "no_system", tab: "chart", targetId: null, chartMode: "sector", log: "Press named no dock." };
+      }
+      const kind = act.type === "quest" ? "Job lead pinned on the chart." : "Press pinned a dock on the chart.";
+      return { ok: true, tab: "chart", targetId: sid, chartMode: "sector", log: kind };
+    }
+    return { ok: false, reason: "unknown", tab: null, targetId: null, chartMode: null, log: "Can't follow that clip." };
+  }
+
+  return { PRESS_PRICE, buyPress, rollEdition, tip, normalizeEdition, resolvePressAction };
 });

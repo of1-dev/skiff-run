@@ -1535,6 +1535,16 @@
 
   // Thin encounters: chance scales with destination police/pirate; small hulls quieter.
 
+
+  function followPressTip(action) {
+    const r = SP.resolvePressAction(action, { hereId: state.system });
+    if (r.log) log(r.log);
+    if (r.targetId) ui.targetId = r.targetId;
+    if (r.chartMode) setChartMode(r.chartMode);
+    if (r.tab) showTab(r.tab);
+    render();
+  }
+
   function doBuyPress() {
     if (bridgeOn) {
       if (currentPilot() === "agent") return log("Agent has the stick.");

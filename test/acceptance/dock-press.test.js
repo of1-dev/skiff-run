@@ -113,3 +113,39 @@ describe("ATDD: Press edition tips", () => {
     assert.equal(n.tips[0].action, null);
   });
 });
+
+describe("ATDD: press deep-link resolver", () => {
+  it("chart action opens chart + pins system", () => {
+    const r = P.resolvePressAction({ type: "chart", systemId: "ash" }, { hereId: "ember" });
+    assert.equal(r.ok, true);
+    assert.equal(r.tab, "chart");
+    assert.equal(r.targetId, "ash");
+    assert.equal(r.chartMode, "sector");
+  });
+  it("yard at current dock opens yard tab", () => {
+    const r = P.resolvePressAction({ type: "yard", systemId: "ember" }, { hereId: "ember" });
+    assert.equal(r.ok, true);
+    assert.equal(r.tab, "yard");
+  });
+  it("yard elsewhere pins chart", () => {
+    const r = P.resolvePressAction({ type: "yard", systemId: "ash" }, { hereId: "ember" });
+    assert.equal(r.ok, true);
+    assert.equal(r.tab, "chart");
+    assert.equal(r.targetId, "ash");
+  });
+  it("market stays on dock", () => {
+    const r = P.resolvePressAction({ type: "market" }, { hereId: "ember" });
+    assert.equal(r.ok, true);
+    assert.equal(r.tab, "dock");
+  });
+  it("quest pins like a chart lead", () => {
+    const r = P.resolvePressAction({ type: "quest", systemId: "wisphollow" }, { hereId: "ember" });
+    assert.equal(r.ok, true);
+    assert.equal(r.tab, "chart");
+    assert.equal(r.targetId, "wisphollow");
+  });
+  it("null action is dead ink", () => {
+    const r = P.resolvePressAction(null, { hereId: "ember" });
+    assert.equal(r.ok, false);
+  });
+});
