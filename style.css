@@ -142,6 +142,38 @@ html, body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.top-agent-ticker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(45, 140, 150, 0.12);
+  border: 1px solid rgba(45, 140, 150, 0.35);
+  border-top: none;
+  padding: 4px 8px;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 11px;
+  color: var(--fg);
+  overflow: hidden;
+}
+.top-agent-ticker[hidden] {
+  display: none !important;
+}
+.top-agent-ticker .ticker-badge {
+  background: var(--teal, #2d8c96);
+  color: #0d1117;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 1px 5px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.top-agent-ticker .ticker-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .panels {
   min-height: 0;
   overflow: hidden;

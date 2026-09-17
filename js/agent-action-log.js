@@ -53,11 +53,27 @@
     return name + ": done";
   }
 
+  /**
+   * Format the single-line top ticker string from agentLog.
+   * If empty or invalid, returns fallback.
+   */
+  function formatTickerLine(agentLog) {
+    if (!Array.isArray(agentLog) || agentLog.length === 0) {
+      return "Agent stand-by • Ready for orders";
+    }
+    const latest = agentLog[agentLog.length - 1];
+    if (!latest || !latest.summary) {
+      return "Agent active";
+    }
+    return latest.summary;
+  }
+
   return {
     MAX: MAX,
     SKIP_OPS: SKIP_OPS,
     shouldLog: shouldLog,
     append: append,
     summarize: summarize,
+    formatTickerLine: formatTickerLine,
   };
 });

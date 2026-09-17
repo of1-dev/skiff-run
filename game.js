@@ -669,6 +669,8 @@
     if (shell) shell.classList.toggle("is-agent-pilot", p === "agent");
     const banner = el("pilot-banner");
     if (banner) banner.hidden = p !== "agent";
+    const ticker = el("top-agent-ticker");
+    if (ticker) ticker.hidden = p !== "agent";
     const btxt = el("pilot-banner-text");
     if (btxt) btxt.textContent = "Agent has the stick — watching until you take over.";
     document.querySelectorAll("[data-pilot-pick]").forEach((b) => {
@@ -1302,6 +1304,10 @@
       return '<div class="agent-act"><span class="op">' + op + '</span>' + summary + '</div>';
     }).join("");
     box.scrollTop = box.scrollHeight;
+    const ttxt = el("top-agent-ticker-text");
+    if (ttxt && window.SkiffAgentActionLog && typeof window.SkiffAgentActionLog.formatTickerLine === "function") {
+      ttxt.textContent = window.SkiffAgentActionLog.formatTickerLine(state.agentLog);
+    }
   }
 
   function render() {
@@ -1319,6 +1325,16 @@
     if (shell) shell.classList.toggle("is-agent-pilot", currentPilot() === "agent");
     const banner = el("pilot-banner");
     if (banner) banner.hidden = currentPilot() !== "agent";
+    const ticker = el("top-agent-ticker");
+    if (ticker) {
+      ticker.hidden = currentPilot() !== "agent";
+      if (currentPilot() === "agent") {
+        const ttxt = el("top-agent-ticker-text");
+        if (ttxt && window.SkiffAgentActionLog && typeof window.SkiffAgentActionLog.formatTickerLine === "function") {
+          ttxt.textContent = window.SkiffAgentActionLog.formatTickerLine(state.agentLog);
+        }
+      }
+    }
     document.querySelectorAll("[data-pilot-pick]").forEach((b) => {
       b.classList.toggle("active", b.dataset.pilotPick === currentPilot());
     });
