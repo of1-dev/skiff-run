@@ -63,12 +63,21 @@ save.pilot = "human" | "agent"
 2. ~~Headless engine + stdio MCP~~ (`mcp/` — 0.7.0)
 3. Connect MCP to Grok Bot / Cursor for agent play + debugging
 4. ~~Fold spectator HTTP bridge~~ (`mcp/bridge.mjs` — 0.8.0) — see `docs/spectator.md`
-5. Optional richer live action feed of agent tool calls
+5. ~~Autonomous auto-pilot driver~~ (`mcp/auto-pilot.mjs` — 0.9.23)
+6. Optional richer live action feed of agent tool calls
 
 ## Run locally
 
 ```bash
 cd mcp && npm install && npm start
+```
+
+### Auto-Pilot Driver
+
+```bash
+cd mcp && npm run autopilot
+# Or run with arguments:
+# npm run autopilot -- --url http://100.83.8.84:8787 --interval 3000
 ```
 
 Stdio MCP command for connectors:

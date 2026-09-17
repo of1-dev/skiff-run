@@ -9,7 +9,9 @@
   "scripts": {
     "start": "node server.mjs",
     "bridge": "node bridge.mjs",
-    "smoke": "node smoke.mjs"
+    "smoke": "node smoke.mjs",
+    "autopilot": "node auto-pilot.mjs",
+    "test": "node --test test/auto-pilot.test.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.0",
