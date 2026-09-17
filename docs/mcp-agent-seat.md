@@ -63,7 +63,7 @@ save.pilot = "human" | "agent"
 2. ~~Headless engine + stdio MCP~~ (`mcp/` — 0.7.0)
 3. Connect MCP to Grok Bot / Cursor for agent play + debugging
 4. ~~Fold spectator HTTP bridge~~ (`mcp/bridge.mjs` — 0.8.0) — see `docs/spectator.md`
-5. ~~Autonomous auto-pilot driver~~ (`mcp/auto-pilot.mjs` — 0.9.23)
+5. ~~Autonomous auto-pilot driver~~ (`mcp/auto-pilot.mjs` — 0.9.24)
 6. Optional richer live action feed of agent tool calls
 
 ## Run locally

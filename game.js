@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.23";
+  const VERSION = "0.9.24";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const bridgeOn = (() => {

@@ -17,9 +17,9 @@ function switchSource(file) {
   return readFileSync(path.join(mcpRoot, file), "utf8");
 }
 
-describe("ATDD: one version law 0.9.23", () => {
+describe("ATDD: one version law 0.9.24", () => {
   it("VERSION and RULESET match Fold clock", () => {
-    assert.equal(VERSION, "0.9.23");
+    assert.equal(VERSION, "0.9.24");
     assert.match(RULESET, /0\.9\.23/);
   });
 
