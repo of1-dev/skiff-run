@@ -271,6 +271,7 @@ describe("ATDD: market toolbar", () => {
     assert.ok(allAt > expAt);
     assert.match(html, />Fill cheap</);
     assert.match(html, />Sell expensive</);
+    assert.match(html, /Fill cheap <strong>here<\/strong>, jump, sell expensive <strong>there<\/strong>/);
     assert.doesNotMatch(html, /dear/i);
   });
 });

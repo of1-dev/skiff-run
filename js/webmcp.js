@@ -138,19 +138,19 @@
       },
       {
         name: "skiff_sell_all",
-        description: "Liquidate entire cargo hold at current local market prices.",
+        description: "Dump the whole hold at THIS dock's prices. Last resort (yard fit). Do not use after fill_cheap on the same dock — jump and sell_expensive elsewhere.",
         parameters: { type: "object", properties: {} },
         handler: wrap((a) => a.sellAll()),
       },
       {
         name: "skiff_fill_cheap",
-        description: "Smart-buy: purchase the most undervalued commodity (below galaxy average) that fits in hold.",
+        description: "Buy the most undervalued good HERE (below galaxy average). Then JUMP to another dock before selling. Do not sell_all on this dock.",
         parameters: { type: "object", properties: {} },
         handler: wrap((a) => a.fillCheap()),
       },
       {
         name: "skiff_sell_expensive",
-        description: "Smart-sell: sell all cargo commodities currently valued above galaxy average.",
+        description: "Sell goods that are expensive HERE vs galaxy average. Use after a jump, not after fill_cheap on the same dock.",
         parameters: { type: "object", properties: {} },
         handler: wrap((a) => a.sellExpensive()),
       },

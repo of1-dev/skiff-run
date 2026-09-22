@@ -84,30 +84,19 @@ async function turn() {
     return;
   }
 
-  // Sell expensive, or sell all if hold is completely packed
+  // Trade: sell premium HERE, or haul cheap cargo AWAY. Never sell_all on the same dock as a fill.
   const holding = Object.keys(snapshot.cargo).filter(k => snapshot.cargo[k] > 0);
   if (holding.length > 0) {
-    console.log(`[AutoPilot] Liquidating expensive cargo...`);
     const res = await act({ op: "sell_expensive" });
     if (res.result && res.result.ok && res.result.log && !res.result.log.includes("Nothing expensive")) {
       console.log("[AutoPilot] Sold expensive:", res.result.log);
       return;
     }
-    if (snapshot.cargoUsed >= snapshot.cargoMax) {
-      console.log("[AutoPilot] Hold full with no premium; liquidating hold at market rate...");
-      const sellAllRes = await act({ op: "sell_all" });
-      if (sellAllRes.result && sellAllRes.result.ok) {
-        console.log("[AutoPilot] Sold all:", sellAllRes.result.log);
-        return;
-      }
-    }
-  }
-
-  // Buy cheap
-  if (snapshot.cargoUsed < snapshot.cargoMax && snapshot.credits > 100) {
+    console.log("[AutoPilot] Hold has cargo that is not premium here — jumping to sell elsewhere.");
+  } else if (snapshot.cargoUsed < snapshot.cargoMax && snapshot.credits > 100) {
     const res = await act({ op: "fill_cheap" });
     if (res.result && res.result.ok && res.result.log && !res.result.log.includes("Nothing cheap")) {
-      console.log("[AutoPilot] Filling cheap cargo:", res.result.log);
+      console.log("[AutoPilot] Filling cheap cargo (will haul, not dump here):", res.result.log);
       return;
     }
   }
