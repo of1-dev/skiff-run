@@ -1537,10 +1537,7 @@
   }
 
   function doBuy(id, qty) {
-    if (bridgeOn) {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct({ op: "buy", good: id, qty: Math.max(1, qty | 0) });
-    }
+    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
     const r = SM.applyBuy({
       cargo: state.cargo, credits: state.credits, prices: state.prices,
       goods: GOODS, holdMax: hull().cargo, id: id, qty: qty,
@@ -1552,13 +1549,11 @@
     log("Bought " + r.n + " " + GOODS.find((g) => g.id === id).name + " for ₩" + (p * r.n) + ".");
     tickSkill("trader", true);
     render();
+    if (bridgeOn) bridgeAct({ op: "save", state: state });
   }
 
   function doSell(id, qty) {
-    if (bridgeOn) {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct({ op: "sell", good: id, qty: Math.max(1, qty | 0) });
-    }
+    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
     const r = SM.applySell({
       cargo: state.cargo, credits: state.credits, prices: state.prices,
       goods: GOODS, id: id, qty: qty,
@@ -1570,13 +1565,11 @@
     log("Sold " + r.n + " " + GOODS.find((g) => g.id === id).name + " for ₩" + (p * r.n) + ".");
     tickSkill("trader", true);
     render();
+    if (bridgeOn) bridgeAct({ op: "save", state: state });
   }
 
   function doSellAll() {
-    if (bridgeOn) {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct({ op: "sell_all" });
-    }
+    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
     const r = SM.applySellAll({
       cargo: state.cargo, credits: state.credits, prices: state.prices, goods: GOODS,
     });
@@ -1585,6 +1578,7 @@
     state.cargo = r.cargo;
     log("Sold all (" + r.units + " units) for ₩" + r.total.toLocaleString() + ".");
     render();
+    if (bridgeOn) bridgeAct({ op: "save", state: state });
   }
 
   function galaxyAvgs() {
@@ -1592,10 +1586,7 @@
   }
 
   function doFillCheap() {
-    if (bridgeOn) {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct({ op: "fill_cheap" });
-    }
+    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
     const r = SM.applyFillCheap({
       cargo: state.cargo, credits: state.credits, prices: state.prices,
       goods: GOODS, holdMax: hull().cargo, avgs: galaxyAvgs(),
@@ -1606,13 +1597,11 @@
     state.cargo = r.cargo;
     tickSkill("trader", true);
     render();
+    if (bridgeOn) bridgeAct({ op: "save", state: state });
   }
 
   function doSellExpensive() {
-    if (bridgeOn) {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct({ op: "sell_expensive" });
-    }
+    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
     const r = SM.applySellExpensive({
       cargo: state.cargo, credits: state.credits, prices: state.prices,
       goods: GOODS, avgs: galaxyAvgs(),
@@ -1623,6 +1612,7 @@
     state.cargo = r.cargo;
     tickSkill("trader", true);
     render();
+    if (bridgeOn) bridgeAct({ op: "save", state: state });
   }
 
   function applyRefuelInternal(prefix) {
@@ -1664,10 +1654,7 @@
   }
 
   function doTravel(toId) {
-    if (bridgeOn) {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct({ op: "jump", system: toId });
-    }
+    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
     let dest = toId;
     const goal = courseDest();
     if (!inRange(state.system, dest)) {
@@ -1712,26 +1699,22 @@
     maybeAutoRefuel();
     render();
     tickSkill("pilot", true);
+    if (bridgeOn) bridgeAct({ op: "save", state: state });
     maybeEncounter(dest);
   }
   function doRefuel() {
-    if (bridgeOn) {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct({ op: "refuel" });
-    }
+    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
     const need = hull().fuelMax - state.fuel;
     if (need <= 0) return log("Tanks full.");
     if (!applyRefuelInternal(null)) return;
     // rewrite last log for manual (non-auto) wording when full/partial already logged
     tickSkill("engineer", true);
     render();
+    if (bridgeOn) bridgeAct({ op: "save", state: state });
   }
 
   function doRepair() {
-    if (bridgeOn) {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct({ op: "repair" });
-    }
+    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
     const h = hull();
     if (!h.hullMax) return log("Hull has no integrity rating.");
     const need = h.hullMax - (state.hull || 0);
@@ -1744,13 +1727,11 @@
     state.hull = (state.hull || 0) + repair;
     log(`Repaired ${repair} hull points (-${repair * costPer} ₩).`);
     render();
+    if (bridgeOn) bridgeAct({ op: "save", state: state });
   }
 
   function doRearm() {
-    if (bridgeOn) {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct({ op: "rearm" });
-    }
+    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
     const h = hull();
     if (!h.ammoMax) return log("Ship has no weapon mounts.");
     const need = h.ammoMax - (state.ammo || 0);
@@ -1763,13 +1744,11 @@
     state.ammo = (state.ammo || 0) + loaded;
     log(`Loaded ${loaded} ordnance (-${loaded * costPer} ₩).`);
     render();
+    if (bridgeOn) bridgeAct({ op: "save", state: state });
   }
 
   function doBuyShip(id) {
-    if (bridgeOn) {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct({ op: "buy_ship", ship: id });
-    }
+    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
     const next = ship(id);
     if (!next) return;
     const stock = hullStock(sys(state.system));
@@ -1800,26 +1779,22 @@
     else if (due === 0) pay = "No cash due";
     log("Signed for " + next.name + (next.weapons ? " (armed)" : "") + ". " + pay + ".");
     render();
+    if (bridgeOn) bridgeAct({ op: "save", state: state });
   }
 
   function doDockWork() {
-    if (bridgeOn) {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct({ op: "dock_work" });
-    }
+    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
     const shift = YE.afterDockWork(state.dockWorkAt, state.system, state.credits);
     if (!shift.ok) return log("Already worked this stay.");
     state.dockWorkAt = shift.dockWorkAt;
     state.credits = shift.credits;
     log("Dock shift done. +₩" + shift.pay + " — limp stake toward a Mite or yard.");
     render();
+    if (bridgeOn) bridgeAct({ op: "save", state: state });
   }
 
   function doHireCrew() {
-    if (bridgeOn) {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct({ op: "hire_crew" });
-    }
+    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
     const h = hull();
     const offer = CR.makeOffer();
     const gate = CR.canHire(state.roster || [], h.crewMax, state.credits, offer);
@@ -1829,13 +1804,11 @@
     state.crew = CR.syncHeadcount(state.roster);
     log("Hired " + offer.label + " (— " + offer.quirk + ") for ₩" + gate.cost + ". Crew " + state.crew + "/" + h.crewMax + ".");
     render();
+    if (bridgeOn) bridgeAct({ op: "save", state: state });
   }
 
   function doFireCrew() {
-    if (bridgeOn) {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct({ op: "fire_crew" });
-    }
+    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
     const fired = CR.afterDismiss(state.roster || [], null);
     if (!fired.ok) return log("No crew to dismiss.");
     state.roster = fired.roster;
@@ -1843,6 +1816,7 @@
     state.credits += fired.refund;
     log("Dismissed a hand. +₩" + fired.refund + ".");
     render();
+    if (bridgeOn) bridgeAct({ op: "save", state: state });
   }
 
   // Thin encounters: chance scales with destination police/pirate; small hulls quieter.

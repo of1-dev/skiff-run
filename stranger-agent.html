@@ -59,44 +59,102 @@
       // 1. Discover Tools
       const tools = mc.listTools();
       log(`Discovered ${tools.length} available tools.`, "system");
+      await sleep(1000);
+
+      async function refreshState() {
+        const r = await mc.callTool("skiff_state");
+        const obj = JSON.parse(r.content[0].text);
+        return obj.state || obj;
+      }
+
+      let state = await refreshState();
+      log(`Docked at ${state.systemName || state.system} | Credits: ₩${(state.credits || 0).toLocaleString()} | Hold: ${state.cargoUsed}/${state.cargoMax} | Fuel: ${state.fuel}/${state.fuelMax}`, "agent");
       await sleep(1500);
 
-      // 2. Read State
-      log("Thinking: Let me check the current state...", "agent");
-      log("-> callTool('skiff_state')", "action");
-      const stateRes = await mc.callTool("skiff_state");
+      // Step A: Liquidate incoming cargo on the local market
+      if (state.cargoUsed > 0) {
+        log(`Thinking: We arrived with ${state.cargoUsed} units of cargo. Liquidating on local exchange...`, "agent");
+        log("-> callTool('skiff_sell_expensive')", "action");
+        const sellRes = await mc.callTool("skiff_sell_expensive");
+        const sellParsed = JSON.parse(sellRes.content[0].text);
+        log(sellParsed.log || (sellParsed.ok ? "Cargo sold." : "Market holds no premium right now."), "system");
+        state = await refreshState();
+        await sleep(1500);
+      }
 
-      const stateObj = JSON.parse(stateRes.content[0].text);
-      const state = stateObj.state || stateObj; // handle both cases
-      log(`I see we are at ${state.systemName} with ₩${state.credits}.`, "agent");
-      await sleep(2000);
-
-      // 3. Make a decision
-      if (state.cargoUsed < state.cargoMax && state.credits > 200) {
-        log("Thinking: We have hold space and credits. Let's fill up cheap cargo.", "agent");
-        log("-> callTool('skiff_fill_cheap')", "action");
-        const res = await mc.callTool("skiff_fill_cheap");
-
-        const parsed = JSON.parse(res.content[0].text);
-        log(parsed.log || ("Error: " + parsed.error), "system");
-        await sleep(2000);
-      } else {
-        log("Thinking: Hold is full or funds are low. Let's jump to a new system.", "agent");
-        log("-> callTool('skiff_chart', { mode: 'local' })", "action");
-        const chartRes = await mc.callTool("skiff_chart", { mode: "local" });
-        const chart = JSON.parse(chartRes.content[0].text);
-        await sleep(2000);
-        
-        if (chart.length > 0) {
-          // Pick a random destination
-          const dest = chart[Math.floor(Math.random() * chart.length)];
-          log(`Thinking: Jumping to ${dest.name}.`, "agent");
-          log(`-> callTool('skiff_jump', { system: '${dest.id}' })`, "action");
-          const jumpRes = await mc.callTool("skiff_jump", { system: dest.id });
-          log(JSON.parse(jumpRes.content[0].text).log, "system");
-        } else {
-          log("Thinking: We are out of fuel or stuck!", "agent");
+      // Step B: Buy Dock Press & inspect news/leads/quests
+      if (state.pressBoughtAt !== state.system && state.credits >= 75) {
+        log("Thinking: Purchasing today's Dock Press to check market rumors and quest bounties.", "agent");
+        log("-> callTool('skiff_buy_press')", "action");
+        const pressRes = await mc.callTool("skiff_buy_press");
+        const pressParsed = JSON.parse(pressRes.content[0].text);
+        log(pressParsed.log || "Dock Press acquired.", "system");
+        state = await refreshState();
+        if (state.quests && state.quests.length > 0) {
+          const latestQ = state.quests[state.quests.length - 1];
+          log(`Intel: Found active lead — "${latestQ.title}" (Reward: ₩${latestQ.reward})`, "agent");
         }
+        await sleep(1500);
+      }
+
+      // Step C: Maintenance (Repairs & Refueling)
+      if (state.hull < state.hullMax && state.credits > 100) {
+        log(`Thinking: Hull at ${state.hull}/${state.hullMax}. Purchasing shipyard repairs.`, "agent");
+        log("-> callTool('skiff_repair')", "action");
+        const repRes = await mc.callTool("skiff_repair");
+        const repParsed = JSON.parse(repRes.content[0].text);
+        log(repParsed.log || "Ship repaired.", "system");
+        state = await refreshState();
+        await sleep(1200);
+      }
+      if (state.fuel < state.fuelMax && state.credits > 50) {
+        log(`Thinking: Refueling tanks (${state.fuel}/${state.fuelMax}).`, "agent");
+        log("-> callTool('skiff_refuel')", "action");
+        const refRes = await mc.callTool("skiff_refuel");
+        const refParsed = JSON.parse(refRes.content[0].text);
+        log(refParsed.log || "Tanks topped off.", "system");
+        state = await refreshState();
+        await sleep(1200);
+      }
+
+      // Step D: Buy cheap goods if hold space is available
+      if (state.cargoUsed < state.cargoMax && state.credits > 150) {
+        log("Thinking: Hold has room. Buying below-average commodities to haul.", "agent");
+        log("-> callTool('skiff_fill_cheap')", "action");
+        const fillRes = await mc.callTool("skiff_fill_cheap");
+        const fillParsed = JSON.parse(fillRes.content[0].text);
+        log(fillParsed.log || "Loaded commodities.", "system");
+        state = await refreshState();
+        await sleep(1500);
+      }
+
+      // Step E: Consult Star Chart & Jump
+      log("Thinking: Plotting jump course...", "agent");
+      log("-> callTool('skiff_chart', { mode: 'local' })", "action");
+      const chartRes = await mc.callTool("skiff_chart", { mode: "local" });
+      const chart = JSON.parse(chartRes.content[0].text);
+      await sleep(1500);
+
+      if (chart && chart.length > 0) {
+        // Check if any destination matches an active quest
+        let target = null;
+        if (state.quests && state.quests.length > 0) {
+          target = chart.find(c => state.quests.some(q => q.dest === c.id));
+          if (target) {
+            log(`Strategy: System ${target.name} has an active bounty/quest! Locking coordinates.`, "agent");
+          }
+        }
+        if (!target) {
+          target = chart[Math.floor(Math.random() * chart.length)];
+          log(`Strategy: Jumping to ${target.name} to trade and explore.`, "agent");
+        }
+
+        log(`-> callTool('skiff_jump', { system: '${target.id}' })`, "action");
+        const jumpRes = await mc.callTool("skiff_jump", { system: target.id });
+        const jumpParsed = JSON.parse(jumpRes.content[0].text);
+        log(jumpParsed.log || `Arrived at ${target.name}.`, "system");
+      } else {
+        log("Thinking: No systems in jump range or insufficient fuel.", "agent");
       }
 
       log("Agent turn complete.", "system");
