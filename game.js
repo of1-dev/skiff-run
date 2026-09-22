@@ -14,14 +14,7 @@
   const CREW_FIRE_REFUND = 200;
   // DOCK_WORK_PAY from js/yard-economy.js (SkiffYardEconomy)
 
-  const GOODS = [
-    { id: "ore", name: "Basalt Ore", base: 40 },
-    { id: "grain", name: "Dry Grain", base: 28 },
-    { id: "optics", name: "Lens Optics", base: 95 },
-    { id: "meds", name: "Field Meds", base: 110 },
-    { id: "spice", name: "Rack Spice", base: 70 },
-    { id: "scrap", name: "Hull Scrap", base: 22 },
-  ];
+  const GOODS = globalThis.SkiffGoods;
 
   // x/y are map coords (0–100). Links kept for lore; jump range is distance + hull.range.
   // Named roster is fixed; x/y are filled per New-game chart seed.
@@ -30,225 +23,19 @@
   const TECH_NAME = ["Pre-ag", "Ag", "Low", "Craft", "Early-ind", "Industrial", "Post-ind", "Hi-tech"];
   const SIZE_NAME = ["Tiny", "Small", "Medium", "Large", "Huge"];
 
-  const SYSTEM_DEFS = [
-    { id: "ember", name: "Ember Reach", mods: { ore: 0.7, optics: 1.3, meds: 1.1 }, yard: true,
-      tech: 5, size: 3, gov: "Compact Hub", police: 4, pirate: 2 },
-    { id: "glass", name: "Glass Orchard", mods: { grain: 0.65, spice: 1.25, scrap: 1.1 },
-      tech: 3, size: 2, gov: "Orchard Freehold", police: 2, pirate: 3 },
-    { id: "tide", name: "Tide Spur", mods: { meds: 0.75, ore: 1.2, optics: 1.15 },
-      tech: 4, size: 2, gov: "Spur League", police: 3, pirate: 4 },
-    { id: "ash", name: "Ash Meridian", mods: { scrap: 0.6, spice: 0.9, grain: 1.2 }, yard: true,
-      tech: 4, size: 2, gov: "Fringe Compact", police: 1, pirate: 6 },
-    { id: "knot", name: "Knot Harbor", mods: { optics: 0.8, meds: 1.3, ore: 1.1 }, yard: true,
-      tech: 6, size: 3, gov: "Harbor Syndicate", police: 5, pirate: 2 },
-    { id: "quiet", name: "Quiet Moon", mods: { grain: 1.1, spice: 1.1, scrap: 1.15 }, retire: true,
-      tech: 2, size: 1, gov: "Quiet Protectorate", police: 3, pirate: 1 },
-    { id: "cinder", name: "Cinder Well", mods: { ore: 0.74, scrap: 1.24, optics: 1.19 }, yard: true,
-      tech: 4, size: 2, gov: "Well Compact", police: 3, pirate: 4 },
-    { id: "ledger", name: "Drift Ledger", mods: { optics: 0.72, meds: 1.22, scrap: 1.17 },
-      tech: 5, size: 2, gov: "Ledger Freehold", police: 4, pirate: 2 },
-    { id: "spindle", name: "Rust Spindle", mods: { scrap: 0.61, grain: 1.26, meds: 1.06 },
-      tech: 3, size: 2, gov: "Spindle League", police: 2, pirate: 5 },
-    { id: "cobaltfen", name: "Cobalt Fen", mods: { meds: 0.72, optics: 1.17, scrap: 1.17 },
-      tech: 5, size: 3, gov: "Fen Protectorate", police: 5, pirate: 1 },
-    { id: "foldmargin", name: "Fold Margin", mods: { spice: 0.69, scrap: 1.3399999999999999, grain: 1.1400000000000001 },
-      tech: 4, size: 2, gov: "Margin Compact", police: 2, pirate: 4 },
-    { id: "palekiln", name: "Pale Kiln", mods: { ore: 0.6799999999999999, spice: 1.23, grain: 1.1300000000000001 },
-      tech: 3, size: 2, gov: "Kiln Freehold", police: 2, pirate: 3 },
-    { id: "ironquay", name: "Iron Quay", mods: { scrap: 0.63, meds: 1.23, ore: 1.08 }, yard: true,
-      tech: 5, size: 3, gov: "Quay Syndicate", police: 4, pirate: 3 },
-    { id: "softvault", name: "Soft Vault", mods: { meds: 0.7, ore: 1.15, optics: 1.1500000000000001 },
-      tech: 6, size: 2, gov: "Vault Compact", police: 6, pirate: 1 },
-    { id: "brinegate", name: "Brine Gate", mods: { grain: 0.6, ore: 1.2, meds: 1.05 },
-      tech: 2, size: 2, gov: "Gate League", police: 3, pirate: 3 },
-    { id: "sootladder", name: "Soot Ladder", mods: { scrap: 0.6799999999999999, meds: 1.2799999999999998, ore: 1.1300000000000001 },
-      tech: 3, size: 1, gov: "Ladder Compact", police: 1, pirate: 5 },
-    { id: "coppervein", name: "Copper Vein", mods: { ore: 0.63, spice: 1.18, grain: 1.08 },
-      tech: 4, size: 2, gov: "Vein Freehold", police: 3, pirate: 3 },
-    { id: "nightquill", name: "Night Quill", mods: { optics: 0.69, scrap: 1.24, grain: 1.1400000000000001 },
-      tech: 5, size: 1, gov: "Quill Protectorate", police: 4, pirate: 2 },
-    { id: "ambersluice", name: "Amber Sluice", mods: { spice: 0.69, scrap: 1.19, grain: 1.1400000000000001 },
-      tech: 3, size: 2, gov: "Sluice League", police: 2, pirate: 4 },
-    { id: "gritanchor", name: "Grit Anchor", mods: { scrap: 0.6799999999999999, meds: 1.2799999999999998, ore: 1.1300000000000001 },
-      tech: 2, size: 2, gov: "Anchor Compact", police: 2, pirate: 5 },
-    { id: "loomreach", name: "Loom Reach", mods: { optics: 0.69, scrap: 1.29, grain: 1.1400000000000001 }, yard: true,
-      tech: 6, size: 3, gov: "Loom Syndicate", police: 5, pirate: 2 },
-    { id: "voidpeddle", name: "Void Peddle", mods: { spice: 0.6599999999999999, grain: 1.3099999999999998, meds: 1.11 },
-      tech: 4, size: 1, gov: "Peddle Freehold", police: 1, pirate: 6 },
-    { id: "sparforge", name: "Spar Forge", mods: { ore: 0.69, scrap: 1.24, optics: 1.1400000000000001 },
-      tech: 5, size: 2, gov: "Forge Compact", police: 3, pirate: 3 },
-    { id: "claybeacon", name: "Clay Beacon", mods: { grain: 0.6599999999999999, optics: 1.16, spice: 1.11 },
-      tech: 2, size: 2, gov: "Beacon League", police: 3, pirate: 2 },
-    { id: "mistharbor", name: "Mist Harbor", mods: { meds: 0.63, spice: 1.18, ore: 1.08 },
-      tech: 4, size: 3, gov: "Mist Syndicate", police: 4, pirate: 3 },
-    { id: "rimequay", name: "Rime Quay", mods: { scrap: 0.6699999999999999, optics: 1.3199999999999998, spice: 1.12 },
-      tech: 3, size: 2, gov: "Rime Compact", police: 2, pirate: 4 },
-    { id: "flintcross", name: "Flint Cross", mods: { ore: 0.6, grain: 1.2999999999999998, meds: 1.05 },
-      tech: 3, size: 2, gov: "Cross Freehold", police: 2, pirate: 4 },
-    { id: "emberfall", name: "Emberfall", mods: { spice: 0.6799999999999999, meds: 1.3299999999999998, ore: 1.1300000000000001 },
-      tech: 4, size: 2, gov: "Fall League", police: 3, pirate: 3 },
-    { id: "saltmeridian", name: "Salt Meridian", mods: { grain: 0.62, meds: 1.3199999999999998, scrap: 1.07 },
-      tech: 3, size: 2, gov: "Salt Compact", police: 3, pirate: 3 },
-    { id: "oxbow", name: "Oxbow Dock", mods: { scrap: 0.64, spice: 1.3399999999999999, grain: 1.09 },
-      tech: 2, size: 2, gov: "Oxbow Freehold", police: 2, pirate: 3 },
-    { id: "wisphollow", name: "Wisp Hollow", mods: { meds: 0.62, optics: 1.27, scrap: 1.07 },
-      tech: 1, size: 1, gov: "Hollow Protectorate", police: 1, pirate: 2 },
-    { id: "brassladder", name: "Brass Ladder", mods: { optics: 0.64, scrap: 1.3399999999999999, grain: 1.09 }, yard: true,
-      tech: 6, size: 2, gov: "Brass Syndicate", police: 5, pirate: 2 },
-    { id: "duskorchard", name: "Dusk Orchard", mods: { grain: 0.6799999999999999, spice: 1.3299999999999998, ore: 1.1300000000000001 },
-      tech: 3, size: 2, gov: "Dusk Freehold", police: 2, pirate: 3 },
-    { id: "coilharbor", name: "Coil Harbor", mods: { ore: 0.71, optics: 1.16, spice: 1.1600000000000001 },
-      tech: 5, size: 3, gov: "Coil Compact", police: 4, pirate: 3 },
-    { id: "redledger", name: "Red Ledger", mods: { spice: 0.72, optics: 1.17, scrap: 1.17 },
-      tech: 4, size: 2, gov: "Red League", police: 2, pirate: 5 },
-    { id: "palespur", name: "Pale Spur", mods: { meds: 0.6599999999999999, grain: 1.3099999999999998, spice: 1.11 },
-      tech: 4, size: 1, gov: "Pale League", police: 3, pirate: 3 },
-    { id: "tinreach", name: "Tin Reach", mods: { scrap: 0.6599999999999999, grain: 1.21, meds: 1.11 },
-      tech: 3, size: 2, gov: "Tin Compact", police: 3, pirate: 3 },
-    { id: "mosskiln", name: "Moss Kiln", mods: { grain: 0.7, ore: 1.15, meds: 1.1500000000000001 },
-      tech: 2, size: 2, gov: "Moss Freehold", police: 2, pirate: 2 },
-    { id: "shardquay", name: "Shard Quay", mods: { optics: 0.63, spice: 1.3299999999999998, ore: 1.08 },
-      tech: 5, size: 2, gov: "Shard Syndicate", police: 4, pirate: 3 },
-    { id: "windfold", name: "Windfold", mods: { spice: 0.6, ore: 1.2999999999999998, optics: 1.05 },
-      tech: 3, size: 1, gov: "Fold Compact", police: 1, pirate: 5 },
-    { id: "cruciblefen", name: "Crucible Fen", mods: { ore: 0.74, scrap: 1.29, optics: 1.19 },
-      tech: 5, size: 2, gov: "Crucible League", police: 3, pirate: 4 },
-    { id: "lumendrift", name: "Lumen Drift", mods: { optics: 0.62, meds: 1.17, scrap: 1.07 }, yard: true,
-      tech: 7, size: 3, gov: "Lumen Syndicate", police: 6, pirate: 1 },
-    { id: "ashenquill", name: "Ashen Quill", mods: { meds: 0.73, spice: 1.3299999999999998, ore: 1.1800000000000002 },
-      tech: 4, size: 1, gov: "Ashen Protectorate", police: 3, pirate: 3 },
-    { id: "thornharbor", name: "Thorn Harbor", mods: { scrap: 0.6799999999999999, meds: 1.2799999999999998, ore: 1.1300000000000001 },
-      tech: 3, size: 2, gov: "Thorn Compact", police: 2, pirate: 5 },
-    { id: "silkbasalt", name: "Silk Basalt", mods: { ore: 0.61, optics: 1.21, spice: 1.06 },
-      tech: 4, size: 2, gov: "Basalt Freehold", police: 3, pirate: 2 },
-    { id: "frostspindle", name: "Frost Spindle", mods: { optics: 0.64, scrap: 1.24, grain: 1.09 },
-      tech: 5, size: 2, gov: "Frost League", police: 4, pirate: 2 },
-    { id: "torchmargin", name: "Torch Margin", mods: { spice: 0.72, optics: 1.17, scrap: 1.17 },
-      tech: 3, size: 2, gov: "Torch Compact", police: 2, pirate: 4 },
-    { id: "nettlegate", name: "Nettle Gate", mods: { grain: 0.64, scrap: 1.24, optics: 1.09 },
-      tech: 2, size: 2, gov: "Nettle League", police: 3, pirate: 3 },
-    { id: "obsidianfen", name: "Obsidian Fen", mods: { ore: 0.74, scrap: 1.29, optics: 1.19 },
-      tech: 4, size: 2, gov: "Obsidian Compact", police: 2, pirate: 5 },
-    { id: "coralledger", name: "Coral Ledger", mods: { meds: 0.61, grain: 1.3099999999999998, spice: 1.06 },
-      tech: 5, size: 2, gov: "Coral Freehold", police: 4, pirate: 2 },
-    { id: "skiffmere", name: "Skiffmere", mods: { scrap: 0.71, grain: 1.3099999999999998, meds: 1.1600000000000001 },
-      tech: 3, size: 2, gov: "Mere Compact", police: 3, pirate: 3 },
-    { id: "quillbone", name: "Quillbone", mods: { optics: 0.71, grain: 1.26, spice: 1.1600000000000001 },
-      tech: 4, size: 1, gov: "Bone Protectorate", police: 3, pirate: 4 },
-    { id: "marrowdock", name: "Marrow Dock", mods: { scrap: 0.61, grain: 1.16, meds: 1.06 },
-      tech: 2, size: 2, gov: "Marrow League", police: 2, pirate: 4 },
-    { id: "vellumreach", name: "Vellum Reach", mods: { meds: 0.6599999999999999, grain: 1.3099999999999998, spice: 1.11 },
-      tech: 6, size: 2, gov: "Vellum Syndicate", police: 5, pirate: 1 },
-    { id: "pitchorchard", name: "Pitch Orchard", mods: { grain: 0.6, ore: 1.2999999999999998, meds: 1.05 },
-      tech: 3, size: 2, gov: "Pitch Freehold", police: 2, pirate: 3 },
-    { id: "crowbarquay", name: "Crowbar Quay", mods: { ore: 0.6, grain: 1.15, meds: 1.05 },
-      tech: 3, size: 2, gov: "Crowbar Compact", police: 1, pirate: 6 },
-    { id: "lanternspur", name: "Lantern Spur", mods: { spice: 0.74, scrap: 1.29, grain: 1.19 },
-      tech: 4, size: 2, gov: "Lantern League", police: 3, pirate: 3 },
-    { id: "softiron", name: "Soft Iron", mods: { ore: 0.74, scrap: 1.19, optics: 1.19 },
-      tech: 5, size: 3, gov: "Iron Compact", police: 4, pirate: 2 },
-    { id: "dustcompact", name: "Dust Compact", mods: { scrap: 0.6599999999999999, grain: 1.26, meds: 1.11 },
-      tech: 2, size: 2, gov: "Dust Freehold", police: 2, pirate: 4 },
-    { id: "coalridge", name: "Ridge of Coals", mods: { ore: 0.6799999999999999, spice: 1.3299999999999998, grain: 1.1300000000000001 },
-      tech: 3, size: 2, gov: "Ridge League", police: 2, pirate: 4 },
-    { id: "mirrorbasin", name: "Mirror Basin", mods: { optics: 0.6699999999999999, meds: 1.27, scrap: 1.12 },
-      tech: 6, size: 2, gov: "Basin Syndicate", police: 5, pirate: 2 },
-    { id: "hearthknot", name: "Hearth Knot", mods: { meds: 0.6, ore: 1.15, optics: 1.05 }, yard: true,
-      tech: 5, size: 3, gov: "Hearth Compact", police: 4, pirate: 2 },
-    { id: "farember", name: "Far Ember", mods: { spice: 0.71, grain: 1.3099999999999998, meds: 1.1600000000000001 },
-      tech: 4, size: 1, gov: "Far Compact", police: 2, pirate: 5 },
-    { id: "gutterwake", name: "Gutter Wake", mods: { scrap: 0.71, grain: 1.26, meds: 1.1600000000000001 },
-      tech: 2, size: 1, gov: "Wake Freehold", police: 1, pirate: 6 },
-    { id: "slagfen", name: "Slag Fen", mods: { scrap: 0.62, ore: 1.18, grain: 1.08 },
-      tech: 2, size: 2, gov: "Slag Compact", police: 2, pirate: 5 },
-    { id: "tinmouth", name: "Tinmouth", mods: { ore: 0.66, scrap: 1.22, meds: 1.1 },
-      tech: 3, size: 2, gov: "Mouth League", police: 3, pirate: 3 },
-    { id: "cinderquay", name: "Cinder Quay", mods: { spice: 0.68, scrap: 1.2, grain: 1.12 }, yard: true,
-      tech: 4, size: 2, gov: "Cinder Compact", police: 3, pirate: 4 },
-    { id: "paleharbor", name: "Pale Harbor", mods: { meds: 0.7, optics: 1.18, grain: 1.1 },
-      tech: 5, size: 3, gov: "Pale Freehold", police: 4, pirate: 2 },
-    { id: "hookbasin", name: "Hook Basin", mods: { grain: 0.64, spice: 1.24, ore: 1.08 },
-      tech: 3, size: 2, gov: "Hook League", police: 2, pirate: 4 },
-    { id: "rivenkiln", name: "Riven Kiln", mods: { ore: 0.63, spice: 1.21, scrap: 1.14 },
-      tech: 4, size: 1, gov: "Kiln Protectorate", police: 3, pirate: 4 },
-    { id: "lowspindle", name: "Low Spindle", mods: { optics: 0.72, scrap: 1.16, grain: 1.12 },
-      tech: 5, size: 2, gov: "Spindle Syndicate", police: 5, pirate: 2 },
-    { id: "ashwake", name: "Ashwake", mods: { scrap: 0.6, grain: 1.28, meds: 1.08 },
-      tech: 2, size: 1, gov: "Wake Compact", police: 1, pirate: 6 },
-    { id: "saltfold", name: "Saltfold", mods: { grain: 0.62, meds: 1.2, spice: 1.12 },
-      tech: 3, size: 2, gov: "Fold Freehold", police: 3, pirate: 3 },
-    { id: "brineorchard", name: "Brine Orchard", mods: { grain: 0.58, spice: 1.3, optics: 1.06 },
-      tech: 3, size: 2, gov: "Orchard League", police: 2, pirate: 3 },
-    { id: "farquay", name: "Far Quay", mods: { scrap: 0.7, ore: 1.16, meds: 1.14 },
-      tech: 4, size: 2, gov: "Far Quay Compact", police: 3, pirate: 4 },
-    { id: "nightbasin", name: "Night Basin", mods: { optics: 0.66, meds: 1.22, scrap: 1.1 },
-      tech: 6, size: 2, gov: "Night Syndicate", police: 5, pirate: 1 },
-    { id: "emberledge", name: "Emberledge", mods: { spice: 0.7, ore: 1.14, grain: 1.16 },
-      tech: 4, size: 1, gov: "Ledge Compact", police: 2, pirate: 5 },
-    { id: "quietspur", name: "Quiet Spur", mods: { grain: 1.12, spice: 1.12, scrap: 1.12 },
-      tech: 3, size: 1, gov: "Spur Protectorate", police: 4, pirate: 2 },
-    { id: "ironfold", name: "Ironfold", mods: { ore: 0.61, scrap: 1.26, meds: 1.08 }, yard: true,
-      tech: 5, size: 3, gov: "Ironfold Compact", police: 4, pirate: 3 },
-    { id: "mossreach", name: "Moss Reach", mods: { grain: 0.67, meds: 1.18, optics: 1.1 },
-      tech: 3, size: 2, gov: "Moss League", police: 3, pirate: 3 },
-    { id: "shaleharbor", name: "Shale Harbor", mods: { scrap: 0.64, ore: 1.2, grain: 1.1 },
-      tech: 4, size: 2, gov: "Shale Freehold", police: 3, pirate: 3 },
-    { id: "coldledger", name: "Cold Ledger", mods: { optics: 0.68, meds: 1.24, scrap: 1.14 },
-      tech: 6, size: 2, gov: "Ledger Syndicate", police: 5, pirate: 2 },
-    { id: "wickgate", name: "Wick Gate", mods: { spice: 0.66, grain: 1.22, ore: 1.12 },
-      tech: 3, size: 2, gov: "Wick Compact", police: 2, pirate: 4 },
-    { id: "longwake", name: "Long Wake", mods: { scrap: 0.63, grain: 1.24, meds: 1.1 },
-      tech: 2, size: 2, gov: "Long Wake Freehold", police: 1, pirate: 5 },
-    { id: "redkiln", name: "Red Kiln", mods: { ore: 0.65, spice: 1.26, scrap: 1.12 },
-      tech: 4, size: 2, gov: "Red Kiln League", police: 3, pirate: 4 },
-    { id: "silverfen", name: "Silver Fen", mods: { meds: 0.68, optics: 1.2, grain: 1.08 },
-      tech: 5, size: 2, gov: "Fen Protectorate", police: 4, pirate: 2 },
-    { id: "dryorchard", name: "Dry Orchard", mods: { grain: 0.6, spice: 1.28, scrap: 1.1 },
-      tech: 3, size: 2, gov: "Dry Freehold", police: 2, pirate: 3 },
-    { id: "westcinder", name: "West Cinder", mods: { spice: 0.72, scrap: 1.18, ore: 1.14 },
-      tech: 4, size: 1, gov: "West Compact", police: 2, pirate: 5 }
-  ];
+  const SYSTEM_DEFS = globalThis.SkiffSystems;
   let SYSTEMS = SYSTEM_DEFS.map((s) => Object.assign({ x: 50, y: 50 }, s));
 
-  const SHIPS = [
-    // Soft-fail escape (Flea homage). Free Take; scrap pads + full yards.
-    { id: "mite", name: "Mite", cargo: 10, fuelMax: 10, range: 20, weapons: false, crewMax: 1, hullMax: 20, ammoMax: 0, price: 0 },
-    // Fresh game still starts in Skiff-7, not Mite.
-    { id: "skiff-7", name: "Skiff-7", cargo: 20, fuelMax: 14, range: 28, weapons: false, crewMax: 1, hullMax: 40, ammoMax: 0, price: 0 },
-    { id: "glass-dart", name: "Glass Dart", cargo: 12, fuelMax: 16, range: 42, weapons: false, crewMax: 1, hullMax: 30, ammoMax: 0, price: 4500 },
-    { id: "tide-runner", name: "Tide Runner", cargo: 24, fuelMax: 16, range: 34, weapons: false, crewMax: 2, hullMax: 60, ammoMax: 0, price: 7000 },
-    { id: "knot-hauler", name: "Knot Hauler", cargo: 32, fuelMax: 17, range: 30, weapons: false, crewMax: 3, hullMax: 80, ammoMax: 0, price: 8000 },
-    { id: "hold-barge", name: "Hold Barge", cargo: 40, fuelMax: 18, range: 32, weapons: false, crewMax: 3, hullMax: 120, ammoMax: 0, price: 9000 },
-    { id: "ember-cutter", name: "Ember Cutter", cargo: 16, fuelMax: 16, range: 38, weapons: true, crewMax: 2, hullMax: 60, ammoMax: 20, price: 12000 },
-    { id: "ash-lance", name: "Ash Lance", cargo: 14, fuelMax: 18, range: 40, weapons: true, crewMax: 2, hullMax: 50, ammoMax: 30, price: 15000 },
-    { id: "quiet-ark", name: "Quiet Ark", cargo: 50, fuelMax: 22, range: 36, weapons: false, crewMax: 4, hullMax: 150, ammoMax: 0, price: 22000 },
-    { id: "wasp-prime", name: "Wasp Prime", cargo: 18, fuelMax: 20, range: 44, weapons: true, crewMax: 3, hullMax: 100, ammoMax: 40, price: 28000 },
-    { id: "unbowed", name: "Unbowed", cargo: 12, fuelMax: 16, range: 36, weapons: true, crewMax: 3, hullMax: 80, ammoMax: 50, price: 0, gated: true },
-  ];
+  const SHIPS = globalThis.SkiffShips;
 
   function sys(id) { return SYSTEMS.find((s) => s.id === id); }
   function ship(id) { return SHIPS.find((s) => s.id === id); }
   function hull() { return ship(state.shipId) || SHIPS[0]; }
 
   // Shared hull art — original silhouettes; inline so themes tint via currentColor.
-  const HULL_SVG = {"ash-lance":"<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <!-- pirate hunter -->\n  <defs>\n    <linearGradient id=\"metal-ash-lance\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#E8EEF6\"/>\n      <stop offset=\"45%\" stop-color=\"#9AA8BC\"/>\n      <stop offset=\"100%\" stop-color=\"#4A5568\"/>\n    </linearGradient>\n    <linearGradient id=\"shade-ash-lance\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#2A3340\" stop-opacity=\".55\"/>\n      <stop offset=\"55%\" stop-color=\"#2A3340\" stop-opacity=\"0\"/>\n    </linearGradient>\n    <linearGradient id=\"glow-ash-lance\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#FFB24A\" stop-opacity=\".95\"/>\n      <stop offset=\"100%\" stop-color=\"#FF6A2A\" stop-opacity=\".15\"/>\n    </linearGradient>\n    <radialGradient id=\"canopy-ash-lance\" cx=\"50%\" cy=\"40%\" r=\"65%\">\n      <stop offset=\"0%\" stop-color=\"#B8F0FF\"/>\n      <stop offset=\"55%\" stop-color=\"#3AA0C8\"/>\n      <stop offset=\"100%\" stop-color=\"#0B3A4A\"/>\n    </radialGradient>\n  </defs>\n  <ellipse cx=\"90\" cy=\"64\" rx=\"52\" ry=\"3.5\" fill=\"#000\" opacity=\".28\"/>\n  <g id=\"hull\">\n    <path fill=\"url(#metal-ash-lance)\" d=\"M14 36 L14 48 L36 56 L104 50 L158 40 L104 30 L36 24 Z\"/>\n    <path fill=\"url(#shade-ash-lance)\" d=\"M14 36 L14 48 L36 56 L104 50 L158 40 L104 30 L36 24 Z\"/>\n    <path fill=\"#6B7788\" d=\"M48 26 L80 14 L84 28 Z\"/>\n    <path fill=\"#6B7788\" d=\"M48 54 L80 66 L84 52 Z\"/>\n    <path stroke=\"#EEF3FA\" stroke-width=\".8\" opacity=\".5\" d=\"M40 34 L130 38 M40 46 L130 42\"/>\n  </g>\n  <g id=\"canopy\">\n    <circle cx=\"100\" cy=\"40\" r=\"3\" fill=\"#E8FBFF\" opacity=\".85\"/>\n    <rect x=\"90\" y=\"33\" width=\"22\" height=\"13\" rx=\"2\" fill=\"url(#canopy-ash-lance)\"/>\n  </g>\n  <g id=\"thruster\">\n    <rect x=\"2\" y=\"37\" width=\"14\" height=\"10\" rx=\"2\" fill=\"#2A3340\"/>\n    <ellipse cx=\"1\" cy=\"42\" rx=\"7\" ry=\"4.5\" fill=\"url(#glow-ash-lance)\"/>\n  </g>\n  <g id=\"hit-flash\" opacity=\"0\"><rect width=\"160\" height=\"80\" fill=\"#fff\"/></g>\n</svg>\n","ember-cutter":"<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <!-- armed cutter -->\n  <defs>\n    <linearGradient id=\"metal-ember-cutter\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#E8EEF6\"/>\n      <stop offset=\"45%\" stop-color=\"#9AA8BC\"/>\n      <stop offset=\"100%\" stop-color=\"#4A5568\"/>\n    </linearGradient>\n    <linearGradient id=\"shade-ember-cutter\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#2A3340\" stop-opacity=\".55\"/>\n      <stop offset=\"55%\" stop-color=\"#2A3340\" stop-opacity=\"0\"/>\n    </linearGradient>\n    <linearGradient id=\"glow-ember-cutter\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#FFB24A\" stop-opacity=\".95\"/>\n      <stop offset=\"100%\" stop-color=\"#FF6A2A\" stop-opacity=\".15\"/>\n    </linearGradient>\n    <radialGradient id=\"canopy-ember-cutter\" cx=\"50%\" cy=\"40%\" r=\"65%\">\n      <stop offset=\"0%\" stop-color=\"#B8F0FF\"/>\n      <stop offset=\"55%\" stop-color=\"#3AA0C8\"/>\n      <stop offset=\"100%\" stop-color=\"#0B3A4A\"/>\n    </radialGradient>\n  </defs>\n  <ellipse cx=\"88\" cy=\"64\" rx=\"50\" ry=\"3.5\" fill=\"#000\" opacity=\".28\"/>\n  <g id=\"hull\">\n    <path fill=\"url(#metal-ember-cutter)\" d=\"M16 38 L16 46 L40 54 L112 48 L154 40 L112 32 L40 26 Z\"/>\n    <path fill=\"url(#shade-ember-cutter)\" d=\"M16 38 L16 46 L40 54 L112 48 L154 40 L112 32 L40 26 Z\"/>\n    <path fill=\"#7A8798\" d=\"M70 16 L94 12 L96 20 L74 24 Z\"/>\n    <path fill=\"#7A8798\" d=\"M70 64 L94 68 L96 60 L74 56 Z\"/>\n    <path stroke=\"#EEF3FA\" stroke-width=\".8\" opacity=\".55\" d=\"M48 34 L120 38 M48 46 L120 42\"/>\n  </g>\n  <g id=\"canopy\">\n    <rect x=\"100\" y=\"33\" width=\"18\" height=\"13\" rx=\"2\" fill=\"url(#canopy-ember-cutter)\"/>\n    <rect x=\"102\" y=\"35\" width=\"5\" height=\"4\" rx=\".4\" fill=\"#E8FBFF\" opacity=\".55\"/>\n  </g>\n  <g id=\"thruster\">\n    <rect x=\"4\" y=\"35\" width=\"14\" height=\"14\" rx=\"2\" fill=\"#2A3340\"/>\n    <ellipse cx=\"3\" cy=\"42\" rx=\"7\" ry=\"5\" fill=\"url(#glow-ember-cutter)\"/>\n  </g>\n  <g id=\"hit-flash\" opacity=\"0\"><rect width=\"160\" height=\"80\" fill=\"#fff\"/></g>\n</svg>\n","glass-dart":"<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <!-- fast needle courier -->\n  <defs>\n    <linearGradient id=\"metal-glass-dart\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#E8EEF6\"/>\n      <stop offset=\"45%\" stop-color=\"#9AA8BC\"/>\n      <stop offset=\"100%\" stop-color=\"#4A5568\"/>\n    </linearGradient>\n    <linearGradient id=\"shade-glass-dart\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#2A3340\" stop-opacity=\".55\"/>\n      <stop offset=\"55%\" stop-color=\"#2A3340\" stop-opacity=\"0\"/>\n    </linearGradient>\n    <linearGradient id=\"glow-glass-dart\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#FFB24A\" stop-opacity=\".95\"/>\n      <stop offset=\"100%\" stop-color=\"#FF6A2A\" stop-opacity=\".15\"/>\n    </linearGradient>\n    <radialGradient id=\"canopy-glass-dart\" cx=\"50%\" cy=\"40%\" r=\"65%\">\n      <stop offset=\"0%\" stop-color=\"#B8F0FF\"/>\n      <stop offset=\"55%\" stop-color=\"#3AA0C8\"/>\n      <stop offset=\"100%\" stop-color=\"#0B3A4A\"/>\n    </radialGradient>\n  </defs>\n  <ellipse cx=\"90\" cy=\"62\" rx=\"50\" ry=\"3.2\" fill=\"#000\" opacity=\".25\"/>\n  <g id=\"hull\">\n    <path fill=\"url(#metal-glass-dart)\" d=\"M12 38 L40 32 L132 36 L156 40 L132 44 L40 48 L12 42 Z\"/>\n    <path fill=\"url(#shade-glass-dart)\" d=\"M12 38 L40 32 L132 36 L156 40 L132 44 L40 48 L12 42 Z\"/>\n    <path stroke=\"#E8EEF6\" stroke-width=\".8\" opacity=\".65\" d=\"M48 36 L120 38 M48 44 L120 42\"/>\n    <path stroke=\"#7EC8E8\" stroke-width=\"1.2\" opacity=\".45\" d=\"M60 30 L74 22 M60 50 L74 58\"/>\n  </g>\n  <g id=\"canopy\">\n    <ellipse cx=\"112\" cy=\"40\" rx=\"11\" ry=\"5.5\" fill=\"url(#canopy-glass-dart)\"/>\n    <ellipse cx=\"108\" cy=\"39\" rx=\"3\" ry=\"1.6\" fill=\"#E8FBFF\" opacity=\".65\"/>\n  </g>\n  <g id=\"thruster\">\n    <rect x=\"2\" y=\"37\" width=\"12\" height=\"8\" rx=\"1.5\" fill=\"#2A3340\"/>\n    <ellipse cx=\"1\" cy=\"41\" rx=\"6\" ry=\"3.5\" fill=\"url(#glow-glass-dart)\"/>\n  </g>\n  <g id=\"hit-flash\" opacity=\"0\"><rect width=\"160\" height=\"80\" fill=\"#fff\"/></g>\n</svg>\n","hold-barge":"<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <!-- fat cargo hauler -->\n  <defs>\n    <linearGradient id=\"metal-hold-barge\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#E8EEF6\"/>\n      <stop offset=\"45%\" stop-color=\"#9AA8BC\"/>\n      <stop offset=\"100%\" stop-color=\"#4A5568\"/>\n    </linearGradient>\n    <linearGradient id=\"shade-hold-barge\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#2A3340\" stop-opacity=\".55\"/>\n      <stop offset=\"55%\" stop-color=\"#2A3340\" stop-opacity=\"0\"/>\n    </linearGradient>\n    <linearGradient id=\"glow-hold-barge\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#FFB24A\" stop-opacity=\".95\"/>\n      <stop offset=\"100%\" stop-color=\"#FF6A2A\" stop-opacity=\".15\"/>\n    </linearGradient>\n    <radialGradient id=\"canopy-hold-barge\" cx=\"50%\" cy=\"40%\" r=\"65%\">\n      <stop offset=\"0%\" stop-color=\"#B8F0FF\"/>\n      <stop offset=\"55%\" stop-color=\"#3AA0C8\"/>\n      <stop offset=\"100%\" stop-color=\"#0B3A4A\"/>\n    </radialGradient>\n  </defs>\n  <ellipse cx=\"86\" cy=\"66\" rx=\"54\" ry=\"3.8\" fill=\"#000\" opacity=\".3\"/>\n  <g id=\"hull\">\n    <rect x=\"34\" y=\"30\" width=\"96\" height=\"30\" rx=\"3\" fill=\"url(#metal-hold-barge)\"/>\n    <rect x=\"34\" y=\"30\" width=\"96\" height=\"30\" rx=\"3\" fill=\"url(#shade-hold-barge)\"/>\n    <rect x=\"42\" y=\"14\" width=\"36\" height=\"18\" rx=\"2\" fill=\"url(#metal-hold-barge)\"/>\n    <rect x=\"84\" y=\"14\" width=\"36\" height=\"18\" rx=\"2\" fill=\"url(#metal-hold-barge)\"/>\n    <rect x=\"16\" y=\"32\" width=\"20\" height=\"26\" rx=\"2\" fill=\"#5A687A\"/>\n    <path stroke=\"#EEF3FA\" stroke-width=\".85\" opacity=\".55\" d=\"M50 30 L50 60 M70 30 L70 60 M90 30 L90 60 M110 30 L110 60 M42 22 L74 22 M84 22 L116 22\"/>\n  </g>\n  <g id=\"canopy\">\n    <rect x=\"48\" y=\"18\" width=\"24\" height=\"8\" rx=\"1\" fill=\"url(#canopy-hold-barge)\"/>\n  </g>\n  <g id=\"thruster\">\n    <rect x=\"4\" y=\"34\" width=\"12\" height=\"10\" rx=\"1.5\" fill=\"#2A3340\"/>\n    <rect x=\"4\" y=\"46\" width=\"12\" height=\"10\" rx=\"1.5\" fill=\"#2A3340\" opacity=\".9\"/>\n    <ellipse cx=\"3\" cy=\"39\" rx=\"5\" ry=\"3.5\" fill=\"url(#glow-hold-barge)\"/>\n    <ellipse cx=\"3\" cy=\"51\" rx=\"5\" ry=\"3.5\" fill=\"url(#glow-hold-barge)\"/>\n  </g>\n  <g id=\"hit-flash\" opacity=\"0\"><rect width=\"160\" height=\"80\" fill=\"#fff\"/></g>\n</svg>\n","knot-hauler":"<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <!-- mid cargo box -->\n  <defs>\n    <linearGradient id=\"metal-knot-hauler\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#E8EEF6\"/>\n      <stop offset=\"45%\" stop-color=\"#9AA8BC\"/>\n      <stop offset=\"100%\" stop-color=\"#4A5568\"/>\n    </linearGradient>\n    <linearGradient id=\"shade-knot-hauler\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#2A3340\" stop-opacity=\".55\"/>\n      <stop offset=\"55%\" stop-color=\"#2A3340\" stop-opacity=\"0\"/>\n    </linearGradient>\n    <linearGradient id=\"glow-knot-hauler\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#FFB24A\" stop-opacity=\".95\"/>\n      <stop offset=\"100%\" stop-color=\"#FF6A2A\" stop-opacity=\".15\"/>\n    </linearGradient>\n    <radialGradient id=\"canopy-knot-hauler\" cx=\"50%\" cy=\"40%\" r=\"65%\">\n      <stop offset=\"0%\" stop-color=\"#B8F0FF\"/>\n      <stop offset=\"55%\" stop-color=\"#3AA0C8\"/>\n      <stop offset=\"100%\" stop-color=\"#0B3A4A\"/>\n    </radialGradient>\n  </defs>\n  <ellipse cx=\"86\" cy=\"66\" rx=\"50\" ry=\"3.5\" fill=\"#000\" opacity=\".28\"/>\n  <g id=\"hull\">\n    <rect x=\"24\" y=\"30\" width=\"104\" height=\"28\" rx=\"3\" fill=\"url(#metal-knot-hauler)\"/>\n    <rect x=\"24\" y=\"30\" width=\"104\" height=\"28\" rx=\"3\" fill=\"url(#shade-knot-hauler)\"/>\n    <rect x=\"40\" y=\"14\" width=\"52\" height=\"18\" rx=\"2\" fill=\"url(#metal-knot-hauler)\"/>\n    <rect x=\"40\" y=\"14\" width=\"52\" height=\"18\" rx=\"2\" fill=\"#5A687A\" opacity=\".25\"/>\n    <path stroke=\"#EEF3FA\" stroke-width=\".8\" opacity=\".55\" d=\"M40 38 L120 38 M56 30 L56 58 M88 30 L88 58 M40 20 L88 20\"/>\n    <circle cx=\"38\" cy=\"60\" r=\"5\" fill=\"#4A5568\"/>\n    <circle cx=\"112\" cy=\"60\" r=\"5\" fill=\"#4A5568\"/>\n    <circle cx=\"38\" cy=\"60\" r=\"2\" fill=\"#2A3340\"/>\n    <circle cx=\"112\" cy=\"60\" r=\"2\" fill=\"#2A3340\"/>\n  </g>\n  <g id=\"canopy\">\n    <rect x=\"48\" y=\"18\" width=\"22\" height=\"9\" rx=\"1.5\" fill=\"url(#canopy-knot-hauler)\"/>\n    <rect x=\"50\" y=\"19.5\" width=\"6\" height=\"3\" rx=\"0.4\" fill=\"#E8FBFF\" opacity=\".5\"/>\n  </g>\n  <g id=\"thruster\">\n    <rect x=\"8\" y=\"34\" width=\"16\" height=\"18\" rx=\"2\" fill=\"#2A3340\"/>\n    <path fill=\"#5A687A\" opacity=\".7\" d=\"M126 32 L150 30 L150 54 L126 56 Z\"/>\n    <ellipse cx=\"7\" cy=\"43\" rx=\"6\" ry=\"5\" fill=\"url(#glow-knot-hauler)\"/>\n  </g>\n  <g id=\"hit-flash\" opacity=\"0\"><rect width=\"160\" height=\"80\" fill=\"#fff\"/></g>\n</svg>\n","mite":"<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <!-- tiny short-hopper -->\n  <defs>\n    <linearGradient id=\"metal-mite\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#8A929C\"/><stop offset=\"45%\" stop-color=\"#4A525C\"/><stop offset=\"100%\" stop-color=\"#232830\"/>\n    </linearGradient>\n    <linearGradient id=\"shade-mite\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#101418\" stop-opacity=\".7\"/><stop offset=\"55%\" stop-color=\"#101418\" stop-opacity=\"0\"/>\n    </linearGradient>\n    <radialGradient id=\"canopy-mite\" cx=\"36%\" cy=\"30%\" r=\"70%\">\n      <stop offset=\"0%\" stop-color=\"#C8E8F4\"/><stop offset=\"55%\" stop-color=\"#2A6078\"/><stop offset=\"100%\" stop-color=\"#081820\"/>\n    </radialGradient>\n    <linearGradient id=\"glow-mite\" x1=\"1\" y1=\"0\" x2=\"0\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#FFC56A\"/><stop offset=\"100%\" stop-color=\"#FF4A10\" stop-opacity=\".15\"/>\n    </linearGradient>\n  </defs>\n  <ellipse cx=\"84\" cy=\"64\" rx=\"36\" ry=\"3\" fill=\"#000\" opacity=\".32\"/>\n  <g id=\"hull\">\n    <path fill=\"url(#metal-mite)\" d=\"M46 36 C46 28 54 24 66 24 L106 24 C124 24 134 31 136 40 C134 49 124 56 106 56 L66 56 C54 56 46 52 46 44 Z\"/>\n    <path fill=\"url(#shade-mite)\" d=\"M46 36 C46 28 54 24 66 24 L106 24 C124 24 134 31 136 40 C134 49 124 56 106 56 L66 56 C54 56 46 52 46 44 Z\"/>\n    <path fill=\"#3A424C\" d=\"M64 24 L108 24 L104 31 L68 31 Z\"/>\n    <path fill=\"#2A323A\" opacity=\".7\" d=\"M62 49 L112 49 L108 56 L66 56 C56 56 48 52 47 48 Z\"/>\n    <rect x=\"70\" y=\"33\" width=\"24\" height=\"13\" rx=\"1.2\" fill=\"#323A44\"/>\n    <path stroke=\"#E08A3A\" stroke-width=\".45\" opacity=\".55\" d=\"M48 36 C48 28 56 25 66 25 L106 25 C123 25 133 32 135 40\"/>\n    <rect x=\"74\" y=\"54\" width=\"3\" height=\"3.5\" rx=\".3\" fill=\"#2A323A\"/>\n    <rect x=\"98\" y=\"54\" width=\"3\" height=\"3.5\" rx=\".3\" fill=\"#2A323A\"/>\n    <g class=\"plates-loud\">\n      <path stroke=\"#1A2028\" stroke-width=\".5\" d=\"M82 33 V46\"/>\n      <path stroke=\"#C8D0D8\" stroke-width=\".35\" opacity=\".28\" d=\"M68 27 H108 M62 40 H122 M68 53 H108\"/>\n      <rect x=\"86\" y=\"21.5\" width=\"1.1\" height=\"4.5\" fill=\"#9AA4B0\"/>\n    </g>\n  </g>\n  <g id=\"canopy\">\n    <path fill=\"url(#canopy-mite)\" d=\"M108 27 C124 27 134 33 135 40 C134 47 124 53 108 53 C103 53 101 48 101 40 C101 32 103 27 108 27 Z\"/>\n    <path stroke=\"#12181E\" stroke-width=\".55\" d=\"M116 29 V51 M108 28 V52\"/>\n    <ellipse cx=\"114\" cy=\"35\" rx=\"5\" ry=\"2.2\" fill=\"#E8FBFF\" opacity=\".28\"/>\n  </g>\n  <g id=\"thruster\">\n    <rect x=\"38\" y=\"32\" width=\"10\" height=\"16\" rx=\"1.4\" fill=\"#1A2028\"/>\n    <path stroke=\"#6A7480\" stroke-width=\".5\" d=\"M44 33 V47 M41 34 V46\"/>\n    <ellipse cx=\"38\" cy=\"40\" rx=\"5.2\" ry=\"5\" fill=\"#12161C\"/>\n    <ellipse cx=\"37\" cy=\"40\" rx=\"3.2\" ry=\"3\" fill=\"url(#glow-mite)\"/>\n    <ellipse cx=\"36.2\" cy=\"40\" rx=\"1.3\" ry=\"1.1\" fill=\"#FFE7B0\"/>\n  </g>\n  <g id=\"hit-flash\" opacity=\"0\"><rect width=\"160\" height=\"80\" fill=\"#fff\"/></g>\n</svg>\n","quiet-ark":"<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <!-- late tank / ferry -->\n  <defs>\n    <linearGradient id=\"metal-quiet-ark\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#E8EEF6\"/>\n      <stop offset=\"45%\" stop-color=\"#9AA8BC\"/>\n      <stop offset=\"100%\" stop-color=\"#4A5568\"/>\n    </linearGradient>\n    <linearGradient id=\"shade-quiet-ark\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#2A3340\" stop-opacity=\".55\"/>\n      <stop offset=\"55%\" stop-color=\"#2A3340\" stop-opacity=\"0\"/>\n    </linearGradient>\n    <linearGradient id=\"glow-quiet-ark\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#FFB24A\" stop-opacity=\".95\"/>\n      <stop offset=\"100%\" stop-color=\"#FF6A2A\" stop-opacity=\".15\"/>\n    </linearGradient>\n    <radialGradient id=\"canopy-quiet-ark\" cx=\"50%\" cy=\"40%\" r=\"65%\">\n      <stop offset=\"0%\" stop-color=\"#B8F0FF\"/>\n      <stop offset=\"55%\" stop-color=\"#3AA0C8\"/>\n      <stop offset=\"100%\" stop-color=\"#0B3A4A\"/>\n    </radialGradient>\n  </defs>\n  <ellipse cx=\"88\" cy=\"68\" rx=\"58\" ry=\"4\" fill=\"#000\" opacity=\".3\"/>\n  <g id=\"hull\">\n    <path fill=\"url(#metal-quiet-ark)\" d=\"M20 28 C20 18, 36 12, 54 12 L122 12 C144 12, 154 26, 154 40 C154 54, 144 66, 122 66 L54 66 C36 66, 20 60, 20 50 Z\"/>\n    <path fill=\"url(#shade-quiet-ark)\" d=\"M20 28 C20 18, 36 12, 54 12 L122 12 C144 12, 154 26, 154 40 C154 54, 144 66, 122 66 L54 66 C36 66, 20 60, 20 50 Z\"/>\n    <rect x=\"50\" y=\"24\" width=\"74\" height=\"16\" rx=\"5\" fill=\"#5A687A\" opacity=\".4\"/>\n    <path stroke=\"#EEF3FA\" stroke-width=\".8\" opacity=\".45\" d=\"M54 20 L120 20 M54 48 L120 48 M70 14 L70 64 M100 14 L100 64\"/>\n  </g>\n  <g id=\"canopy\">\n    <circle cx=\"34\" cy=\"40\" r=\"7\" fill=\"url(#canopy-quiet-ark)\"/>\n    <circle cx=\"32\" cy=\"38\" r=\"2.2\" fill=\"#E8FBFF\" opacity=\".65\"/>\n    <rect x=\"72\" y=\"28\" width=\"28\" height=\"7\" rx=\"1.5\" fill=\"url(#canopy-quiet-ark)\" opacity=\".85\"/>\n  </g>\n  <g id=\"thruster\">\n    <rect x=\"4\" y=\"30\" width=\"20\" height=\"24\" rx=\"4\" fill=\"#2A3340\"/>\n    <ellipse cx=\"3\" cy=\"42\" rx=\"8\" ry=\"7\" fill=\"url(#glow-quiet-ark)\"/>\n  </g>\n  <g id=\"hit-flash\" opacity=\"0\"><rect width=\"160\" height=\"80\" fill=\"#fff\"/></g>\n</svg>\n","skiff-7":"<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <!-- starter light freighter -->\n  <defs>\n    <linearGradient id=\"metal-skiff-7\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#9AA2AC\"/><stop offset=\"45%\" stop-color=\"#5A626C\"/><stop offset=\"100%\" stop-color=\"#2A323A\"/>\n    </linearGradient>\n    <linearGradient id=\"shade-skiff-7\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#12161C\" stop-opacity=\".65\"/><stop offset=\"50%\" stop-color=\"#12161C\" stop-opacity=\"0\"/>\n    </linearGradient>\n    <radialGradient id=\"canopy-skiff-7\" cx=\"30%\" cy=\"25%\" r=\"80%\">\n      <stop offset=\"0%\" stop-color=\"#A8C8D4\"/><stop offset=\"60%\" stop-color=\"#243848\"/><stop offset=\"100%\" stop-color=\"#0A141A\"/>\n    </radialGradient>\n    <linearGradient id=\"glow-skiff-7\" x1=\"1\" y1=\"0\" x2=\"0\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#FFB24A\"/><stop offset=\"100%\" stop-color=\"#FF4A10\" stop-opacity=\".2\"/>\n    </linearGradient>\n  </defs>\n  <ellipse cx=\"86\" cy=\"62\" rx=\"48\" ry=\"3\" fill=\"#000\" opacity=\".3\"/>\n  <g id=\"hull\">\n    <path fill=\"url(#metal-skiff-7)\" d=\"M28 38 L36 32 L86 28 L118 32 L146 42 L118 48 L70 52 L36 48 L28 44 Z\"/>\n    <path fill=\"url(#shade-skiff-7)\" d=\"M28 38 L36 32 L86 28 L118 32 L146 42 L118 48 L70 52 L36 48 L28 44 Z\"/>\n    <path fill=\"#3A424C\" d=\"M54 46 L118 46 L110 54 L62 54 L50 50 Z\"/>\n    <rect x=\"58\" y=\"46\" width=\"48\" height=\"10\" rx=\"1.4\" fill=\"#4A525C\"/>\n    <path d=\"M40 26 L50 18 L58 28 L46 30 Z\" fill=\"#5A626C\"/>\n    <path d=\"M50 18 L56 16 L60 26 L54 28 Z\" fill=\"#4A525C\"/>\n    <rect x=\"72\" y=\"24\" width=\"18\" height=\"6\" rx=\".8\" fill=\"#3A424C\"/>\n    <g class=\"plates-loud\">\n      <path stroke=\"#E08A3A\" stroke-width=\".4\" opacity=\".45\" d=\"M58 55 H106\"/>\n      <path stroke=\"#C8D0D8\" stroke-width=\".3\" opacity=\".28\" d=\"M50 34 H110 M70 28 V50\"/>\n      <rect x=\"78\" y=\"34\" width=\"14\" height=\"4\" rx=\".4\" fill=\"#2A323A\"/>\n    </g>\n  </g>\n  <g id=\"canopy\">\n    <path fill=\"url(#canopy-skiff-7)\" d=\"M112 30 L144 42 L118 48 L108 38 Z\"/>\n    <path stroke=\"#101418\" stroke-width=\".5\" d=\"M122 33 L118 46 M132 37 L126 46\"/>\n    <path fill=\"#D0E8F0\" opacity=\".2\" d=\"M118 32 L130 38 L120 40 Z\"/>\n  </g>\n  <g id=\"thruster\">\n    <rect x=\"18\" y=\"34\" width=\"16\" height=\"14\" rx=\"3\" fill=\"#1A2028\"/>\n    <ellipse cx=\"18\" cy=\"41\" rx=\"6\" ry=\"5\" fill=\"#101418\"/>\n    <ellipse cx=\"16.5\" cy=\"41\" rx=\"3.6\" ry=\"3.2\" fill=\"url(#glow-skiff-7)\"/>\n    <ellipse cx=\"15.4\" cy=\"41\" rx=\"1.4\" ry=\"1.2\" fill=\"#FFE2A8\"/>\n  </g>\n  <g id=\"hit-flash\" opacity=\"0\"><rect width=\"160\" height=\"80\" fill=\"#fff\"/></g>\n</svg>\n","tide-runner":"<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <!-- multi-role freighter -->\n  <defs>\n    <linearGradient id=\"metal-tide-runner\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#E8EEF6\"/>\n      <stop offset=\"45%\" stop-color=\"#9AA8BC\"/>\n      <stop offset=\"100%\" stop-color=\"#4A5568\"/>\n    </linearGradient>\n    <linearGradient id=\"shade-tide-runner\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#2A3340\" stop-opacity=\".55\"/>\n      <stop offset=\"55%\" stop-color=\"#2A3340\" stop-opacity=\"0\"/>\n    </linearGradient>\n    <linearGradient id=\"glow-tide-runner\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#FFB24A\" stop-opacity=\".95\"/>\n      <stop offset=\"100%\" stop-color=\"#FF6A2A\" stop-opacity=\".15\"/>\n    </linearGradient>\n    <radialGradient id=\"canopy-tide-runner\" cx=\"50%\" cy=\"40%\" r=\"65%\">\n      <stop offset=\"0%\" stop-color=\"#B8F0FF\"/>\n      <stop offset=\"55%\" stop-color=\"#3AA0C8\"/>\n      <stop offset=\"100%\" stop-color=\"#0B3A4A\"/>\n    </radialGradient>\n  </defs>\n  <ellipse cx=\"84\" cy=\"64\" rx=\"52\" ry=\"4\" fill=\"#000\" opacity=\".28\"/>\n  <g id=\"hull\">\n    <path fill=\"url(#metal-tide-runner)\" d=\"M16 42 C26 26, 52 18, 80 20 C112 22, 138 28, 150 40 C138 52, 112 58, 80 60 C52 62, 26 54, 16 38 Z\"/>\n    <path fill=\"url(#shade-tide-runner)\" d=\"M16 42 C26 26, 52 18, 80 20 C112 22, 138 28, 150 40 C138 52, 112 58, 80 60 C52 62, 26 54, 16 38 Z\"/>\n    <ellipse cx=\"72\" cy=\"40\" rx=\"24\" ry=\"13\" fill=\"#5A687A\" opacity=\".35\"/>\n    <path stroke=\"#EEF3FA\" stroke-width=\".8\" opacity=\".5\" d=\"M40 28 L110 32 M40 52 L110 48 M70 24 L70 56\"/>\n    <rect x=\"48\" y=\"22\" width=\"22\" height=\"8\" rx=\"1.5\" fill=\"#6B7788\" opacity=\".7\"/>\n  </g>\n  <g id=\"canopy\">\n    <ellipse cx=\"122\" cy=\"40\" rx=\"8\" ry=\"4.5\" fill=\"url(#canopy-tide-runner)\"/>\n    <ellipse cx=\"119\" cy=\"39\" rx=\"2.5\" ry=\"1.4\" fill=\"#E8FBFF\" opacity=\".6\"/>\n  </g>\n  <g id=\"thruster\">\n    <rect x=\"4\" y=\"34\" width=\"14\" height=\"14\" rx=\"3\" fill=\"#2A3340\"/>\n    <ellipse cx=\"3\" cy=\"41\" rx=\"7\" ry=\"5\" fill=\"url(#glow-tide-runner)\"/>\n  </g>\n  <g id=\"hit-flash\" opacity=\"0\"><rect width=\"160\" height=\"80\" fill=\"#fff\"/></g>\n</svg>\n","unbowed":"<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <!-- gated compact war -->\n  <defs>\n    <linearGradient id=\"metal-unbowed\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#E8EEF6\"/>\n      <stop offset=\"45%\" stop-color=\"#9AA8BC\"/>\n      <stop offset=\"100%\" stop-color=\"#4A5568\"/>\n    </linearGradient>\n    <linearGradient id=\"shade-unbowed\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#2A3340\" stop-opacity=\".55\"/>\n      <stop offset=\"55%\" stop-color=\"#2A3340\" stop-opacity=\"0\"/>\n    </linearGradient>\n    <linearGradient id=\"glow-unbowed\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#FFB24A\" stop-opacity=\".95\"/>\n      <stop offset=\"100%\" stop-color=\"#FF6A2A\" stop-opacity=\".15\"/>\n    </linearGradient>\n    <radialGradient id=\"canopy-unbowed\" cx=\"50%\" cy=\"40%\" r=\"65%\">\n      <stop offset=\"0%\" stop-color=\"#B8F0FF\"/>\n      <stop offset=\"55%\" stop-color=\"#3AA0C8\"/>\n      <stop offset=\"100%\" stop-color=\"#0B3A4A\"/>\n    </radialGradient>\n  </defs>\n  <ellipse cx=\"92\" cy=\"62\" rx=\"40\" ry=\"3.2\" fill=\"#000\" opacity=\".26\"/>\n  <g id=\"hull\">\n    <path fill=\"url(#metal-unbowed)\" d=\"M46 34 L46 46 L72 54 L122 46 L140 40 L122 34 L72 26 Z\"/>\n    <path fill=\"url(#shade-unbowed)\" d=\"M46 34 L46 46 L72 54 L122 46 L140 40 L122 34 L72 26 Z\"/>\n    <path fill=\"#5A687A\" opacity=\".55\" d=\"M78 36 L104 40 L78 44 Z\"/>\n    <rect x=\"86\" y=\"42\" width=\"16\" height=\"6\" rx=\"1\" fill=\"#3A4452\" opacity=\".55\"/>\n    <path stroke=\"#EEF3FA\" stroke-width=\".7\" opacity=\".5\" d=\"M60 36 L118 38 M60 44 L118 42\"/>\n  </g>\n  <g id=\"canopy\">\n    <rect x=\"108\" y=\"35\" width=\"14\" height=\"9\" rx=\"1.2\" fill=\"url(#canopy-unbowed)\"/>\n    <rect x=\"110\" y=\"36.5\" width=\"4\" height=\"3\" rx=\".3\" fill=\"#E8FBFF\" opacity=\".55\"/>\n  </g>\n  <g id=\"thruster\">\n    <rect x=\"34\" y=\"35\" width=\"14\" height=\"10\" rx=\"1.5\" fill=\"#2A3340\"/>\n    <rect x=\"58\" y=\"29\" width=\"24\" height=\"6\" rx=\"1\" fill=\"#6B7788\" opacity=\".65\"/>\n    <rect x=\"58\" y=\"45\" width=\"24\" height=\"6\" rx=\"1\" fill=\"#6B7788\" opacity=\".65\"/>\n    <ellipse cx=\"33\" cy=\"40\" rx=\"6\" ry=\"4\" fill=\"url(#glow-unbowed)\"/>\n  </g>\n  <g id=\"hit-flash\" opacity=\"0\"><rect width=\"160\" height=\"80\" fill=\"#fff\"/></g>\n</svg>\n","wasp-prime":"<svg class=\"hull-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 80\" fill=\"none\" aria-hidden=\"true\">\n  <!-- endgame war hull -->\n  <defs>\n    <linearGradient id=\"metal-wasp-prime\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#6A727C\"/><stop offset=\"40%\" stop-color=\"#323840\"/><stop offset=\"100%\" stop-color=\"#14181E\"/>\n    </linearGradient>\n    <linearGradient id=\"shade-wasp-prime\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#080A0E\" stop-opacity=\".75\"/><stop offset=\"50%\" stop-color=\"#080A0E\" stop-opacity=\".15\"/>\n    </linearGradient>\n    <radialGradient id=\"canopy-wasp-prime\" cx=\"30%\" cy=\"25%\" r=\"75%\">\n      <stop offset=\"0%\" stop-color=\"#8AB0C0\"/><stop offset=\"65%\" stop-color=\"#1A3040\"/><stop offset=\"100%\" stop-color=\"#060A0E\"/>\n    </radialGradient>\n    <linearGradient id=\"glow-wasp-prime\" x1=\"1\" y1=\"0\" x2=\"0\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#FFB24A\"/><stop offset=\"100%\" stop-color=\"#FF4A10\" stop-opacity=\".12\"/>\n    </linearGradient>\n  </defs>\n  <ellipse cx=\"86\" cy=\"68\" rx=\"58\" ry=\"3.2\" fill=\"#000\" opacity=\".32\"/>\n  <g id=\"hull\">\n    <path fill=\"url(#metal-wasp-prime)\" d=\"M16 38 L28 28 L88 26 L154 40 L88 52 L40 56 L16 48 Z\"/>\n    <path fill=\"url(#shade-wasp-prime)\" d=\"M16 38 L28 28 L88 26 L154 40 L88 52 L40 56 L16 48 Z\"/>\n    <path fill=\"#2A323A\" d=\"M40 28 L96 30 L130 38 L96 40 L44 38 Z\"/>\n    <path d=\"M30 26 L58 8 L74 30 L48 32 Z\" fill=\"#3A424C\"/>\n    <path d=\"M30 54 L58 72 L74 50 L48 48 Z\" fill=\"#2A323A\"/>\n    <path d=\"M58 10 L96 4 L102 24 L72 28 Z\" fill=\"#4A525C\"/>\n    <path d=\"M58 70 L96 76 L102 56 L72 52 Z\" fill=\"#323A44\"/>\n    <rect x=\"54\" y=\"20\" width=\"10\" height=\"6\" rx=\".8\" fill=\"#1A2028\"/>\n    <rect x=\"74\" y=\"18\" width=\"10\" height=\"6\" rx=\".8\" fill=\"#1A2028\"/>\n    <rect x=\"94\" y=\"22\" width=\"9\" height=\"5.5\" rx=\".8\" fill=\"#1A2028\"/>\n    <g class=\"plates-loud\">\n      <rect x=\"62\" y=\"21.6\" width=\"8\" height=\"1.5\" fill=\"#0A0C10\"/>\n      <rect x=\"82\" y=\"19.6\" width=\"8\" height=\"1.5\" fill=\"#0A0C10\"/>\n      <rect x=\"101\" y=\"23.6\" width=\"7\" height=\"1.4\" fill=\"#0A0C10\"/>\n      <rect x=\"108\" y=\"42\" width=\"16\" height=\"4\" rx=\".5\" fill=\"#1A2028\"/>\n      <rect x=\"122\" y=\"43\" width=\"8\" height=\"2\" fill=\"#3A4450\"/>\n      <path stroke=\"#C8D0D8\" stroke-width=\".3\" opacity=\".22\" d=\"M36 32 L128 36 M36 48 L128 44 M72 28 V52\"/>\n      <path stroke=\"#E08A3A\" stroke-width=\".35\" opacity=\".35\" d=\"M28 28 L88 26 L154 40\"/>\n    </g>\n  </g>\n  <g id=\"canopy\">\n    <path fill=\"url(#canopy-wasp-prime)\" d=\"M112 31 L138 37 L138 43 L112 49 L106 40 Z\"/>\n    <path stroke=\"#0A1014\" stroke-width=\".5\" d=\"M120 33 V47 M128 35 V45\"/>\n  </g>\n  <g id=\"thruster\">\n    <rect x=\"6\" y=\"34\" width=\"12\" height=\"16\" rx=\"1.5\" fill=\"#12161C\"/>\n    <ellipse cx=\"6\" cy=\"42\" rx=\"6.5\" ry=\"5.5\" fill=\"#0A0C10\"/>\n    <ellipse cx=\"4.6\" cy=\"42\" rx=\"3.8\" ry=\"3.2\" fill=\"url(#glow-wasp-prime)\"/>\n    <ellipse cx=\"3.6\" cy=\"42\" rx=\"1.5\" ry=\"1.2\" fill=\"#FFE2A8\"/>\n  </g>\n  <g id=\"hit-flash\" opacity=\"0\"><rect width=\"160\" height=\"80\" fill=\"#fff\"/></g>\n</svg>\n"};
+  const HULL_SVG = globalThis.SkiffHullArt.HULL_SVG;
 
-  function makeHullArt(id, cls) {
-    const wrap = document.createElement("div");
-    wrap.className = cls || "hull-art";
-    wrap.setAttribute("aria-hidden", "true");
-    let html = HULL_SVG[id] || HULL_SVG["skiff-7"] || "";
-    const suffix = "-" + String(id || "hull") + "-" + Math.random().toString(36).slice(2, 7);
-    const ids = [];
-    html.replace(/\bid="([^"]+)"/g, function (_, x) { ids.push(x); return _; });
-    ids.forEach(function (raw) {
-      const next = raw + suffix;
-      html = html.split('id="' + raw + '"').join('id="' + next + '"');
-      html = html.split('url(#' + raw + ')').join('url(#' + next + ')');
-    });
-    wrap.innerHTML = html;
-    return wrap;
-  }
+  const makeHullArt = globalThis.SkiffHullArt.makeHullArt;
 
 
   // Yard economy — pure logic in js/yard-economy.js (ATDD). Thin adapters only.
