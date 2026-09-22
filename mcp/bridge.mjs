@@ -332,6 +332,7 @@ const server = http.createServer(async (req, res) => {
       writeSave(body);
       return sendJson(res, 200, { ok: true });
     } catch (e) {
+      console.warn("[bridge] /api/save bad JSON payload:", e.message);
       return sendJson(res, 400, { ok: false, error: "bad_json" });
     }
   }

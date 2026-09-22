@@ -27,7 +27,7 @@ async function forwardOp(body) {
       let data = "";
       res.on("data", chunk => data += chunk);
       res.on("end", () => {
-        try { resolve(JSON.parse(data)); } catch (e) { resolve({ ok: false, error: "bad_response" }); }
+        try { resolve(JSON.parse(data)); } catch (e) { console.error("[server] bad JSON from bridge:", e.message); resolve({ ok: false, error: "bad_response" }); }
       });
     });
     req.on("error", (err) => {

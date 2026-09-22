@@ -1,4 +1,4 @@
-import { test, mock } from "node:test";
+import { test } from "node:test";
 import assert from "node:assert";
 import http from "node:http";
 import { spawn } from "node:child_process";

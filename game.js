@@ -5,13 +5,12 @@
   const THEME_KEY = "skiff-run-theme";
   let bridgeOn = (() => {
     try { return new URLSearchParams(location.search).get("bridge") === "1"; }
-    catch (_) { return false; }
+    catch { return false; }
   })();
   const THEMES = ["cobalt", "coffee", "lcars"];
   const RETIRE_NET = (globalThis.SkiffMarket && globalThis.SkiffMarket.RETIRE_NET) || 35000;
   const FUEL_PRICE = (globalThis.SkiffFuel && globalThis.SkiffFuel.FUEL_PRICE) || 45;
   const CREW_HIRE = 800;
-  const CREW_FIRE_REFUND = 200;
   // DOCK_WORK_PAY from js/yard-economy.js (SkiffYardEconomy)
 
   const GOODS = globalThis.SkiffGoods;
@@ -83,8 +82,6 @@
   const SP = globalThis.SkiffDockPress;
   if (!SP) throw new Error("SkiffDockPress missing — load js/dock-press.js before game.js");
 
-  const mulberry32 = globalThis.SkiffChartGen.mulberry32;
-
   function applyChart(chart) {
     if (!chart || !chart.pos) return;
     SYSTEMS = SYSTEM_DEFS.map((s) => {
@@ -143,9 +140,6 @@
 
   function dist(a, b) { return SF.dist(a, b); }
 
-  // World units per fuel point — fuelCost = ceil(distance / FUEL_DIST).
-  const FUEL_DIST = SF.FUEL_DIST;
-
   function fuelCost(fromId, toId) {
     return SF.fuelCost(sys(fromId), sys(toId));
   }
@@ -200,8 +194,6 @@
   }
 
   function cargoUsed(st) { return SM.cargoUsed(st.cargo); }
-  function inventoryValue(st) { return SM.inventoryValue(st, GOODS); }
-  function shipValue(st) { return SM.shipValue(st.shipId, SHIPS); }
   function netWorth(st) { return SM.netWorth(st, GOODS, SHIPS); }
 
   function rollMarket(st) {
@@ -276,7 +268,7 @@
       applyChart(st.chart);
       if (!sys(st.system)) st.system = "ember";
       return st;
-    } catch (_) { return null; }
+    } catch { return null; }
   }
 
   function save(st) {
@@ -311,11 +303,6 @@
       link: cssVar("--map-link", "rgba(47,164,160,0.55)"),
       linkDim: cssVar("--map-link-dim", "rgba(30,58,95,0.4)"),
     };
-  }
-
-  function currentTheme() {
-    const t = document.documentElement.getAttribute("data-theme") || "cobalt";
-    return THEMES.includes(t) ? t : "cobalt";
   }
 
   function applyTheme(name, persist) {
@@ -770,10 +757,6 @@
     const marginEl = el("target-margin");
     const warp = el("btn-warp");
     const id = ui.targetId;
-    const clearExtra = () => {
-      if (dossier) { dossier.hidden = true; dossier.textContent = ""; }
-      if (marginEl) { marginEl.hidden = true; marginEl.textContent = ""; marginEl.className = "margin-line"; }
-    };
     if (!id || id === state.system) {
       const here = sys(state.system);
       title.textContent = here.name + " (here)";
@@ -1011,7 +994,7 @@
     hint.innerHTML = "<strong>Active Quests:</strong><br/>" + state.quests.map(q => {
       const destObj = sys(q.dest);
       const destName = destObj ? destObj.name : q.dest;
-      return `► ${q.title} (Reward: ₩${q.reward})`;
+      return `► ${q.title} → ${destName} (Reward: ₩${q.reward})`;
     }).join("<br/>");
   }
 
@@ -1841,7 +1824,7 @@
       const data = await r.json();
       applyBridgePayload(data);
     } catch (e) {
-      /* bridge down — keep last frame */
+      console.warn("[bridgePoll] offline or frame skip:", e.message);
     }
   }
 
