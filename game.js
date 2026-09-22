@@ -2489,7 +2489,7 @@
         ok: ok,
         unitsSold: sold,
         earned: state.credits - prevCredits,
-        log: ok ? ("Sold all " + sold + " units") : "Hold was empty",
+        log: ok ? ("Sold all " + sold + " units for ₩" + (state.credits - prevCredits).toLocaleString()) : "Hold was empty",
       };
       logAgentAct("sell_all", res);
       return res;
@@ -2541,7 +2541,7 @@
         ok: ok,
         unitsSold: sold,
         earned: state.credits - prevCredits,
-        log: ok ? ("Sold " + sold + " units expensive") : "Nothing expensive in hold",
+        log: ok ? ("Sold " + sold + " units for ₩" + (state.credits - prevCredits).toLocaleString() + " at premium") : "Nothing expensive in hold",
       };
       logAgentAct("sell_expensive", res);
       return res;

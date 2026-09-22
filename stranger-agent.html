@@ -77,7 +77,16 @@
         log("-> callTool('skiff_sell_expensive')", "action");
         const sellRes = await mc.callTool("skiff_sell_expensive");
         const sellParsed = JSON.parse(sellRes.content[0].text);
-        log(sellParsed.log || (sellParsed.ok ? "Cargo sold." : "Market holds no premium right now."), "system");
+        
+        if (sellParsed.ok && sellParsed.unitsSold > 0) {
+          log(sellParsed.log, "system");
+        } else {
+          log("Thinking: No high premium here, but hold is full. Selling at market rate to free capacity.", "agent");
+          log("-> callTool('skiff_sell_all')", "action");
+          const sellAllRes = await mc.callTool("skiff_sell_all");
+          const sellAllParsed = JSON.parse(sellAllRes.content[0].text);
+          log(sellAllParsed.log || "Hold emptied.", "system");
+        }
         state = await refreshState();
         await sleep(1500);
       }
