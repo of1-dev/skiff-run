@@ -854,6 +854,9 @@
     setChartMode(mode);
     const extra = hits.length > 1 ? (" (— " + hits.length + " hits)") : "";
     log("Chart found " + best.name + extra + ".");
+    if (globalThis.SkiffHoloRenderer && typeof globalThis.SkiffHoloRenderer.selectSystem === "function") {
+      globalThis.SkiffHoloRenderer.selectSystem(best.id);
+    }
     showTab("chart");
     render();
   }
@@ -1057,6 +1060,7 @@
       document.querySelectorAll("[data-renderer-pick]").forEach(btn => btn.classList.toggle("active", btn === b));
       if (b.dataset.rendererPick === "holo") {
         document.getElementById("holo-canvas").style.display = "block";
+        document.getElementById("holo-search-wrap").style.display = "block";
         document.getElementById("btn-exit-holo").style.display = "block";
         if (globalThis.SkiffHoloRenderer) {
           globalThis.SkiffHoloRenderer.start(state, HULL_SVG, SYSTEMS, {
@@ -1068,12 +1072,22 @@
         }
       } else {
         document.getElementById("holo-canvas").style.display = "none";
+        document.getElementById("holo-search-wrap").style.display = "none";
         document.getElementById("btn-exit-holo").style.display = "none";
         if (globalThis.SkiffHoloRenderer) globalThis.SkiffHoloRenderer.stop();
       }
     };
   });
   
+  const holoFindForm = document.getElementById("holo-find-form");
+  if (holoFindForm) {
+    holoFindForm.onsubmit = (e) => {
+      e.preventDefault();
+      const q = (document.getElementById("holo-search") || {}).value || "";
+      runChartSearch(q);
+    };
+  }
+
   const exitHolo = document.getElementById("btn-exit-holo");
   if (exitHolo) {
     exitHolo.onclick = () => {

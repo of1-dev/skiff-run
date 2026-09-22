@@ -596,5 +596,12 @@
     }
   }
 
-  return { start, stop, update };
+  function selectSystem(systemId) {
+    const posMap = getPosMap();
+    if (posMap[systemId]) {
+      selectedSystemId = systemId;
+    }
+  }
+
+  return { start, stop, update, selectSystem };
 });
