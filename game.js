@@ -961,11 +961,21 @@
         el("enc-b").textContent = "Flee (−fuel)";
       }
     }
-    dlg.showModal();
+    try {
+      dlg.showModal();
+    } catch (err) {
+      /* already open */
+    }
+    if (typeof document !== "undefined" && document.body) {
+      document.body.classList.add("enc-open");
+    }
   }
 
   function resolveEncounter(choice) {
-    dlg.close();
+    if (typeof document !== "undefined" && document.body) {
+      document.body.classList.remove("enc-open");
+    }
+    if (dlg && dlg.open) dlg.close();
     const result = globalThis.SkiffCombat.resolveEncounter({
       state,
       encKind,

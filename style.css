@@ -336,8 +336,14 @@ dialog {
   padding: 16px;
   max-width: 90vw;
   width: 340px;
+  z-index: 11000;
 }
-dialog::backdrop { background: rgba(0,0,0,.72); }
+dialog::backdrop { background: rgba(0,0,0,.72); z-index: 10990; }
+body.enc-open #holo-canvas,
+body.enc-open #holo-search-wrap,
+body.enc-open #btn-exit-holo {
+  pointer-events: none;
+}
 .enc-actions { display: flex; gap: 8px; margin-top: 12px; }
 .enc-actions .btn { flex: 1; }
 

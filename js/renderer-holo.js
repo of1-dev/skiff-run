@@ -51,6 +51,27 @@
     return { enabled: false, label: "NEED " + o.cost + " FUEL (Have " + o.fuel + ")" };
   }
 
+  /** Camera follows the ship so a jump is visible (stars slide; hull stays in frame). */
+  function project(wx, wy, originX, originY, cx, cy, scale) {
+    return { x: cx + (wx - originX) * scale, y: cy + (wy - originY) * scale };
+  }
+
+  function viewCam() {
+    const cx = canvas ? canvas.width / 2 : 0;
+    const cy = canvas ? canvas.height / 2 : 0;
+    const scale = Math.min(canvas ? canvas.width : 90, canvas ? canvas.height : 90) / 90;
+    return {
+      cx: cx,
+      cy: cy,
+      scale: scale,
+      ox: shipPos.x,
+      oy: shipPos.y,
+      toScreen: function (wx, wy) {
+        return project(wx, wy, shipPos.x, shipPos.y, cx, cy, scale);
+      },
+    };
+  }
+
   function getShipRange() {
     if (!currentState || !currentState.shipId) return 28;
     const ships = (globalThis.SkiffShips && Array.isArray(globalThis.SkiffShips)) ? globalThis.SkiffShips : [];
@@ -178,15 +199,12 @@
 
     // Check hit test against star nodes
     const posMap = getPosMap();
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-    const scale = Math.min(canvas.width, canvas.height) / 120;
+    const cam = viewCam();
     
     let found = null;
     for (const [id, pos] of Object.entries(posMap)) {
-      const sx = cx + (pos.x - 50) * scale;
-      const sy = cy + (pos.y - 50) * scale;
-      if (Math.hypot(mousePos.x - sx, mousePos.y - sy) <= 16) {
+      const p = cam.toScreen(pos.x, pos.y);
+      if (Math.hypot(mousePos.x - p.x, mousePos.y - p.y) <= 16) {
         found = id;
         break;
       }
@@ -196,6 +214,9 @@
   }
 
   function onPointerDown(e) {
+    if (typeof document !== "undefined" && document.body && document.body.classList.contains("enc-open")) {
+      return;
+    }
     const pt = getCanvasPointer(e);
     const mx = pt.x;
     const my = pt.y;
@@ -210,14 +231,11 @@
 
     // Check star nodes
     const posMap = getPosMap();
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-    const scale = Math.min(canvas.width, canvas.height) / 120;
+    const cam = viewCam();
 
     for (const [id, pos] of Object.entries(posMap)) {
-      const sx = cx + (pos.x - 50) * scale;
-      const sy = cy + (pos.y - 50) * scale;
-      if (Math.hypot(mx - sx, my - sy) <= 18) {
+      const p = cam.toScreen(pos.x, pos.y);
+      if (Math.hypot(mx - p.x, my - p.y) <= 18) {
         selectedSystemId = (selectedSystemId === id && id !== currentState.system) ? null : id;
         return;
       }
@@ -237,9 +255,6 @@
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     const time = Date.now() / 1000;
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-    const scale = Math.min(canvas.width, canvas.height) / 120;
     
     // Smoothly interpolate ship position
     const targetSys = posMap[currentState.system];
@@ -257,6 +272,11 @@
       }
     }
 
+    const cam = viewCam();
+    const cx = cam.cx;
+    const cy = cam.cy;
+    const scale = cam.scale;
+
     // Engine Trail
     if (isMoving) {
       trail.push({ x: shipPos.x, y: shipPos.y, age: 0 });
@@ -267,8 +287,9 @@
     for (let i = 0; i < trail.length; i++) {
       const t = trail[i];
       t.age += 1;
-      const tx = cx + (t.x - 50) * scale;
-      const ty = cy + (t.y - 50) * scale;
+      const tp = cam.toScreen(t.x, t.y);
+      const tx = tp.x;
+      const ty = tp.y;
       if (i === 0) ctx.moveTo(tx, ty);
       else ctx.lineTo(tx, ty);
     }
@@ -283,8 +304,9 @@
     const fuelReach = Math.min(rangeVal, currentFuel * 14);
 
     if (targetSys) {
-      const currentSx = cx + (targetSys.x - 50) * scale;
-      const currentSy = cy + (targetSys.y - 50) * scale;
+      const herePt = cam.toScreen(targetSys.x, targetSys.y);
+      const currentSx = herePt.x;
+      const currentSy = herePt.y;
 
       // Max Hull Range ring
       ctx.beginPath();
@@ -315,8 +337,10 @@
         const p2 = posMap[posKeys[j]];
         const d = Math.hypot(p2.x - p1.x, p2.y - p1.y);
         if (d <= rangeVal) {
-          ctx.moveTo(cx + (p1.x - 50) * scale, cy + (p1.y - 50) * scale);
-          ctx.lineTo(cx + (p2.x - 50) * scale, cy + (p2.y - 50) * scale);
+          const a = cam.toScreen(p1.x, p1.y);
+          const b = cam.toScreen(p2.x, p2.y);
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
         }
       }
     }
@@ -324,8 +348,9 @@
 
     // Draw systems
     for (const [id, pos] of Object.entries(posMap)) {
-      const x = cx + (pos.x - 50) * scale;
-      const y = cy + (pos.y - 50) * scale;
+      const sp = cam.toScreen(pos.x, pos.y);
+      const x = sp.x;
+      const y = sp.y;
       
       const isHere = id === currentState.system;
       const isSelected = id === selectedSystemId;
@@ -394,8 +419,9 @@
     
     if (shipImg && shipImg.complete && shipImg.naturalWidth !== 0) {
       const bob = Math.sin(time * 3) * 4;
-      const sx = cx + (shipPos.x - 50) * scale;
-      const sy = cy + (shipPos.y - 50) * scale + bob;
+      const hullPt = cam.toScreen(shipPos.x, shipPos.y);
+      const sx = hullPt.x;
+      const sy = hullPt.y + bob;
       
       let angle = 0;
       if (isMoving && targetSys) {
@@ -641,5 +667,5 @@
     }
   }
 
-  return { start, stop, update, selectSystem, engageJumpButton };
+  return { start, stop, update, selectSystem, engageJumpButton, project };
 });
