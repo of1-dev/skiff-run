@@ -81,6 +81,32 @@
     };
   }
 
+  function riskFill(pirate) {
+    const p = pirate | 0;
+    if (p <= 1) return "#2FA4A0";
+    if (p <= 3) return "#C4A35A";
+    if (p <= 5) return "#D97757";
+    return "#C44C4C";
+  }
+
+  function fuelCostBetween(a, b) {
+    if (!a || !b) return 99;
+    return Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 14));
+  }
+
+  function canJumpFromHere(here, dest, range, fuel) {
+    if (!here || !dest || here.id === dest.id) return false;
+    const d = Math.hypot(dest.x - here.x, dest.y - here.y);
+    if (d > (range || 0) + 0.01) return false;
+    return (fuel | 0) >= fuelCostBetween(here, dest);
+  }
+
+  function linksFromHere(here, systems, range, fuel) {
+    return (systems || []).filter(function (s) {
+      return canJumpFromHere(here, s, range, fuel);
+    });
+  }
+
   function getShipRange() {
     if (!currentState || !currentState.shipId) return 28;
     const ships = (globalThis.SkiffShips && Array.isArray(globalThis.SkiffShips)) ? globalThis.SkiffShips : [];
@@ -286,6 +312,25 @@
     const cx = cam.cx;
     const cy = cam.cy;
     const scale = cam.scale;
+    const W = worldSize();
+
+    // Same even grid as 2D Full (step 20 on the 160 sky)
+    ctx.strokeStyle = "rgba(30, 58, 95, 0.45)";
+    ctx.lineWidth = 1;
+    for (let g = 0; g <= W + 1e-6; g += 20) {
+      const v0 = cam.toScreen(g, 0);
+      const v1 = cam.toScreen(g, W);
+      ctx.beginPath();
+      ctx.moveTo(v0.x, v0.y);
+      ctx.lineTo(v1.x, v1.y);
+      ctx.stroke();
+      const h0 = cam.toScreen(0, g);
+      const h1 = cam.toScreen(W, g);
+      ctx.beginPath();
+      ctx.moveTo(h0.x, h0.y);
+      ctx.lineTo(h1.x, h1.y);
+      ctx.stroke();
+    }
 
     // Engine Trail
     if (isMoving) {
@@ -361,26 +406,33 @@
       }
     }
 
-    // Draw connections
-    ctx.strokeStyle = "rgba(35, 65, 105, 0.35)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let i = 0; i < posKeys.length; i++) {
-      for (let j = i + 1; j < posKeys.length; j++) {
-        const p1 = posMap[posKeys[i]];
-        const p2 = posMap[posKeys[j]];
-        const d = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-        if (d <= rangeVal) {
-          const a = cam.toScreen(p1.x, p1.y);
-          const b = cam.toScreen(p2.x, p2.y);
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
-        }
-      }
+    // Links: only legal jumps from HERE (2D Chart law — not every pair in range)
+    if (targetSys) {
+      ctx.strokeStyle = "rgba(47, 164, 160, 0.55)";
+      ctx.lineWidth = 1.5;
+      const herePt = cam.toScreen(targetSys.x, targetSys.y);
+      const sysList = currentSystems && currentSystems.length
+        ? currentSystems
+        : posKeys.map(function (id) { return posMap[id]; });
+      linksFromHere(targetSys, sysList, rangeVal, currentFuel).forEach(function (s) {
+        const b = cam.toScreen(s.x, s.y);
+        ctx.beginPath();
+        ctx.moveTo(herePt.x, herePt.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      });
     }
-    ctx.stroke();
 
-    // Draw systems
+    const CF = globalThis.SkiffChartFind;
+    const WP = globalThis.SkiffWaypoints;
+    const SM = globalThis.SkiffMarket;
+    const TF = globalThis.SkiffTradeFog;
+    const GOODS = globalThis.SkiffGoods;
+    const waypoints = (currentState.waypoints || []).slice();
+    const herePrices = currentState.prices || {};
+    const sectorR = (TF && TF.SECTOR_RADIUS) || 48;
+
+    // Draw systems (2D Chart intel: hollow unvisited, dim far, teal halo, pins, names policy)
     for (const [id, pos] of Object.entries(posMap)) {
       const sp = cam.toScreen(pos.x, pos.y);
       const x = sp.x;
@@ -389,60 +441,87 @@
       const isHere = id === currentState.system;
       const isSelected = id === selectedSystemId;
       const isHovered = id === hoveredSystemId;
-      const isVisited = currentState.visited && currentState.visited[id];
+      const isVisited = !!(currentState.visited && currentState.visited[id]) || isHere;
       const pir = pos.pirate != null ? pos.pirate : 0;
-      
-      // Distance from current system
-      let inJumpRange = false;
-      let fuelCost = 1;
-      if (targetSys && !isHere) {
-        const dist = Math.hypot(pos.x - targetSys.x, pos.y - targetSys.y);
-        inJumpRange = dist <= rangeVal + 0.01;
-        fuelCost = Math.max(1, Math.ceil(dist / 14));
-      }
-
-      // Node glow & color coding by danger (pirates)
+      const reach = isHere || (targetSys && canJumpFromHere(targetSys, pos, rangeVal, currentFuel));
+      const fill = isHere ? "#7ec8e8" : riskFill(pir);
+      const r = isHere ? 6.5 : isSelected ? 6 : 4.5;
       const glow = (isHere || isSelected) && !isMoving ? (Math.sin(time * 5) * 0.5 + 0.5) : 0;
-      
-      let nodeColor;
-      if (isHere) {
-        nodeColor = `rgba(126, 200, 232, ${0.85 + glow * 0.15})`;
-      } else if (pir >= 6) {
-        nodeColor = "rgba(255, 75, 75, 0.85)"; // Extreme danger
-      } else if (pir >= 4) {
-        nodeColor = "rgba(255, 178, 74, 0.85)"; // Moderate danger
-      } else if (isVisited) {
-        nodeColor = "rgba(100, 140, 185, 0.75)";
-      } else {
-        nodeColor = "rgba(50, 75, 105, 0.6)";
-      }
 
-      // Draw outer target ring if selected or hovered
+      ctx.save();
+      ctx.globalAlpha = reach || isHere ? 1 : 0.45;
+
       if (isSelected || isHovered) {
         ctx.beginPath();
-        ctx.arc(x, y, 11 + glow * 2, 0, Math.PI * 2);
-        ctx.strokeStyle = isSelected ? "#ffb24a" : "rgba(126, 200, 232, 0.7)";
-        ctx.lineWidth = isSelected ? 2 : 1.5;
+        ctx.arc(x, y, r + 5 + glow * 2, 0, Math.PI * 2);
+        ctx.strokeStyle = isSelected ? "#7ec8e8" : "rgba(126, 200, 232, 0.7)";
+        ctx.lineWidth = 1.5;
         ctx.stroke();
       }
 
       ctx.beginPath();
-      ctx.arc(x, y, isHere ? 6.5 + glow * 2.5 : (isSelected ? 6 : 4.5), 0, Math.PI * 2);
-      ctx.fillStyle = nodeColor;
-      ctx.fill();
-
-      // System Name & Quick Intel badge
-      const label = pos.name || id.toUpperCase();
-      ctx.fillStyle = isHere ? "#7ec8e8" : (isSelected ? "#ffb24a" : (isVisited ? "#D6E4F5" : "#6e829e"));
-      ctx.font = isHere ? "bold 13px monospace" : (isSelected ? "bold 12px monospace" : "11px monospace");
-      ctx.fillText(label, x + 11, y + 4);
-
-      // Threat / Jump fuel badge
-      if (!isHere && inJumpRange) {
-        ctx.fillStyle = currentFuel >= fuelCost ? "rgba(72, 187, 120, 0.9)" : "rgba(255, 123, 114, 0.9)";
-        ctx.font = "10px monospace";
-        ctx.fillText(`${fuelCost}f`, x + 11, y + 16);
+      ctx.arc(x, y, r + (isHere ? glow * 2 : 0), 0, Math.PI * 2);
+      if (isVisited) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+      } else {
+        ctx.fillStyle = "#04070F";
+        ctx.fill();
+        ctx.strokeStyle = fill;
+        ctx.lineWidth = 2;
+        ctx.stroke();
       }
+
+      if (!isHere && reach && pos.mods && TF && SM && GOODS && TF.canSeeTradeIntel({
+        dist: targetSys ? Math.hypot(pos.x - targetSys.x, pos.y - targetSys.y) : 99,
+        sectorRadius: sectorR,
+      })) {
+        const there = {};
+        GOODS.forEach(function (g) { there[g.id] = SM.priceFor(pos, g); });
+        const edge = SM.bestLaneEdge(herePrices, there, GOODS);
+        if (edge && edge.edge >= 4) {
+          ctx.beginPath();
+          ctx.arc(x, y, r + 3, 0, Math.PI * 2);
+          ctx.strokeStyle = edge.edge >= 12 ? "rgba(47,164,160,0.9)" : "rgba(47,164,160,0.45)";
+          ctx.lineWidth = edge.edge >= 12 ? 2.5 : 1.5;
+          ctx.stroke();
+        }
+      }
+
+      const wpIdx = WP && typeof WP.indexOf === "function" ? WP.indexOf(waypoints, id) : waypoints.indexOf(id);
+      if (wpIdx >= 0) {
+        ctx.beginPath();
+        ctx.arc(x, y - r - 6, 5.5, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(232,160,106,0.95)";
+        ctx.fill();
+        ctx.fillStyle = "#1a120c";
+        ctx.font = "bold 9px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(String(wpIdx + 1), x, y - r - 3);
+        ctx.textAlign = "start";
+      }
+
+      const showLabel = CF
+        ? CF.shouldLabel("full", pos, {
+          hereId: currentState.system,
+          targetId: selectedSystemId,
+          hitId: selectedSystemId,
+          waypoints: waypoints,
+        })
+        : (isHere || isSelected);
+      if (showLabel) {
+        const nm = pos.name || id;
+        ctx.fillStyle = isVisited ? "#D6E4F5" : "#5A7394";
+        ctx.font = isHere ? "bold 13px monospace" : "12px monospace";
+        ctx.fillText(nm, x + 8, y + 3);
+        if (reach && !isHere && isSelected) {
+          const cost = fuelCostBetween(targetSys, pos);
+          ctx.fillStyle = "#5A7394";
+          ctx.font = "11px monospace";
+          ctx.fillText(cost + "f", x + 9, y + 16);
+        }
+      }
+      ctx.restore();
     }
     
     // Draw Ship
@@ -721,5 +800,5 @@
     }
   }
 
-  return { start, stop, update, selectSystem, engageJumpButton, project };
+  return { start, stop, update, selectSystem, engageJumpButton, project, linksFromHere, canJumpFromHere, riskFill };
 });
