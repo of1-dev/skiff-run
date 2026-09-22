@@ -39,17 +39,33 @@
     }
   }
 
-  function start(state, svgs) {
+  let currentSystems = null;
+
+  function getPosMap() {
+    const map = {};
+    if (currentState && currentState.chart && currentState.chart.pos) {
+      Object.assign(map, currentState.chart.pos);
+    }
+    if (currentSystems && Array.isArray(currentSystems)) {
+      currentSystems.forEach(s => {
+        if (s.id && typeof s.x === "number") {
+          if (!map[s.id]) map[s.id] = { x: s.x, y: s.y, name: s.name, pirate: s.pirate, police: s.police };
+        }
+      });
+    }
+    return map;
+  }
+
+  function start(state, svgs, systems) {
     if (!canvas) init();
     currentState = state;
+    if (systems) currentSystems = systems;
     cacheShipImages(svgs);
     
-    if (state && state.chart && state.chart.pos && state.system) {
-      const p = state.chart.pos[state.system];
-      if (p) {
-        shipPos.x = p.x;
-        shipPos.y = p.y;
-      }
+    const posMap = getPosMap();
+    if (state && state.system && posMap[state.system]) {
+      shipPos.x = posMap[state.system].x;
+      shipPos.y = posMap[state.system].y;
     }
 
     resize();
@@ -63,8 +79,9 @@
     }
   }
 
-  function update(state) {
+  function update(state, systems) {
     currentState = state;
+    if (systems) currentSystems = systems;
   }
 
   function renderLoop() {
@@ -73,7 +90,10 @@
   }
 
   function draw() {
-    if (!ctx || !currentState || !currentState.chart || !currentState.chart.pos) return;
+    if (!ctx || !currentState) return;
+    const posMap = getPosMap();
+    const posKeys = Object.keys(posMap);
+    if (posKeys.length === 0) return;
     
     // Clear background with slight fade for trails
     ctx.fillStyle = "rgba(5, 5, 10, 0.3)";
@@ -87,7 +107,7 @@
     const scale = Math.min(canvas.width, canvas.height) / 120;
     
     // Smoothly interpolate ship position
-    const targetSys = currentState.chart.pos[currentState.system];
+    const targetSys = posMap[currentState.system];
     let isMoving = false;
     if (targetSys) {
       const dx = targetSys.x - shipPos.x;
@@ -127,11 +147,10 @@
     ctx.strokeStyle = "rgba(40, 80, 120, 0.3)";
     ctx.lineWidth = 1;
     ctx.beginPath();
-    const posKeys = Object.keys(currentState.chart.pos);
     for (let i = 0; i < posKeys.length; i++) {
       for (let j = i + 1; j < posKeys.length; j++) {
-        const p1 = currentState.chart.pos[posKeys[i]];
-        const p2 = currentState.chart.pos[posKeys[j]];
+        const p1 = posMap[posKeys[i]];
+        const p2 = posMap[posKeys[j]];
         const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
         if (dist < 30) {
           ctx.moveTo(cx + (p1.x - 50) * scale, cy + (p1.y - 50) * scale);
@@ -142,7 +161,7 @@
     ctx.stroke();
 
     // Draw systems
-    for (const [id, pos] of Object.entries(currentState.chart.pos)) {
+    for (const [id, pos] of Object.entries(posMap)) {
       const x = cx + (pos.x - 50) * scale;
       const y = cy + (pos.y - 50) * scale;
       
@@ -158,9 +177,10 @@
       ctx.fill();
       
       // System Name
+      const label = pos.name || id.toUpperCase();
       ctx.fillStyle = isHere ? "#7ec8e8" : (isVisited ? "#9aa8bc" : "#4a5568");
-      ctx.font = isHere ? "bold 14px monospace" : "10px monospace";
-      ctx.fillText(id.toUpperCase(), x + 10, y + 4);
+      ctx.font = isHere ? "bold 13px monospace" : "10px monospace";
+      ctx.fillText(label, x + 10, y + 4);
     }
     
     // Draw Ship Image
@@ -206,12 +226,15 @@
     
     // Draw Ship overlay data
     ctx.fillStyle = "#ffb24a";
-    ctx.font = "16px monospace";
-    ctx.fillText(`CAPTAIN ON DECK | ${currentState.credits} CREDITS`, 20, 40);
+    ctx.font = "bold 15px monospace";
+    ctx.fillText(`CAPTAIN ON DECK | ₩${(currentState.credits || 0).toLocaleString()}`, 20, 36);
     ctx.fillStyle = "#7ec8e8";
-    ctx.fillText(`LOCATION: ${currentState.system.toUpperCase()}`, 20, 60);
-    ctx.fillStyle = "#ff5555";
-    ctx.fillText(`FUEL: ${currentState.fuel}`, 20, 80);
+    ctx.font = "13px monospace";
+    ctx.fillText(`LOCATION: ${String(currentState.system || "UNKNOWN").toUpperCase()}`, 20, 56);
+    ctx.fillStyle = "#48bb78";
+    ctx.fillText(`HULL: ${currentState.hull != null ? currentState.hull : 20}  |  AMMO: ${currentState.ammo != null ? currentState.ammo : 0}`, 20, 76);
+    ctx.fillStyle = "#ff7b72";
+    ctx.fillText(`FUEL: ${currentState.fuel != null ? currentState.fuel : 10}`, 20, 96);
     
     // Draw active quests
     if (currentState.quests && currentState.quests.length > 0) {

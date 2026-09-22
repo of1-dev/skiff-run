@@ -1331,7 +1331,7 @@
 
   function render() {
     renderQuests();
-    if (globalThis.SkiffHoloRenderer) globalThis.SkiffHoloRenderer.update(state);
+    if (globalThis.SkiffHoloRenderer) globalThis.SkiffHoloRenderer.update(state, SYSTEMS);
     
     const s = sys(state.system);
     const h = hull();
@@ -2123,7 +2123,7 @@
       if (b.dataset.rendererPick === "holo") {
         document.getElementById("holo-canvas").style.display = "block";
         document.getElementById("btn-exit-holo").style.display = "block";
-        if (globalThis.SkiffHoloRenderer) globalThis.SkiffHoloRenderer.start(state, HULL_SVG);
+        if (globalThis.SkiffHoloRenderer) globalThis.SkiffHoloRenderer.start(state, HULL_SVG, SYSTEMS);
       } else {
         document.getElementById("holo-canvas").style.display = "none";
         document.getElementById("btn-exit-holo").style.display = "none";
