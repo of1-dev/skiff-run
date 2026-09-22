@@ -1735,7 +1735,14 @@
       if (b.dataset.rendererPick === "holo") {
         document.getElementById("holo-canvas").style.display = "block";
         document.getElementById("btn-exit-holo").style.display = "block";
-        if (globalThis.SkiffHoloRenderer) globalThis.SkiffHoloRenderer.start(state, HULL_SVG, SYSTEMS);
+        if (globalThis.SkiffHoloRenderer) {
+          globalThis.SkiffHoloRenderer.start(state, HULL_SVG, SYSTEMS, {
+            onTravel: doTravel,
+            onRefuel: doRefuel,
+            onRepair: doRepair,
+            onRearm: doRearm,
+          });
+        }
       } else {
         document.getElementById("holo-canvas").style.display = "none";
         document.getElementById("btn-exit-holo").style.display = "none";
