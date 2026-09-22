@@ -25,4 +25,10 @@ describe("ATDD: Captain god / Unbowed UI", () => {
   it("god-actions stay clickable", () => {
     assert.match(css, /\.god-actions/);
   });
+  it("game.js persists god flag outside the save object so render cannot uncheck it", () => {
+    const js = fs.readFileSync(path.join(__dirname, "../../game.js"), "utf8");
+    assert.match(js, /GOD_KEY = "skiff-run-god"/);
+    assert.match(js, /writeGodFlag/);
+    assert.match(js, /removeAttribute\("hidden"\)/);
+  });
 });

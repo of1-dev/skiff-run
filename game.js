@@ -1,8 +1,9 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.29";
+  const VERSION = "0.9.30";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
+  const GOD_KEY = "skiff-run-god";
   let bridgeOn = (() => {
     try { return new URLSearchParams(location.search).get("bridge") === "1"; }
     catch { return false; }
@@ -42,9 +43,19 @@
   if (!YE) throw new Error("SkiffYardEconomy missing — load js/yard-economy.js before game.js");
   const GOD = (typeof SkiffDebugGod !== "undefined") ? SkiffDebugGod : null;
   if (!GOD) throw new Error("SkiffDebugGod missing — load js/debug-god.js before game.js");
+  function readGodFlag() {
+    try { return localStorage.getItem(GOD_KEY) === "1"; }
+    catch { return false; }
+  }
+  function writeGodFlag(on) {
+    try { localStorage.setItem(GOD_KEY, on ? "1" : "0"); }
+    catch (e) { console.warn("[skiff] god flag save failed:", e.message); }
+  }
   function godEnabled() {
+    if (GOD.isDebugOn(typeof location !== "undefined" ? location.search : "")) return true;
+    if (readGodFlag()) return true;
     return GOD.isGodEnabled({
-      search: typeof location !== "undefined" ? location.search : "",
+      search: "",
       prefs: (state && state.prefs) || {},
     });
   }
@@ -245,6 +256,7 @@
       st.prefs = st.prefs || { autoFuel: true };
       if (st.prefs.autoFuel == null) st.prefs.autoFuel = true;
       if (st.prefs.godMode == null) st.prefs.godMode = false;
+      if (readGodFlag()) st.prefs.godMode = true;
       st.shipId = h.id;
       st.crew = Math.min(st.crew, h.crewMax);
       if (st.fuel > h.fuelMax) st.fuel = h.fuelMax;
@@ -1245,7 +1257,10 @@
   function syncGodUi() {
     const on = godEnabled();
     const godPanel = el("god-panel");
-    if (godPanel) godPanel.hidden = !on;
+    if (godPanel) {
+      if (on) godPanel.removeAttribute("hidden");
+      else godPanel.setAttribute("hidden", "");
+    }
     const btn = el("pref-godmode");
     if (btn) {
       btn.setAttribute("aria-pressed", on ? "true" : "false");
@@ -1255,20 +1270,26 @@
     }
   }
 
+  let godClickLock = false;
   function setGodMode(on) {
+    on = !!on;
     state.prefs = state.prefs || { autoFuel: true };
-    state.prefs.godMode = !!on;
-    log(state.prefs.godMode ? "God mode ON — Unbowed kit unlocked." : "God mode OFF.");
+    state.prefs.godMode = on;
+    writeGodFlag(on);
+    log(on ? "God mode ON — Unbowed kit unlocked." : "God mode OFF.");
     save(state);
     syncGodUi();
-    render();
   }
   const godPref = el("pref-godmode");
   if (godPref) {
-    godPref.onclick = function (e) {
+    godPref.addEventListener("click", function (e) {
       e.preventDefault();
+      e.stopPropagation();
+      if (godClickLock) return;
+      godClickLock = true;
       setGodMode(!godEnabled());
-    };
+      setTimeout(function () { godClickLock = false; }, 250);
+    });
   }
 
   const wireGod = (id, fn) => {
