@@ -1,7 +1,8 @@
 
+node_modules/
+
 # MCP
 mcp/node_modules/
-
 
 mcp/session/
 
