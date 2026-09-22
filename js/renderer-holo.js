@@ -81,7 +81,7 @@
     if (currentSystems && Array.isArray(currentSystems)) {
       currentSystems.forEach(s => {
         if (s.id && typeof s.x === "number") {
-          map[s.id] = Object.assign({ x: s.x, y: s.y, name: s.name, pirate: s.pirate, police: s.police, yard: s.yard, tech: s.tech, size: s.size }, map[s.id]);
+          map[s.id] = Object.assign({ id: s.id, x: s.x, y: s.y, name: s.name, pirate: s.pirate, police: s.police, yard: s.yard, tech: s.tech, size: s.size }, map[s.id]);
         }
       });
     }
@@ -131,10 +131,20 @@
   // Interaction buttons bounding boxes calculated per frame
   let interactiveZones = [];
 
-  function onPointerMove(e) {
+  function getCanvasPointer(e) {
     const rect = canvas.getBoundingClientRect();
-    mousePos.x = e.clientX - rect.left;
-    mousePos.y = e.clientY - rect.top;
+    const scaleX = rect.width > 0 ? canvas.width / rect.width : 1;
+    const scaleY = rect.height > 0 ? canvas.height / rect.height : 1;
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
+  }
+
+  function onPointerMove(e) {
+    const pt = getCanvasPointer(e);
+    mousePos.x = pt.x;
+    mousePos.y = pt.y;
 
     // Check hover over interactive zones
     for (const z of interactiveZones) {
@@ -165,14 +175,14 @@
   }
 
   function onPointerDown(e) {
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
+    const pt = getCanvasPointer(e);
+    const mx = pt.x;
+    const my = pt.y;
 
     // Check UI buttons first
     for (const z of interactiveZones) {
       if (mx >= z.x && mx <= z.x + z.w && my >= z.y && my <= z.y + z.h) {
-        z.action();
+        if (typeof z.action === "function") z.action();
         return;
       }
     }
@@ -572,7 +582,10 @@
         interactiveZones.push({
           x: btnX, y: btnY, w: btnW, h: btnH,
           action: () => {
-            if (onTravel) onTravel(dest.id);
+            const targetId = dest.id || selectedSystemId;
+            if (onTravel && targetId) {
+              onTravel(targetId);
+            }
           }
         });
       }
