@@ -591,13 +591,10 @@
     ctx.fillStyle = fuelVal < 3 ? "#ff7b72" : "#ffb24a";
     ctx.fillText(`FUEL: ${fuelVal}/${maxes.fuelMax || 14} (Range: ${getShipRange()})`, 24, 98);
 
-    if (currentState.quests && currentState.quests.length > 0) {
+    const nLeads = (currentState.quests && currentState.quests.length) || 0;
+    if (nLeads > 0) {
       ctx.fillStyle = "#ffd166";
-      ctx.fillText(`ACTIVE LEADS:`, 24, 122);
-      currentState.quests.forEach((q, idx) => {
-        ctx.fillStyle = "#e2e8f0";
-        ctx.fillText(`► ${q.title} (₩${q.reward})`, 24, 142 + idx * 20);
-      });
+      ctx.fillText(nLeads === 1 ? "1 LEAD (Captain tab)" : nLeads + " LEADS (Captain tab)", 24, 118);
     }
   }
 

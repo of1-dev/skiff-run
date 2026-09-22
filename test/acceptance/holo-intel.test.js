@@ -20,6 +20,11 @@ describe("ATDD: holo 2D-parity intel", () => {
     assert.equal(links.length, 0);
     assert.equal(H.canJumpFromHere(HERE, FAR, 28, 99), false);
   });
+  it("does not paint quest titles across the sky (Captain tab holds the list)", () => {
+    const src = require("fs").readFileSync(require("path").join(__dirname, "../../js/renderer-holo.js"), "utf8");
+    assert.equal(/ACTIVE LEADS:/.test(src), false);
+    assert.equal(/q\.title/.test(src), false);
+  });
   it("riskFill matches 2D Chart pirate bands", () => {
     assert.equal(H.riskFill(0), "#2FA4A0");
     assert.equal(H.riskFill(5), "#D97757");
