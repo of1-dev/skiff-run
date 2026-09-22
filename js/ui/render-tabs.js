@@ -9,7 +9,7 @@
 
   function setup(ctx) {
     const {
-      el, sys, state, ui, hull, cargoUsed, netWorth, VERSION,
+      el, sys, ui, hull, cargoUsed, netWorth, VERSION,
       currentPilot, formatTickerLine,
       GOODS, SM, SYSTEMS, qtyFor, setQty, doBuy, doSell,
       reachableFrom, SP, doBuyPress, followPressTip,
@@ -19,8 +19,12 @@
       DOCK_WORK_PAY, doDockWork, CREW_HIRE, doHireCrew, doFireCrew,
       CR, SK, syncGodUi, sizeMap, drawMap, RETIRE_NET, save
     } = ctx;
+    function st() {
+      return typeof ctx.getState === "function" ? ctx.getState() : ctx.state;
+    }
 
     function renderAgentActionLog() {
+      const state = st();
       const box = el("agent-action-log");
       if (!box) return;
       const rows = Array.isArray(state.agentLog) ? state.agentLog : [];
@@ -46,6 +50,7 @@
     }
 
     function renderCaptainLog() {
+      const state = st();
       const box = el("captain-log");
       if (!box) return;
       const rows = Array.isArray(state.captainLog) ? state.captainLog : [];
@@ -68,6 +73,7 @@
     }
 
     function renderQuests() {
+      const state = st();
       const hint = el("quest-tracker-hint");
       if (!hint) return;
       if (!state.quests || state.quests.length === 0) {
@@ -82,6 +88,7 @@
     }
 
     function renderSkillsBox() {
+      const state = st();
       const box = el("skills-box");
       if (!box) return;
       const eff = CR.shipSkills(state.skills, state.roster || [], hull());
@@ -119,6 +126,7 @@
     }
 
     function renderShipPanel() {
+      const state = st();
       const h = hull();
       el("ship-name").textContent = h.name + (h.weapons ? " · armed" : " · unarmed");
       el("ship-meta").textContent =
@@ -245,6 +253,7 @@
     }
 
     function renderTarget(opts) {
+      const state = st();
       const canSeeTradeFn = (opts && opts.canSeeTrade) || ctx.canSeeTrade;
       const cargoMarginAtFn = (opts && opts.cargoMarginAt) || ctx.cargoMarginAt;
       const title = el("target-title");
@@ -329,6 +338,7 @@
     }
 
     function render(options) {
+      const state = st();
       const opts = options || {};
       const canSeeTradeFn = opts.canSeeTrade || ctx.canSeeTrade;
       const cargoMarginAtFn = opts.cargoMarginAt || ctx.cargoMarginAt;

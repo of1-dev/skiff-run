@@ -9,10 +9,13 @@
 
   function setup(ctx) {
     const {
-      el, sys, state, ui, themeColors, fuelReachDistance, SYSTEMS,
+      el, sys, ui, themeColors, fuelReachDistance, SYSTEMS,
       canJumpTo, isVisited, riskFill, canSeeTrade, bestLaneEdge,
       peekPrices, WP, CF, fuelCost, inSector, WORLD, SECTOR_RADIUS
     } = ctx;
+    function st() {
+      return typeof ctx.getState === "function" ? ctx.getState() : ctx.state;
+    }
 
     function chartVisible(s, hereId, mode) {
       if (s.id === hereId) return true;
@@ -129,6 +132,7 @@
     }
 
     function drawMap() {
+      const state = st();
       const canvas = el("map");
       if (!canvas) return;
       if (!canvas.width) sizeMap();
@@ -267,6 +271,7 @@
     }
 
     function pickSystemAt(clientX, clientY) {
+      const state = st();
       const canvas = el("map");
       const rect = canvas.getBoundingClientRect();
       const sx = clientX - rect.left;

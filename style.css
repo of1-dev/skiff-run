@@ -559,10 +559,19 @@ body.enc-open #btn-exit-holo {
   user-select: none;
 }
 .pref-row input {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
   accent-color: var(--ember, #e86);
+  pointer-events: auto;
 }
+.god-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.god-actions .btn { pointer-events: auto; }
 body.bridge-mode #ver::after {
   content: " · bridge";
   opacity: 0.65;

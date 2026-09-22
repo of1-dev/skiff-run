@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.26";
+  const VERSION = "0.9.27";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   let bridgeOn = (() => {
@@ -394,7 +394,7 @@
   };
 
   const chartRenderer = globalThis.SkiffChartRenderer ? globalThis.SkiffChartRenderer.setup({
-    el, sys, state, ui, themeColors, fuelReachDistance, SYSTEMS,
+    el, sys, getState: function () { return state; }, ui, themeColors, fuelReachDistance, SYSTEMS,
     canJumpTo, isVisited, riskFill, canSeeTrade, bestLaneEdge,
     peekPrices, WP, CF, fuelCost, inSector, WORLD, SECTOR_RADIUS
   }) : null;
@@ -494,7 +494,7 @@
   function getTabsRenderer() {
     if (!tabsRenderer && globalThis.SkiffTabsRenderer) {
       tabsRenderer = globalThis.SkiffTabsRenderer.setup({
-        el, sys, state, ui, hull, cargoUsed, netWorth, VERSION,
+        el, sys, getState: function () { return state; }, ui, hull, cargoUsed, netWorth, VERSION,
         currentPilot, formatTickerLine: (window.SkiffAgentActionLog && window.SkiffAgentActionLog.formatTickerLine),
         GOODS, SM, SYSTEMS, qtyFor, setQty, doBuy, doSell,
         reachableFrom, SP, doBuyPress, followPressTip,
@@ -1021,7 +1021,15 @@
   };
 
   document.querySelectorAll(".tabbar .tab").forEach((b) => {
-    b.onclick = () => showTab(b.dataset.tab);
+    b.onclick = () => {
+      const holoOn = document.getElementById("holo-canvas") &&
+        document.getElementById("holo-canvas").style.display === "block";
+      if (holoOn && globalThis.SkiffHoloRenderer) {
+        const exit = document.getElementById("btn-exit-holo");
+        if (exit) exit.click();
+      }
+      showTab(b.dataset.tab);
+    };
   });
   document.querySelectorAll("[data-goto]").forEach((b) => {
     b.onclick = () => showTab(b.dataset.goto);
@@ -1234,16 +1242,20 @@
     }
   }
 
+  function setGodMode(on) {
+    state.prefs = state.prefs || { autoFuel: true };
+    state.prefs.godMode = !!on;
+    log(state.prefs.godMode ? "God mode ON — Unbowed kit unlocked." : "God mode OFF.");
+    save(state);
+    syncGodUi();
+    render();
+  }
   const godPref = el("pref-godmode");
   if (godPref) {
-    godPref.onchange = () => {
-      state.prefs = state.prefs || {};
-      state.prefs.godMode = !!godPref.checked;
-      log(state.prefs.godMode ? "God mode ON — tools unlocked." : "God mode OFF.");
-      save(state);
-      syncGodUi();
-      render();
-    };
+    godPref.addEventListener("change", () => setGodMode(godPref.checked));
+    godPref.addEventListener("click", () => {
+      /* Fold sometimes skips change; click still toggles checked first */
+    });
   }
 
   const wireGod = (id, fn) => {
