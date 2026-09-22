@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.28";
+  const VERSION = "0.9.29";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   let bridgeOn = (() => {
@@ -1086,6 +1086,21 @@
             onRefuel: doRefuel,
             onRepair: doRepair,
             onRearm: doRearm,
+            onPin: function (id) {
+              if (!id || id === state.system) return log("That's your current dock.");
+              ui.targetId = id;
+              ui.courseDest = id;
+              const hint = WP.pinHint({ targetId: id, hereId: state.system });
+              if (hint.ok && !WP.isPinned(state.waypoints, id)) {
+                const r = WP.toggle(state.waypoints, id);
+                state.waypoints = r.list;
+              }
+              const plan = coursePlan(id);
+              const jumps = plan && plan.ok ? plan.jumps : "?";
+              log("Course pinned: " + ((sys(id) || {}).name || id) + " — " + jumps + " hops. Engage hop; not a warp.");
+              save(state);
+              render();
+            },
           });
         }
       } else {

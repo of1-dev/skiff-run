@@ -23,6 +23,7 @@
   let onRefuel = null;
   let onRepair = null;
   let onRearm = null;
+  let onPin = null;
 
   const ACTIVITY_NAMES = ["Absent", "Minimal", "Few", "Some", "Moderate", "Many", "Abundant", "Swarms"];
   function activityLabel(n) {
@@ -51,23 +52,31 @@
     return { enabled: false, label: "NEED " + o.cost + " FUEL (Have " + o.fuel + ")" };
   }
 
-  /** Camera follows the ship so a jump is visible (stars slide; hull stays in frame). */
+  /** Full-sky holo: origin is the world center, not the hull. */
+  function worldSize() {
+    return (globalThis.SkiffChartGen && globalThis.SkiffChartGen.WORLD) || 160;
+  }
+
   function project(wx, wy, originX, originY, cx, cy, scale) {
     return { x: cx + (wx - originX) * scale, y: cy + (wy - originY) * scale };
   }
 
   function viewCam() {
+    const W = worldSize();
     const cx = canvas ? canvas.width / 2 : 0;
     const cy = canvas ? canvas.height / 2 : 0;
-    const scale = Math.min(canvas ? canvas.width : 90, canvas ? canvas.height : 90) / 90;
+    const span = W + 16;
+    const scale = Math.min(canvas ? canvas.width : span, canvas ? canvas.height : span) / span;
+    const ox = W / 2;
+    const oy = W / 2;
     return {
       cx: cx,
       cy: cy,
       scale: scale,
-      ox: shipPos.x,
-      oy: shipPos.y,
+      ox: ox,
+      oy: oy,
       toScreen: function (wx, wy) {
-        return project(wx, wy, shipPos.x, shipPos.y, cx, cy, scale);
+        return project(wx, wy, ox, oy, cx, cy, scale);
       },
     };
   }
@@ -139,6 +148,7 @@
       onRefuel = callbacks.onRefuel || null;
       onRepair = callbacks.onRepair || null;
       onRearm = callbacks.onRearm || null;
+      onPin = callbacks.onPin || null;
     }
     cacheShipImages(svgs);
     
@@ -324,6 +334,30 @@
         ctx.lineWidth = 1.5;
         ctx.stroke();
         ctx.setLineDash([]);
+      }
+    }
+
+    // Course: dashed hops from here to the pinned/selected dock (not an insta-warp)
+    if (selectedSystemId && selectedSystemId !== currentState.system && globalThis.SkiffRoute && currentSystems) {
+      const plan = globalThis.SkiffRoute.shortestPath(
+        currentState.system, selectedSystemId, currentSystems, rangeVal
+      );
+      if (plan && plan.ok && plan.hops && plan.hops.length > 1) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(255, 178, 74, 0.9)";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([7, 5]);
+        ctx.beginPath();
+        for (let i = 0; i < plan.hops.length; i++) {
+          const hp = posMap[plan.hops[i]];
+          if (!hp) continue;
+          const spt = cam.toScreen(hp.x, hp.y);
+          if (i === 0) ctx.moveTo(spt.x, spt.y);
+          else ctx.lineTo(spt.x, spt.y);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
       }
     }
 
@@ -543,7 +577,7 @@
 
   function drawSystemIntelCard(dest, current, scale) {
     const cardW = 320;
-    const cardH = 175;
+    const cardH = 214;
     const cardX = canvas.width - cardW - 24;
     const cardY = canvas.height - cardH - 24;
 
@@ -611,9 +645,10 @@
     // JUMP Action Button
     if (!isHere) {
       const btnW = cardW - 32;
-      const btnH = 34;
+      const btnH = 32;
       const btnX = cardX + 16;
-      const btnY = cardY + 124;
+      const btnY = cardY + 122;
+      const pinY = cardY + 160;
 
       const engage = engageJumpButton({
         canReach: canReach,
@@ -653,6 +688,25 @@
           }
         });
       }
+
+      ctx.fillStyle = "rgba(30, 41, 59, 0.9)";
+      ctx.strokeStyle = "#ffb24a";
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(btnX, pinY, btnW, btnH, 4) : ctx.rect(btnX, pinY, btnW, btnH);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#ffb24a";
+      ctx.font = "bold 12px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("PIN AS COURSE", btnX + btnW / 2, pinY + 21);
+      ctx.textAlign = "start";
+      interactiveZones.push({
+        x: btnX, y: pinY, w: btnW, h: btnH,
+        action: () => {
+          const targetId = dest.id || selectedSystemId;
+          if (onPin && targetId) onPin(targetId);
+        }
+      });
     } else {
       ctx.fillStyle = "#7ec8e8";
       ctx.font = "italic 13px monospace";
