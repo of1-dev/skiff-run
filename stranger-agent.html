@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stranger's Agent Smoke Test</title>
+  <style>
+    body { display: flex; font-family: system-ui, sans-serif; height: 100vh; margin: 0; background: #0a0a0c; color: #e8eefa; }
+    #agent-panel { width: 380px; padding: 24px; background: #161a22; border-right: 1px solid #2a3340; overflow-y: auto; display: flex; flex-direction: column; }
+    #game-frame { flex: 1; border: none; }
+    .log { margin-bottom: 12px; font-size: 14px; line-height: 1.4; padding: 8px; border-radius: 4px; background: #222a36; }
+    .log.agent { border-left: 4px solid #ffb24a; }
+    .log.system { border-left: 4px solid #4a5568; color: #9aa8bc; }
+    .log.action { border-left: 4px solid #7ec8e8; font-family: monospace; }
+    button { background: #ffb24a; border: none; padding: 12px; border-radius: 6px; cursor: pointer; color: #111; font-weight: bold; width: 100%; margin-bottom: 24px; transition: opacity 0.2s; }
+    button:hover { opacity: 0.9; }
+    button:disabled { background: #4a5568; cursor: not-allowed; }
+    h2 { margin-top: 0; font-size: 18px; color: #ffb24a; }
+    p { font-size: 14px; color: #9aa8bc; margin-bottom: 24px; }
+  </style>
+</head>
+<body>
+  <div id="agent-panel">
+    <h2>Third-Party Agent UI</h2>
+    <p>This simulates what an AI extension or browser-native agent sees when you drop a WebMCP URL into it.</p>
+    <button id="btn-start">Simulate Agent Turn</button>
+    <div id="logs"></div>
+  </div>
+  
+  <!-- We load the game in bridge mode -->
+  <iframe id="game-frame" src="/?bridge=1"></iframe>
+
+  <script>
+    const logs = document.getElementById('logs');
+    const btn = document.getElementById('btn-start');
+
+    function log(msg, type='system') {
+      const d = document.createElement('div');
+      d.className = 'log ' + type;
+      d.innerText = msg;
+      logs.prepend(d);
+    }
+
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+    btn.onclick = async () => {
+      btn.disabled = true;
+      const frame = document.getElementById('game-frame').contentWindow;
+      
+      if (!frame || !frame.navigator.modelContext) {
+        log("Error: WebMCP not detected in iframe yet. Wait for game to load.", "system");
+        btn.disabled = false;
+        return;
+      }
+      
+      const mc = frame.navigator.modelContext;
+      log("Agent connected to navigator.modelContext!", "system");
+      await sleep(1000);
+      
+      // 1. Discover Tools
+      const tools = mc.listTools();
+      log(`Discovered ${tools.length} available tools.`, "system");
+      await sleep(1500);
+
+      // 2. Read State
+      log("Thinking: Let me check the current state...", "agent");
+      log("-> callTool('skiff_state')", "action");
+      const stateRes = await mc.callTool("skiff_state");
+
+      const stateObj = JSON.parse(stateRes.content[0].text);
+      const state = stateObj.state || stateObj; // handle both cases
+      log(`I see we are at ${state.systemName} with ₩${state.credits}.`, "agent");
+      await sleep(2000);
+
+      // 3. Make a decision
+      if (state.cargoUsed < state.cargoMax && state.credits > 200) {
+        log("Thinking: We have hold space and credits. Let's fill up cheap cargo.", "agent");
+        log("-> callTool('skiff_fill_cheap')", "action");
+        const res = await mc.callTool("skiff_fill_cheap");
+
+        const parsed = JSON.parse(res.content[0].text);
+        log(parsed.log || ("Error: " + parsed.error), "system");
+        await sleep(2000);
+      } else {
+        log("Thinking: Hold is full or funds are low. Let's jump to a new system.", "agent");
+        log("-> callTool('skiff_chart', { mode: 'local' })", "action");
+        const chartRes = await mc.callTool("skiff_chart", { mode: "local" });
+        const chart = JSON.parse(chartRes.content[0].text);
+        await sleep(2000);
+        
+        if (chart.length > 0) {
+          // Pick a random destination
+          const dest = chart[Math.floor(Math.random() * chart.length)];
+          log(`Thinking: Jumping to ${dest.name}.`, "agent");
+          log(`-> callTool('skiff_jump', { system: '${dest.id}' })`, "action");
+          const jumpRes = await mc.callTool("skiff_jump", { system: dest.id });
+          log(JSON.parse(jumpRes.content[0].text).log, "system");
+        } else {
+          log("Thinking: We are out of fuel or stuck!", "agent");
+        }
+      }
+
+      log("Agent turn complete.", "system");
+      setTimeout(() => btn.disabled = false, 500);
+    };
+  </script>
+</body>
+</html>

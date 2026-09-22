@@ -66,12 +66,12 @@ async function turn() {
   }
 
   // Dock work & press
-  if (state.dockWorkAt !== state.epoch) {
+  if (state.dockWorkAt !== state.system) {
     console.log("[AutoPilot] Working the docks");
     await act({ op: "dock_work" });
     return;
   }
-  if (state.pressBoughtAt !== state.epoch && snapshot.credits >= 50) {
+  if (state.pressBoughtAt !== state.system && snapshot.credits >= 75) {
     console.log("[AutoPilot] Buying press");
     await act({ op: "buy_press" });
     return;
@@ -93,12 +93,6 @@ async function turn() {
       console.log("[AutoPilot] Sold expensive:", res.result.log);
       return;
     }
-    // if full and nothing was explicitly expensive, sell all to free space
-    if (snapshot.cargoUsed === snapshot.cargoMax) {
-       console.log("[AutoPilot] Hold full, dumping all cargo to keep moving");
-       await act({ op: "sell_all" });
-       return;
-    }
   }
 
   // Buy cheap
@@ -114,19 +108,34 @@ async function turn() {
   const currentPos = state.chart.pos[state.system];
   let bestTarget = null;
   let bestDist = Infinity;
-
-  for (const [sys, pos] of Object.entries(state.chart.pos)) {
-    if (sys === state.system) continue;
-    const dist = getDistance(currentPos, pos);
-    if (dist <= snapshot.ship.range) {
-      // Prioritize unvisited systems
-      if (!snapshot.visited[sys]) {
-        bestTarget = sys;
+  
+  // 1. Check if we have an active quest in range
+  if (state.quests && state.quests.length > 0) {
+    for (const q of state.quests) {
+      const qPos = state.chart.pos[q.dest];
+      if (qPos && getDistance(currentPos, qPos) <= snapshot.ship.range) {
+        bestTarget = q.dest;
+        console.log(`[AutoPilot] Found reachable quest target: ${q.dest}`);
         break;
       }
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestTarget = sys;
+    }
+  }
+
+  // 2. Otherwise fall back to exploration
+  if (!bestTarget) {
+    for (const [sys, pos] of Object.entries(state.chart.pos)) {
+      if (sys === state.system) continue;
+      const dist = getDistance(currentPos, pos);
+      if (dist <= snapshot.ship.range) {
+        // Prioritize unvisited systems
+        if (snapshot.visited && !snapshot.visited[sys]) {
+          bestTarget = sys;
+          break;
+        }
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestTarget = sys;
+        }
       }
     }
   }

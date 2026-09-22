@@ -1,9 +1,9 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.24";
+  const VERSION = "0.9.25";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
-  const bridgeOn = (() => {
+  let bridgeOn = (() => {
     try { return new URLSearchParams(location.search).get("bridge") === "1"; }
     catch (_) { return false; }
   })();
@@ -212,18 +212,18 @@
 
   const SHIPS = [
     // Soft-fail escape (Flea homage). Free Take; scrap pads + full yards.
-    { id: "mite", name: "Mite", cargo: 10, fuelMax: 10, range: 20, weapons: false, crewMax: 1, price: 0 },
+    { id: "mite", name: "Mite", cargo: 10, fuelMax: 10, range: 20, weapons: false, crewMax: 1, hullMax: 20, ammoMax: 0, price: 0 },
     // Fresh game still starts in Skiff-7, not Mite.
-    { id: "skiff-7", name: "Skiff-7", cargo: 20, fuelMax: 14, range: 28, weapons: false, crewMax: 1, price: 0 },
-    { id: "glass-dart", name: "Glass Dart", cargo: 12, fuelMax: 16, range: 42, weapons: false, crewMax: 1, price: 4500 },
-    { id: "tide-runner", name: "Tide Runner", cargo: 24, fuelMax: 16, range: 34, weapons: false, crewMax: 2, price: 7000 },
-    { id: "knot-hauler", name: "Knot Hauler", cargo: 32, fuelMax: 17, range: 30, weapons: false, crewMax: 3, price: 8000 },
-    { id: "hold-barge", name: "Hold Barge", cargo: 40, fuelMax: 18, range: 32, weapons: false, crewMax: 3, price: 9000 },
-    { id: "ember-cutter", name: "Ember Cutter", cargo: 16, fuelMax: 16, range: 38, weapons: true, crewMax: 2, price: 12000 },
-    { id: "ash-lance", name: "Ash Lance", cargo: 14, fuelMax: 18, range: 40, weapons: true, crewMax: 2, price: 15000 },
-    { id: "quiet-ark", name: "Quiet Ark", cargo: 50, fuelMax: 22, range: 36, weapons: false, crewMax: 4, price: 22000 },
-    { id: "wasp-prime", name: "Wasp Prime", cargo: 18, fuelMax: 20, range: 44, weapons: true, crewMax: 3, price: 28000 },
-    { id: "unbowed", name: "Unbowed", cargo: 12, fuelMax: 16, range: 36, weapons: true, crewMax: 3, price: 0, gated: true },
+    { id: "skiff-7", name: "Skiff-7", cargo: 20, fuelMax: 14, range: 28, weapons: false, crewMax: 1, hullMax: 40, ammoMax: 0, price: 0 },
+    { id: "glass-dart", name: "Glass Dart", cargo: 12, fuelMax: 16, range: 42, weapons: false, crewMax: 1, hullMax: 30, ammoMax: 0, price: 4500 },
+    { id: "tide-runner", name: "Tide Runner", cargo: 24, fuelMax: 16, range: 34, weapons: false, crewMax: 2, hullMax: 60, ammoMax: 0, price: 7000 },
+    { id: "knot-hauler", name: "Knot Hauler", cargo: 32, fuelMax: 17, range: 30, weapons: false, crewMax: 3, hullMax: 80, ammoMax: 0, price: 8000 },
+    { id: "hold-barge", name: "Hold Barge", cargo: 40, fuelMax: 18, range: 32, weapons: false, crewMax: 3, hullMax: 120, ammoMax: 0, price: 9000 },
+    { id: "ember-cutter", name: "Ember Cutter", cargo: 16, fuelMax: 16, range: 38, weapons: true, crewMax: 2, hullMax: 60, ammoMax: 20, price: 12000 },
+    { id: "ash-lance", name: "Ash Lance", cargo: 14, fuelMax: 18, range: 40, weapons: true, crewMax: 2, hullMax: 50, ammoMax: 30, price: 15000 },
+    { id: "quiet-ark", name: "Quiet Ark", cargo: 50, fuelMax: 22, range: 36, weapons: false, crewMax: 4, hullMax: 150, ammoMax: 0, price: 22000 },
+    { id: "wasp-prime", name: "Wasp Prime", cargo: 18, fuelMax: 20, range: 44, weapons: true, crewMax: 3, hullMax: 100, ammoMax: 40, price: 28000 },
+    { id: "unbowed", name: "Unbowed", cargo: 12, fuelMax: 16, range: 36, weapons: true, crewMax: 3, hullMax: 80, ammoMax: 50, price: 0, gated: true },
   ];
 
   function sys(id) { return SYSTEMS.find((s) => s.id === id); }
@@ -485,14 +485,17 @@
   function fresh() {
     const chart = buildChart();
     applyChart(chart);
+    const startShip = ship("unbowed") || SHIPS.find((s) => s.id === "unbowed") || SHIPS[0];
     return {
       v: VERSION,
       system: "ember",
       credits: 3200,
-      fuel: (ship("skiff-7") || SHIPS.find((s) => s.id === "skiff-7") || SHIPS[0]).fuelMax,
+      fuel: startShip.fuelMax,
+      hull: startShip.hullMax,
+      ammo: startShip.ammoMax,
       cargo: Object.fromEntries(GOODS.map((g) => [g.id, 0])),
       prices: {},
-      shipId: "skiff-7",
+      shipId: "unbowed",
       crew: 0,
       roster: [],
       epoch: 1,
@@ -538,6 +541,9 @@
       if (!st || !st.v) return null;
       st.v = VERSION;
       if (!st.shipId) st.shipId = "skiff-7";
+      const h = ship(st.shipId) || SHIPS[0];
+      if (st.hull == null) st.hull = h.hullMax || 20;
+      if (st.ammo == null) st.ammo = h.ammoMax || 0;
       if (st.crew == null) st.crew = 0;
       if (!st.epoch) st.epoch = 1;
       if (!st.visited) {
@@ -561,7 +567,6 @@
       st.prefs = st.prefs || { autoFuel: true };
       if (st.prefs.autoFuel == null) st.prefs.autoFuel = true;
       if (st.prefs.godMode == null) st.prefs.godMode = false;
-      const h = ship(st.shipId) || SHIPS[0];
       st.shipId = h.id;
       st.crew = Math.min(st.crew, h.crewMax);
       if (st.fuel > h.fuelMax) st.fuel = h.fuelMax;
@@ -1310,13 +1315,32 @@
     }
   }
 
+  function renderQuests() {
+    const hint = el("quest-tracker-hint");
+    if (!hint) return;
+    if (!state.quests || state.quests.length === 0) {
+      hint.textContent = "No active quests. Check the local Dock Press for news, rumors, and bounties.";
+      return;
+    }
+    hint.innerHTML = "<strong>Active Quests:</strong><br/>" + state.quests.map(q => {
+      const destObj = sys(q.dest);
+      const destName = destObj ? destObj.name : q.dest;
+      return `► ${q.title} (Reward: ₩${q.reward})`;
+    }).join("<br/>");
+  }
+
   function render() {
+    renderQuests();
+    if (globalThis.SkiffHoloRenderer) globalThis.SkiffHoloRenderer.update(state);
+    
     const s = sys(state.system);
     const h = hull();
     el("sys-name").textContent = s.name;
     el("credits").textContent = "₩" + state.credits.toLocaleString();
     el("fuel").textContent = state.fuel + " / " + h.fuelMax;
     el("cargo").textContent = cargoUsed(state) + " / " + h.cargo;
+    el("hull-val").textContent = (state.hull || 0) + " / " + (h.hullMax || 0);
+    el("ammo-val").textContent = (state.ammo || 0) + " / " + (h.ammoMax || 0);
     el("net").textContent = "₩" + netWorth(state).toLocaleString();
     el("log").textContent = state.log;
     el("ver").textContent = VERSION;
@@ -1660,6 +1684,18 @@
     markVisited(dest);
     state.dockWorkAt = null;
     state.pressBoughtAt = null;
+    
+    // Resolve quests
+    state.quests = state.quests || [];
+    const completed = state.quests.filter(q => q.dest === state.system);
+    state.quests = state.quests.filter(q => q.dest !== state.system);
+    
+    if (completed.length > 0) {
+      const totalReward = completed.reduce((sum, q) => sum + q.reward, 0);
+      state.credits = (state.credits || 0) + totalReward;
+      log(`Completed ${completed.length} quest(s) for ₩${totalReward}!`);
+    }
+
     rollMarket(state);
     const still = (goal && goal !== dest) ? goal : courseDest();
     if (still && still !== dest) {
@@ -1688,6 +1724,44 @@
     if (!applyRefuelInternal(null)) return;
     // rewrite last log for manual (non-auto) wording when full/partial already logged
     tickSkill("engineer", true);
+    render();
+  }
+
+  function doRepair() {
+    if (bridgeOn) {
+      if (currentPilot() === "agent") return log("Agent has the stick.");
+      return void bridgeAct({ op: "repair" });
+    }
+    const h = hull();
+    if (!h.hullMax) return log("Hull has no integrity rating.");
+    const need = h.hullMax - (state.hull || 0);
+    if (need <= 0) return log("Hull is at 100%.");
+    const costPer = 20;
+    const canAfford = Math.floor(state.credits / costPer);
+    if (canAfford <= 0) return log("Not enough credits for repairs.");
+    const repair = Math.min(need, canAfford);
+    state.credits -= repair * costPer;
+    state.hull = (state.hull || 0) + repair;
+    log(`Repaired ${repair} hull points (-${repair * costPer} ₩).`);
+    render();
+  }
+
+  function doRearm() {
+    if (bridgeOn) {
+      if (currentPilot() === "agent") return log("Agent has the stick.");
+      return void bridgeAct({ op: "rearm" });
+    }
+    const h = hull();
+    if (!h.ammoMax) return log("Ship has no weapon mounts.");
+    const need = h.ammoMax - (state.ammo || 0);
+    if (need <= 0) return log("Ammo bays full.");
+    const costPer = 50;
+    const canAfford = Math.floor(state.credits / costPer);
+    if (canAfford <= 0) return log("Not enough credits for ammo.");
+    const loaded = Math.min(need, canAfford);
+    state.credits -= loaded * costPer;
+    state.ammo = (state.ammo || 0) + loaded;
+    log(`Loaded ${loaded} ordnance (-${loaded * costPer} ₩).`);
     render();
   }
 
@@ -1841,7 +1915,23 @@
       goods: GOODS,
       priceFor: priceFor,
     });
+    state.pressEdition = edition;
     state.lastPress = edition;
+    
+    state.quests = state.quests || [];
+    if (Math.random() < 0.6) {
+      const sysKeys = SYSTEMS.filter(s => s.id !== state.system);
+      if (sysKeys.length > 0) {
+        const destObj = sysKeys[Math.floor(Math.random() * sysKeys.length)];
+        const dest = destObj.id;
+        const isBounty = Math.random() < 0.5;
+        const reward = isBounty ? 8000 : 5000;
+        const title = isBounty ? `Bounty: Pirate Lord at ${destObj.name}` : `Delivery: Medical Supplies to ${destObj.name}`;
+        state.quests.push({ id: Date.now().toString(), dest, title, reward });
+        edition.lines.push(`*** NEW QUEST: ${title} (Reward: ₩${reward}) ***`);
+      }
+    }
+    
     log("Dock Press ₩" + buy.paid + " — " + edition.masthead);
     render();
   }
@@ -1859,7 +1949,7 @@
   function openEncounter(kind, dest) {
     encKind = kind;
     encDest = dest || sys(state.system);
-    const armed = hull().weapons && state.crew > 0;
+    const armed = hull().weapons && state.crew > 0 && (state.ammo || 0) > 0;
     const pir = activityLabel(encDest.pirate);
     const pol = activityLabel(encDest.police);
     if (kind === "warden") {
@@ -1893,7 +1983,7 @@
 
   function resolveEncounter(choice) {
     dlg.close();
-    const armed = hull().weapons && state.crew > 0;
+    const armed = hull().weapons && state.crew > 0 && (state.ammo || 0) > 0;
     if (encKind === "warden") {
       if (choice === "a") {
         const fine = Math.min(state.credits, 400);
@@ -1934,17 +2024,27 @@
       }
     } else if (armed && choice === "a") {
       const pir = (encDest && encDest.pirate) || 3;
-      const odds = 0.55 + state.crew * 0.06 - pir * 0.03;
+      const ammoUsed = Math.min(state.ammo || 0, Math.floor(Math.random() * 3) + 1);
+      state.ammo = Math.max(0, (state.ammo || 0) - ammoUsed);
+      const odds = 0.55 + state.crew * 0.06 - pir * 0.03 + (ammoUsed * 0.05);
+      
       if (Math.random() < odds) {
         const prize = 350 + state.crew * 150 + pir * 40;
         state.credits += prize;
         tickSkill("fighter", false);
-        log("Corsairs broke off. Salvage ₩" + prize + ".");
+        log(`Corsairs broke off. Salvage ₩${prize} (-${ammoUsed} ammo).`);
       } else {
-        const loss = 400 + pir * 50;
-        state.credits = Math.max(0, state.credits - loss);
+        const dmg = 15 + pir * 5;
+        state.hull = (state.hull || 0) - dmg;
         tickSkill("fighter", true);
-        log("Fight went bad. −₩" + loss + " repairs.");
+        if (state.hull <= 0) {
+          state.hull = 20;
+          state.shipId = "mite";
+          state.credits = 0;
+          log("Ship destroyed! Escaped in a Mite with no credits.");
+        } else {
+          log(`Fight went bad. Hull took ${dmg} damage (-${ammoUsed} ammo).`);
+        }
       }
     } else if (choice === "a") {
       let dumped = 0;
@@ -1976,6 +2076,8 @@
   el("enc-a").onclick = () => resolveEncounter("a");
   el("enc-b").onclick = () => resolveEncounter("b");
   el("btn-refuel").onclick = doRefuel;
+  el("btn-repair").onclick = doRepair;
+  el("btn-rearm").onclick = doRearm;
   el("btn-sell-all").onclick = doSellAll;
   el("btn-fill-cheap").onclick = doFillCheap;
   el("btn-sell-expensive").onclick = doSellExpensive;
@@ -2042,6 +2144,29 @@
   document.querySelectorAll("[data-pilot-pick]").forEach((b) => {
     b.onclick = () => applyPilot(b.dataset.pilotPick, true);
   });
+  
+  document.querySelectorAll("[data-renderer-pick]").forEach((b) => {
+    b.onclick = () => {
+      document.querySelectorAll("[data-renderer-pick]").forEach(btn => btn.classList.toggle("active", btn === b));
+      if (b.dataset.rendererPick === "holo") {
+        document.getElementById("holo-canvas").style.display = "block";
+        document.getElementById("btn-exit-holo").style.display = "block";
+        if (globalThis.SkiffHoloRenderer) globalThis.SkiffHoloRenderer.start(state, HULL_SVG);
+      } else {
+        document.getElementById("holo-canvas").style.display = "none";
+        document.getElementById("btn-exit-holo").style.display = "none";
+        if (globalThis.SkiffHoloRenderer) globalThis.SkiffHoloRenderer.stop();
+      }
+    };
+  });
+  
+  const exitHolo = document.getElementById("btn-exit-holo");
+  if (exitHolo) {
+    exitHolo.onclick = () => {
+      document.querySelector('[data-renderer-pick="classic"]').click();
+    };
+  }
+
   const takeStick = el("btn-take-stick");
   if (takeStick) takeStick.onclick = () => applyPilot("human", true);
   loadTheme();
@@ -2054,6 +2179,7 @@
     box.checked = !!state.prefs.autoFuel;
   }
 
+  let lastAgentT = 0;
   function applyBridgePayload(data) {
     if (!data || !data.state) return;
     state = data.state;
@@ -2066,6 +2192,19 @@
     ui.targetId = null;
     render();
     renderAgentActionLog();
+
+    if (state.pilot === "agent" && state.agentLog && state.agentLog.length > 0) {
+      const last = state.agentLog[state.agentLog.length - 1];
+      if (last.t && last.t > lastAgentT) {
+        lastAgentT = last.t;
+        const op = last.op;
+        if (op === "jump") showTab("chart");
+        else if (op === "buy_press" || op === "dock_work" || op === "buy_ship") showTab("dock");
+        else if (op === "sell_all" || op === "sell_expensive" || op === "fill_cheap") showTab("market");
+        else if (op === "retire") showTab("captain");
+      }
+    }
+
     // Surface pending encounter from shared seat (once)
     if (data.pendingEncounter && currentPilot() === "human" && !encKind) {
       const pe = data.pendingEncounter;
@@ -2251,6 +2390,269 @@
     log("Waypoints cleared.");
     save(state); render();
   };
+
+  function logAgentAct(op, res) {
+    if (globalThis.SkiffAgentActionLog && typeof globalThis.SkiffAgentActionLog.append === "function") {
+      const AL = globalThis.SkiffAgentActionLog;
+      if (AL.shouldLog(op)) {
+        const summary = AL.summarize(op, res);
+        state.agentLog = AL.append(state.agentLog, { op, summary });
+        renderAgentActionLog();
+        save(state);
+      }
+    }
+  }
+
+  function withLocalEval(fn) {
+    const wasBridge = bridgeOn;
+    const oldPilot = state.pilot;
+    bridgeOn = false;
+    state.pilot = "human";
+    fn();
+    state.pilot = oldPilot;
+    bridgeOn = wasBridge;
+    if (wasBridge) bridgeAct({ op: "save", state: state });
+  }
+
+  const api = {
+    VERSION: VERSION,
+    getState: function () {
+      const h = hull();
+      const s = sys(state.system);
+      return {
+        system: state.system,
+        systemName: (s || {}).name,
+        credits: state.credits,
+        fuel: state.fuel,
+        fuelMax: h.fuelMax,
+        ship: h,
+        cargo: Object.assign({}, state.cargo),
+        cargoUsed: cargoUsed(state),
+        cargoMax: h.cargo,
+        prices: Object.assign({}, state.prices),
+        netWorth: netWorth(state),
+        pilot: currentPilot(),
+        dockWorkAvailable: state.dockWorkAt !== state.system,
+        pressAvailable: state.pressBoughtAt !== state.system,
+        canRetire: !!(s && s.retire && netWorth(state) >= RETIRE_NET),
+        pendingEncounter: encKind ? { kind: encKind, systemId: (encDest ? encDest.id : state.system) } : null,
+        agentLog: Array.isArray(state.agentLog) ? state.agentLog.slice() : [],
+      };
+    },
+    getChart: function (mode) {
+      const from = state.system;
+      const list = SYSTEMS.map(function (s) {
+        const dist = Math.hypot((s.x || 0) - ((sys(from) || {}).x || 0), (s.y || 0) - ((sys(from) || {}).y || 0));
+        const inJmp = inRange(from, s.id);
+        const cost = fuelCost(from, s.id);
+        return {
+          id: s.id,
+          name: s.name,
+          distance: Math.round(dist * 10) / 10,
+          inRange: inJmp,
+          fuelCost: cost,
+          canJump: inJmp && state.fuel >= cost,
+          yard: !!s.yard,
+          pirate: s.pirate,
+          police: s.police,
+        };
+      });
+      return mode === "local" ? list.filter(function (s) { return s.inRange; }) : list;
+    },
+    claim: function () {
+      applyPilot("agent", true);
+      const res = { ok: true, pilot: "agent", log: "Agent claimed the stick." };
+      logAgentAct("claim", res);
+      return res;
+    },
+    release: function () {
+      applyPilot("human", true);
+      const res = { ok: true, pilot: "human", log: "Agent released the stick." };
+      logAgentAct("release", res);
+      return res;
+    },
+    buy: function (goodId, qty) {
+      const prevCredits = state.credits;
+      const q = qty || 1;
+      withLocalEval(() => {
+        for (let i = 0; i < q; i++) doBuy(goodId);
+      });
+      const bought = Math.floor((prevCredits - state.credits) / (state.prices[goodId] || 1));
+      const ok = bought > 0;
+      const res = {
+        ok: ok,
+        good: goodId,
+        qty: bought,
+        spent: prevCredits - state.credits,
+        log: ok ? ("Bought " + bought + " " + goodId) : "Buy failed",
+      };
+      logAgentAct("buy", res);
+      return res;
+    },
+    sell: function (goodId, qty) {
+      const prevCredits = state.credits;
+      const q = qty || 1;
+      withLocalEval(() => {
+        for (let i = 0; i < q; i++) doSell(goodId);
+      });
+      const sold = Math.floor((state.credits - prevCredits) / (state.prices[goodId] || 1));
+      const ok = sold > 0;
+      const res = {
+        ok: ok,
+        good: goodId,
+        qty: sold,
+        earned: state.credits - prevCredits,
+        log: ok ? ("Sold " + sold + " " + goodId) : "Sell failed",
+      };
+      logAgentAct("sell", res);
+      return res;
+    },
+    sellAll: function () {
+      const prevCredits = state.credits;
+      const prevUsed = cargoUsed(state);
+      withLocalEval(() => doSellAll());
+      const sold = prevUsed - cargoUsed(state);
+      const ok = sold > 0;
+      const res = {
+        ok: ok,
+        unitsSold: sold,
+        earned: state.credits - prevCredits,
+        log: ok ? ("Sold all " + sold + " units") : "Hold was empty",
+      };
+      logAgentAct("sell_all", res);
+      return res;
+    },
+    fillCheap: function () {
+      const prevCredits = state.credits;
+      const prevUsed = cargoUsed(state);
+      withLocalEval(() => doFillCheap());
+      const loaded = cargoUsed(state) - prevUsed;
+      const ok = loaded > 0;
+      const res = {
+        ok: ok,
+        unitsLoaded: loaded,
+        spent: prevCredits - state.credits,
+        log: ok ? ("Filled " + loaded + " units cheap") : "Nothing cheap loaded",
+      };
+      logAgentAct("fill_cheap", res);
+      return res;
+    },
+    repair: function () {
+      const prev = state.hull || 0;
+      withLocalEval(() => doRepair());
+      const res = {
+        ok: (state.hull || 0) > prev,
+        repaired: (state.hull || 0) - prev,
+        log: `Repaired ${(state.hull || 0) - prev} hull points.`,
+      };
+      logAgentAct("repair", res);
+      return res;
+    },
+    rearm: function () {
+      const prev = state.ammo || 0;
+      withLocalEval(() => doRearm());
+      const res = {
+        ok: (state.ammo || 0) > prev,
+        loaded: (state.ammo || 0) - prev,
+        log: `Loaded ${(state.ammo || 0) - prev} ordnance.`,
+      };
+      logAgentAct("rearm", res);
+      return res;
+    },
+    sellExpensive: function () {
+      const prevCredits = state.credits;
+      const prevUsed = cargoUsed(state);
+      withLocalEval(() => doSellExpensive());
+      const sold = prevUsed - cargoUsed(state);
+      const ok = sold > 0;
+      const res = {
+        ok: ok,
+        unitsSold: sold,
+        earned: state.credits - prevCredits,
+        log: ok ? ("Sold " + sold + " units expensive") : "Nothing expensive in hold",
+      };
+      logAgentAct("sell_expensive", res);
+      return res;
+    },
+    refuel: function () {
+      const prevFuel = state.fuel;
+      withLocalEval(() => doRefuel());
+      const added = state.fuel - prevFuel;
+      const ok = added > 0;
+      const res = {
+        ok: ok,
+        fuelAdded: added,
+        log: ok ? ("Refueled +" + added) : "Tanks full or cannot afford",
+      };
+      logAgentAct("refuel", res);
+      return res;
+    },
+    jump: function (destId) {
+      const from = state.system;
+      withLocalEval(() => doTravel(destId));
+      const ok = state.system === destId;
+      const res = {
+        ok: ok,
+        from: from,
+        system: state.system,
+        log: ok ? ("Jumped to " + (sys(state.system) || {}).name) : "Jump failed",
+      };
+      logAgentAct("jump", res);
+      return res;
+    },
+    dockWork: function () {
+      const prevCredits = state.credits;
+      withLocalEval(() => doDockWork());
+      const earned = state.credits - prevCredits;
+      const ok = earned > 0;
+      const res = { ok: ok, earned: earned, log: ok ? "Worked the docks" : "Already worked" };
+      logAgentAct("dock_work", res);
+      return res;
+    },
+    buyPress: function () {
+      const prevCredits = state.credits;
+      withLocalEval(() => doBuyPress());
+      const ok = state.credits < prevCredits;
+      const res = { ok: ok, log: ok ? "Bought the Dock Press" : "Could not buy press" };
+      logAgentAct("buy_press", res);
+      return res;
+    },
+    buyShip: function (shipId) {
+      const oldId = state.shipId;
+      withLocalEval(() => doBuyShip(shipId));
+      const ok = state.shipId === shipId && oldId !== shipId;
+      const res = { ok: ok, log: ok ? ("Traded hull for " + shipId) : "Ship trade failed" };
+      logAgentAct("buy_ship", res);
+      return res;
+    },
+    resolveEncounter: function (choice) {
+      if (!encKind) return { ok: false, error: "no_active_encounter" };
+      const had = encKind;
+      resolveEncounter(choice);
+      const res = {
+        ok: true,
+        resolved: had,
+        choice: choice,
+        log: "Encounter resolved (" + choice + ")",
+      };
+      logAgentAct("encounter", res);
+      return res;
+    },
+    retire: function () {
+      const s = sys(state.system);
+      const canRetire = s && s.retire && netWorth(state) >= RETIRE_NET;
+      if (!canRetire) return { ok: false, error: "cannot_retire" };
+      const b = el("btn-retire");
+      if (b) b.click();
+      const res = { ok: true, retired: true, log: "Retired on Quiet Moon!" };
+      logAgentAct("retire", res);
+      return res;
+    },
+  };
+  globalThis.SkiffAPI = api;
+  if (globalThis.SkiffWebMCP && typeof globalThis.SkiffWebMCP.init === "function") {
+    globalThis.SkiffWebMCP.init(api);
+  }
 
   syncGodUi();
 

@@ -25,7 +25,7 @@ blockers: []
 
 1. **Analyze** Spronck’s C (read / note behavior).
 2. **Write** rules into MD (`docs/…`) with modern structure — not a paste of his source.
-3. **Implement** those MD contracts in JS (`game.js` / shared engine / `mcp/engine.mjs`).
+3. **Implement** those MD contracts in JS (`game.js` / WebMCP client).
 4. **Credit** Spronck / Space Trader publicly (`CREDITS.md`, Captain). Title stays **Skiff Run**.
 
 Do **not** line-for-line translate his `.c` into the repo. That would be a GPL derivative. Clean-room alignment stays **MIT**.

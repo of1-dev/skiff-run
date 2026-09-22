@@ -3,6 +3,11 @@
   "private": true,
   "scripts": {
     "test": "node --test test/acceptance/*.test.js",
-    "test:acceptance": "node --test test/acceptance/*.test.js"
+    "test:acceptance": "node --test test/acceptance/*.test.js",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "eslint": "^10.11.0",
+    "globals": "^17.12.0"
   }
 }

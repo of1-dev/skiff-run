@@ -85,7 +85,7 @@ Stdio MCP command for connectors:
 - command: `node`
 - args: `/absolute/path/to/skiff-run/mcp/server.mjs`
 
-Working directory should be the `mcp/` folder (or use absolute server path; Node resolves `./engine.mjs` relative to the server file).
+Working directory should be the `mcp/` folder (or use absolute server path; `server.mjs` forwards to the WebMCP bridge).
 
 ### Fold spectator (shared save)
 

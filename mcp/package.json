@@ -1,6 +1,6 @@
 {
   "name": "skiff-run-mcp",
-  "version": "0.9.24",
+  "version": "0.9.25",
   "private": true,
   "type": "module",
   "bin": {
@@ -11,7 +11,7 @@
     "bridge": "node bridge.mjs",
     "smoke": "node smoke.mjs",
     "autopilot": "node auto-pilot.mjs",
-    "test": "node --test test/auto-pilot.test.js"
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.0",

@@ -6,9 +6,11 @@
   <meta name="theme-color" content="#060A14" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>SKIFF RUN</title>
-  <link rel="stylesheet" href="style.css?v=0.9.24" />
+  <link rel="stylesheet" href="style.css?v=0.9.25" />
 </head>
 <body>
+  <canvas id="holo-canvas" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: #05050a;"></canvas>
+  <button id="btn-exit-holo" style="display: none; position: fixed; top: 20px; right: 20px; z-index: 10000; padding: 10px 20px; background: #2a3340; color: #7ec8e8; border: 1px solid #7ec8e8; border-radius: 4px; cursor: pointer; font-family: monospace;">Exit Holo View</button>
   <div id="app" class="shell">
     <div id="pilot-banner" class="pilot-banner" hidden>
       <span id="pilot-banner-text">Agent has the stick.</span>
@@ -17,13 +19,15 @@
     <header class="topbar">
       <div class="brand">
         <strong>SKIFF RUN</strong>
-        <span id="ver">0.9.24</span>
+        <span id="ver">0.9.25</span>
       </div>
       <div class="status-strip" aria-label="Status">
         <div><label>Sys</label><span id="sys-name">—</span></div>
         <div><label>₩</label><span id="credits">—</span></div>
         <div><label>Fuel</label><span id="fuel">—</span></div>
         <div><label>Hold</label><span id="cargo">—</span></div>
+        <div><label>Hull</label><span id="hull-val">—</span></div>
+        <div><label>Ammo</label><span id="ammo-val">—</span></div>
         <div><label>Net</label><span id="net">—</span></div>
       </div>
       <div id="top-agent-ticker" class="top-agent-ticker" hidden aria-live="polite">
@@ -107,6 +111,11 @@
         <div id="ship-name" class="ship-name">—</div>
         <div id="ship-meta" class="have">—</div>
         <div id="crew-actions" class="crew-actions"></div>
+        <h3 class="sub">Service</h3>
+        <div id="service-actions" class="crew-actions">
+          <button type="button" id="btn-repair" class="btn wide text-left outline">Repair Hull</button>
+          <button type="button" id="btn-rearm" class="btn wide text-left outline">Rearm Ammo</button>
+        </div>
         <h3 class="sub">Hulls</h3>
         <div id="yard"></div>
       </section>
@@ -114,6 +123,11 @@
       <section id="tab-captain" class="panel" data-tab="captain" hidden>
         <h2>Captain</h2>
         <p class="hint">Save is automatic. New reshuffles the full galaxy — same named systems, new lanes.</p>
+
+        <h3 class="sub">Quest Tracker</h3>
+        <div class="theme-packs" style="margin-bottom: 16px;">
+          <p class="hint" id="quest-tracker-hint">No active quests. Check the local Dock Press for news, rumors, and bounties.</p>
+        </div>
         <h3 class="sub">Pilot</h3>
         <div class="theme-packs">
           <div class="seg" role="group" aria-label="Who has the stick">
@@ -138,6 +152,15 @@
             <button type="button" class="seg-btn" data-theme-pick="lcars">LCARS</button>
           </div>
           <p class="hint" id="theme-hint">Cobalt is the default hull console look.</p>
+        </div>
+
+        <h3 class="sub">Renderer</h3>
+        <div class="theme-packs">
+          <div class="seg" role="group" aria-label="Graphics Engine">
+            <button type="button" class="seg-btn active" data-renderer-pick="classic">Classic UI</button>
+            <button type="button" class="seg-btn" data-renderer-pick="holo">2.5D Holo</button>
+          </div>
+          <p class="hint">Switch graphics engines on the fly. Agent works on both.</p>
         </div>
         <button type="button" id="btn-reset" class="btn ghost">New game</button>
         <h3 class="sub">Skills</h3>
@@ -182,19 +205,21 @@
       <button type="button" id="enc-b" class="btn ghost">B</button>
     </div>
   </dialog>
-  <script src="js/yard-economy.js?v=0.9.24"></script>
-  <script src="js/fuel.js?v=0.9.24"></script>
-  <script src="js/market.js?v=0.9.24"></script>
-  <script src="js/encounter.js?v=0.9.24"></script>
-  <script src="js/dock-press.js?v=0.9.24"></script>
-  <script src="js/debug-god.js?v=0.9.24"></script>
-  <script src="js/waypoints.js?v=0.9.24"></script>
-  <script src="js/chart-find.js?v=0.9.24"></script>
-  <script src="js/route.js?v=0.9.24"></script>
-  <script src="js/skills.js?v=0.9.24"></script>
-  <script src="js/crew.js?v=0.9.24"></script>
-  <script src="js/trade-fog.js?v=0.9.24"></script>
-  <script src="js/agent-action-log.js?v=0.9.24"></script>
-  <script src="game.js?v=0.9.24"></script>
+  <script src="js/yard-economy.js?v=0.9.25"></script>
+  <script src="js/fuel.js?v=0.9.25"></script>
+  <script src="js/market.js?v=0.9.25"></script>
+  <script src="js/encounter.js?v=0.9.25"></script>
+  <script src="js/dock-press.js?v=0.9.25"></script>
+  <script src="js/debug-god.js?v=0.9.25"></script>
+  <script src="js/waypoints.js?v=0.9.25"></script>
+  <script src="js/chart-find.js?v=0.9.25"></script>
+  <script src="js/route.js?v=0.9.25"></script>
+  <script src="js/skills.js?v=0.9.25"></script>
+  <script src="js/crew.js?v=0.9.25"></script>
+  <script src="js/trade-fog.js?v=0.9.25"></script>
+  <script src="js/agent-action-log.js?v=0.9.25"></script>
+  <script src="js/renderer-holo.js?v=0.9.25"></script>
+  <script src="game.js?v=0.9.25"></script>
+  <script src="js/webmcp.js?v=0.9.25"></script>
 </body>
 </html>
