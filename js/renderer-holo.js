@@ -30,6 +30,27 @@
     return ACTIVITY_NAMES[idx];
   }
 
+  /** Pure label for the holo engage button (classic Chart hop copy). */
+  function engageJumpButton(opts) {
+    const o = opts || {};
+    if (o.canReach) {
+      return { enabled: true, label: "ENGAGE JUMP (" + o.cost + " Fuel)" };
+    }
+    if (o.hop && o.hopFuelOk) {
+      return {
+        enabled: true,
+        label: "HOP VIA " + String(o.hop.name).toUpperCase() + " · " + o.hop.jumps + " JUMPS",
+      };
+    }
+    if (!o.inRange && o.hop && !o.hopFuelOk) {
+      return { enabled: false, label: "NEED " + o.hopCost + " FUEL FOR HOP (Have " + o.fuel + ")" };
+    }
+    if (!o.inRange) {
+      return { enabled: false, label: "OUT OF RANGE (Max " + o.rangeVal + ")" };
+    }
+    return { enabled: false, label: "NEED " + o.cost + " FUEL (Have " + o.fuel + ")" };
+  }
+
   function getShipRange() {
     if (!currentState || !currentState.shipId) return 28;
     const ships = (globalThis.SkiffShips && Array.isArray(globalThis.SkiffShips)) ? globalThis.SkiffShips : [];
@@ -518,13 +539,28 @@
     let cost = 0;
     let canReach = false;
     let inRange = false;
+    let hop = null;
+    let hopCost = 0;
+    let hopFuelOk = false;
     const rangeVal = getShipRange();
+    const RT = globalThis.SkiffRoute;
 
     if (!isHere && current) {
       dist = Math.hypot(dest.x - current.x, dest.y - current.y);
       inRange = dist <= rangeVal + 0.01;
       cost = Math.max(1, Math.ceil(dist / 14));
       canReach = inRange && (currentState.fuel >= cost);
+      if (!inRange && RT && currentSystems && currentState.system && dest.id) {
+        const plan = RT.shortestPath(currentState.system, dest.id, currentSystems, rangeVal);
+        if (plan && plan.ok && plan.next) {
+          const hopSys = currentSystems.find(function (s) { return s.id === plan.next; }) || getPosMap()[plan.next];
+          hop = { id: plan.next, name: (hopSys && hopSys.name) || plan.next, jumps: plan.jumps };
+          if (hopSys && current) {
+            hopCost = Math.max(1, Math.ceil(Math.hypot(hopSys.x - current.x, hopSys.y - current.y) / 14));
+            hopFuelOk = currentState.fuel >= hopCost;
+          }
+        }
+      }
     }
 
     // Pirate & Police Danger Intel
@@ -553,16 +589,18 @@
       const btnX = cardX + 16;
       const btnY = cardY + 124;
 
-      let btnLabel = `ENGAGE JUMP (${cost} Fuel)`;
-      let btnEnabled = canReach;
-
-      if (!inRange) {
-        btnLabel = `OUT OF RANGE (Max ${rangeVal})`;
-        btnEnabled = false;
-      } else if (currentState.fuel < cost) {
-        btnLabel = `NEED ${cost} FUEL (Have ${currentState.fuel})`;
-        btnEnabled = false;
-      }
+      const engage = engageJumpButton({
+        canReach: canReach,
+        inRange: inRange,
+        cost: cost,
+        fuel: currentState.fuel,
+        rangeVal: rangeVal,
+        hop: hop,
+        hopCost: hopCost,
+        hopFuelOk: hopFuelOk,
+      });
+      const btnLabel = engage.label;
+      const btnEnabled = engage.enabled;
 
       ctx.fillStyle = btnEnabled ? "rgba(47, 111, 237, 0.9)" : "rgba(30, 41, 59, 0.8)";
       ctx.strokeStyle = btnEnabled ? "#7ec8e8" : "#475569";
@@ -603,5 +641,5 @@
     }
   }
 
-  return { start, stop, update, selectSystem };
+  return { start, stop, update, selectSystem, engageJumpButton };
 });
