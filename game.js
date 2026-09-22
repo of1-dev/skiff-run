@@ -1922,6 +1922,21 @@
     encKind = kind;
     encDest = dest || sys(state.system);
     const armed = hull().weapons && state.crew > 0 && (state.ammo || 0) > 0;
+    
+    // If agent has the stick, automatically decide and resolve encounter
+    if (state.pilot === "agent") {
+      let choice = "b";
+      if (kind === "warden") {
+        choice = state.credits >= 400 ? "a" : "b";
+      } else if (kind === "trader") {
+        choice = "a";
+      } else {
+        // Corsairs
+        choice = armed ? "a" : (state.fuel >= 2 ? "b" : "a");
+      }
+      return resolveEncounter(choice);
+    }
+
     const pir = activityLabel(encDest.pirate);
     const pol = activityLabel(encDest.police);
     if (kind === "warden") {
@@ -2043,6 +2058,7 @@
     encKind = null;
     encDest = null;
     render();
+    if (bridgeOn) bridgeAct({ op: "save", state: state });
   }
 
   el("enc-a").onclick = () => resolveEncounter("a");
@@ -2243,22 +2259,10 @@
     });
     const takeStickBtn = el("btn-take-stick");
     if (takeStickBtn) takeStickBtn.onclick = () => bridgeAct({ op: "take_stick" });
-    // Wrap common market/yard actions when human has stick
-    const wrapHuman = (fn, bodyFn) => function () {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct(bodyFn.apply(null, arguments));
-    };
-    el("btn-sell-all").onclick = wrapHuman(null, () => ({ op: "sell_all" }));
-    el("btn-fill-cheap").onclick = wrapHuman(null, () => ({ op: "fill_cheap" }));
-    el("btn-sell-expensive").onclick = wrapHuman(null, () => ({ op: "sell_expensive" }));
-    el("btn-retire").onclick = wrapHuman(null, () => ({ op: "retire" }));
     el("btn-reset").onclick = () => {
       if (!confirm("Wipe save and start fresh on the shared seat?")) return;
       bridgeAct({ op: "new_game" });
     };
-    // Encounter choices via bridge
-    el("enc-a").onclick = () => bridgeAct({ op: "encounter", choice: "a" });
-    el("enc-b").onclick = () => bridgeAct({ op: "encounter", choice: "b" });
     document.body.classList.add("bridge-mode");
     bridgePoll();
     setInterval(bridgePoll, 500);
