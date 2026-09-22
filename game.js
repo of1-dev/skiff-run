@@ -1917,14 +1917,15 @@
   const dlg = el("encounter");
   let encKind = null;
   let encDest = null;
+  let isLocalEval = false;
 
   function openEncounter(kind, dest) {
     encKind = kind;
     encDest = dest || sys(state.system);
     const armed = hull().weapons && state.crew > 0 && (state.ammo || 0) > 0;
     
-    // If agent has the stick, automatically decide and resolve encounter
-    if (state.pilot === "agent") {
+    // If agent has the stick or running via WebMCP agent call, auto-resolve
+    if (state.pilot === "agent" || isLocalEval) {
       let choice = "b";
       if (kind === "warden") {
         choice = state.credits >= 400 ? "a" : "b";
@@ -2383,10 +2384,14 @@
     const wasBridge = bridgeOn;
     const oldPilot = state.pilot;
     bridgeOn = false;
-    state.pilot = "human";
-    fn();
-    state.pilot = oldPilot;
-    bridgeOn = wasBridge;
+    isLocalEval = true;
+    try {
+      fn();
+    } finally {
+      isLocalEval = false;
+      state.pilot = oldPilot;
+      bridgeOn = wasBridge;
+    }
     if (wasBridge) bridgeAct({ op: "save", state: state });
   }
 
