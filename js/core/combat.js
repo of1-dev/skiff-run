@@ -72,7 +72,11 @@
           state.hull = 20;
           state.shipId = "mite";
           state.credits = 0;
-          log("Ship destroyed! Escaped in a Mite with no credits.");
+          const msg = "Ship destroyed! Escaped in a Mite with no credits.";
+          log(msg);
+          if (globalThis.SkiffCaptainLog && typeof globalThis.SkiffCaptainLog.append === "function") {
+            state.captainLog = globalThis.SkiffCaptainLog.append(state.captainLog, { type: "loss", summary: msg });
+          }
         } else {
           log(`Fight went bad. Hull took ${dmg} damage (-${ammoUsed} ammo).`);
         }
@@ -88,7 +92,11 @@
         state.cargo[id] -= 1;
         dumped += 1;
       }
-      log(dumped ? ("Corsairs took " + dumped + " cargo.") : "Hold empty — they laugh and leave.");
+      const msg = dumped ? ("Corsairs took " + dumped + " cargo.") : "Hold empty — they laugh and leave.";
+      log(msg);
+      if (dumped && globalThis.SkiffCaptainLog && typeof globalThis.SkiffCaptainLog.append === "function") {
+        state.captainLog = globalThis.SkiffCaptainLog.append(state.captainLog, { type: "loss", summary: msg });
+      }
     } else {
       const burn = Math.min(state.fuel, 1 + (rand() < 0.35 ? 1 : 0));
       if (state.fuel >= 1) {
@@ -96,7 +104,11 @@
         log("Fled. −" + burn + " fuel.");
       } else {
         state.credits = Math.max(0, state.credits - 250);
-        log("No fuel to flee. They shake you down ₩250.");
+        const msg = "No fuel to flee. They shake you down ₩250.";
+        log(msg);
+        if (globalThis.SkiffCaptainLog && typeof globalThis.SkiffCaptainLog.append === "function") {
+          state.captainLog = globalThis.SkiffCaptainLog.append(state.captainLog, { type: "loss", summary: msg });
+        }
       }
     }
     return { state, logMsg };
