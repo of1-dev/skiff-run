@@ -207,6 +207,11 @@ const server = http.createServer(async (req, res) => {
             questMsg = `Bought the Press. Found a new lead: ${title} (₩${reward})`;
           }
         }
+        st.lastPress = {
+          masthead: `The ${String(st.system || "Station").toUpperCase()} Dispatch`,
+          lines: [questMsg, "Local market updates published. Review commodity values on the Market tab."],
+          tips: [],
+        };
         result = { ok: true, log: questMsg };
       }
     } else if (op === "refuel") {

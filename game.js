@@ -1893,10 +1893,7 @@
   }
 
   function doBuyPress() {
-    if (bridgeOn) {
-      if (currentPilot() === "agent") return log("Agent has the stick.");
-      return void bridgeAct({ op: "buy_press" });
-    }
+    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
     const buy = SP.buyPress({
       credits: state.credits,
       pressBoughtAt: state.pressBoughtAt,
@@ -1934,6 +1931,7 @@
     
     log("Dock Press ₩" + buy.paid + " — " + edition.masthead);
     render();
+    if (bridgeOn) bridgeAct({ op: "save", state: state });
   }
 
   function maybeEncounter(toId) {
