@@ -4,7 +4,8 @@
   "scripts": {
     "test": "node --test test/acceptance/*.test.js",
     "test:acceptance": "node --test test/acceptance/*.test.js",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "chart-shots": "bash scripts/chart-shots.sh"
   },
   "devDependencies": {
     "eslint": "^10.11.0",

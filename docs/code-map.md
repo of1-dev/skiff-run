@@ -69,6 +69,8 @@ One string: `game.js` `const VERSION`, `<span id="ver">`, every `?v=` on `index.
 ```bash
 npm test
 # syntax: node --check game.js && node --check js/*.js
+# 2D Chart pixels (headless Chromium on Yggi):
+scripts/chart-shots.sh   # writes tmp/chart-{local,sector,full}.png
 ```
 
 Law: [testing-atdd.md](testing-atdd.md). New behavior → failing acceptance test first.
