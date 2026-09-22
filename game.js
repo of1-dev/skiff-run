@@ -83,14 +83,7 @@
   const SP = globalThis.SkiffDockPress;
   if (!SP) throw new Error("SkiffDockPress missing — load js/dock-press.js before game.js");
 
-  function mulberry32(a) {
-    return function () {
-      a |= 0; a = a + 0x6D2B79F5 | 0;
-      let t = Math.imul(a ^ a >>> 15, 1 | a);
-      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-      return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    };
-  }
+  const mulberry32 = globalThis.SkiffChartGen.mulberry32;
 
   function applyChart(chart) {
     if (!chart || !chart.pos) return;
@@ -101,101 +94,7 @@
   }
 
   // Same names every run; positions reshuffle. Keep the graph skiff-reachable.
-  function buildChart(seed) {
-    seed = (seed >>> 0) || (Math.floor(Math.random() * 0xffffffff) || 1);
-    const rand = mulberry32(seed);
-    const minD = 10;
-    const pad = 6;
-    const pos = {};
-
-    function placeOne(id, prefer) {
-      for (let attempt = 0; attempt < 120; attempt++) {
-        let x, y;
-        if (prefer && attempt < 20) {
-          x = prefer.x + (rand() - 0.5) * 24;
-          y = prefer.y + (rand() - 0.5) * 24;
-        } else if (attempt < 40) {
-          // bias into quadrants in roster order
-          const qi = SYSTEM_DEFS.findIndex((s) => s.id === id) % 4;
-          const qx = qi % 2 === 0 ? pad + 8 : WORLD * 0.52;
-          const qy = qi < 2 ? pad + 8 : WORLD * 0.52;
-          x = qx + rand() * (WORLD * 0.38);
-          y = qy + rand() * (WORLD * 0.38);
-        } else {
-          x = pad + rand() * (WORLD - pad * 2);
-          y = pad + rand() * (WORLD - pad * 2);
-        }
-        x = Math.max(pad, Math.min(WORLD - pad, x));
-        y = Math.max(pad, Math.min(WORLD - pad, y));
-        let ok = true;
-        for (const other of Object.values(pos)) {
-          const dx = other.x - x;
-          const dy = other.y - y;
-          if (Math.sqrt(dx * dx + dy * dy) < minD) { ok = false; break; }
-        }
-        if (ok) {
-          pos[id] = { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
-          return;
-        }
-      }
-      pos[id] = { x: pad + rand() * (WORLD - pad * 2), y: pad + rand() * (WORLD - pad * 2) };
-    }
-
-    // Ember near-ish center-left so early jumps exist; others fill out.
-    placeOne("ember", { x: 28, y: 55 });
-    SYSTEM_DEFS.forEach((s) => {
-      if (s.id === "ember") return;
-      placeOne(s.id, null);
-    });
-
-    // Connectivity repair: if any system is unreachable from ember within max ship range hops, nudge.
-    applyChart({ seed, pos });
-    const maxRange = Math.max.apply(null, SHIPS.map((s) => s.range));
-    function connected() {
-      const seen = new Set(["ember"]);
-      const q = ["ember"];
-      while (q.length) {
-        const cur = q.pop();
-        SYSTEMS.forEach((s) => {
-          if (seen.has(s.id)) return;
-          if (dist(sys(cur), s) <= maxRange + 0.01) {
-            seen.add(s.id);
-            q.push(s.id);
-          }
-        });
-      }
-      return seen.size === SYSTEMS.length;
-    }
-    let guard = 0;
-    while (!connected() && guard++ < 120) {
-      // pull a random non-ember system closer to a random visited neighbor
-      const orphan = SYSTEMS.find((s) => {
-        const seen = new Set(["ember"]);
-        const q = ["ember"];
-        while (q.length) {
-          const cur = q.pop();
-          SYSTEMS.forEach((o) => {
-            if (seen.has(o.id)) return;
-            if (dist(sys(cur), o) <= maxRange + 0.01) {
-              seen.add(o.id);
-              q.push(o.id);
-            }
-          });
-        }
-        return !seen.has(s.id);
-      });
-      if (!orphan) break;
-      const anchor = SYSTEMS[Math.floor(rand() * SYSTEMS.length)];
-      const ang = rand() * Math.PI * 2;
-      const rad = maxRange * (0.55 + rand() * 0.35);
-      orphan.x = Math.max(pad, Math.min(WORLD - pad, anchor.x + Math.cos(ang) * rad));
-      orphan.y = Math.max(pad, Math.min(WORLD - pad, anchor.y + Math.sin(ang) * rad));
-      pos[orphan.id] = { x: Math.round(orphan.x * 10) / 10, y: Math.round(orphan.y * 10) / 10 };
-      applyChart({ seed, pos });
-    }
-
-    return { seed, pos, world: WORLD };
-  }
+  const buildChart = globalThis.SkiffChartGen.buildChart;
 
   function hash32(str) { return SM.hash32(str); }
 
@@ -1758,91 +1657,17 @@
 
   function resolveEncounter(choice) {
     dlg.close();
-    const armed = hull().weapons && state.crew > 0 && (state.ammo || 0) > 0;
-    if (encKind === "warden") {
-      if (choice === "a") {
-        const fine = Math.min(state.credits, 400);
-        state.credits -= fine;
-        log("Paid Wardens ₩" + fine + ".");
-      } else if (Math.random() < 0.55) {
-        tickSkill("fighter", true);
-        log("Bluff held. Wardens wave you on.");
-      } else {
-        const fine = Math.min(state.credits, 700);
-        state.credits -= fine;
-        log("Bluff failed. Fine ₩" + fine + ".");
-      }
-    } else if (encKind === "trader") {
-      if (choice === "b") {
-        log("Waved the trader off.");
-      } else {
-        const held = GOODS.map((g) => g.id).filter((id) => (state.cargo[id] || 0) > 0);
-        if (held.length && Math.random() < 0.55) {
-          const id = held[Math.floor(Math.random() * held.length)];
-          const p = Math.round((state.prices[id] || GOODS.find((g) => g.id === id).base) * 1.12);
-          state.cargo[id] -= 1;
-          state.credits += p;
-          tickSkill("trader", true);
-          log("Trader bought 1 " + GOODS.find((g) => g.id === id).name + " for ₩" + p + ".");
-        } else {
-          const g = GOODS[Math.floor(Math.random() * GOODS.length)];
-          const room = hull().cargo - cargoUsed(state);
-          const p = Math.round((state.prices[g.id] || g.base) * 0.88);
-          if (room >= 1 && state.credits >= p) {
-            state.credits -= p;
-            state.cargo[g.id] = (state.cargo[g.id] || 0) + 1;
-            log("Bought 1 " + g.name + " off a trader for ₩" + p + ".");
-          } else {
-            log("Trader had nothing you could take. Fair skies.");
-          }
-        }
-      }
-    } else if (armed && choice === "a") {
-      const pir = (encDest && encDest.pirate) || 3;
-      const ammoUsed = Math.min(state.ammo || 0, Math.floor(Math.random() * 3) + 1);
-      state.ammo = Math.max(0, (state.ammo || 0) - ammoUsed);
-      const odds = 0.55 + state.crew * 0.06 - pir * 0.03 + (ammoUsed * 0.05);
-      
-      if (Math.random() < odds) {
-        const prize = 350 + state.crew * 150 + pir * 40;
-        state.credits += prize;
-        tickSkill("fighter", false);
-        log(`Corsairs broke off. Salvage ₩${prize} (-${ammoUsed} ammo).`);
-      } else {
-        const dmg = 15 + pir * 5;
-        state.hull = (state.hull || 0) - dmg;
-        tickSkill("fighter", true);
-        if (state.hull <= 0) {
-          state.hull = 20;
-          state.shipId = "mite";
-          state.credits = 0;
-          log("Ship destroyed! Escaped in a Mite with no credits.");
-        } else {
-          log(`Fight went bad. Hull took ${dmg} damage (-${ammoUsed} ammo).`);
-        }
-      }
-    } else if (choice === "a") {
-      let dumped = 0;
-      const ids = GOODS.map((g) => g.id);
-      const take = Math.min(3, 1 + Math.floor(((encDest && encDest.pirate) || 3) / 3));
-      while (dumped < take) {
-        const held = ids.filter((id) => state.cargo[id] > 0);
-        if (!held.length) break;
-        const id = held[Math.floor(Math.random() * held.length)];
-        state.cargo[id] -= 1;
-        dumped += 1;
-      }
-      log(dumped ? ("Corsairs took " + dumped + " cargo.") : "Hold empty — they laugh and leave.");
-    } else {
-      const burn = Math.min(state.fuel, 1 + (Math.random() < 0.35 ? 1 : 0));
-      if (state.fuel >= 1) {
-        state.fuel -= burn;
-        log("Fled. −" + burn + " fuel.");
-      } else {
-        state.credits = Math.max(0, state.credits - 250);
-        log("No fuel to flee. They shake you down ₩250.");
-      }
-    }
+    const result = globalThis.SkiffCombat.resolveEncounter({
+      state,
+      encKind,
+      dest: encDest,
+      choice,
+      GOODS: globalThis.SkiffGoods,
+      hull: hull(),
+      cargoUsed: cargoUsed(state),
+      tickSkill: tickSkill
+    });
+    log(result.logMsg);
     encKind = null;
     encDest = null;
     render();

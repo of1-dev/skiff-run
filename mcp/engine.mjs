@@ -575,74 +575,28 @@ export class SkiffGame {
     if (lock) return lock;
     const kind = this.pendingEncounter.kind;
     const dest = this.sys(this.pendingEncounter.systemId) || this.sys(this.state.system);
-    const armed = this.hull().weapons && this.state.crew > 0;
-    if (kind === "warden") {
-      if (choice === "a") {
-        const fine = Math.min(this.state.credits, 400);
-        this.state.credits -= fine;
-        this.log(`Paid Wardens ₩${fine}.`);
-      } else if (Math.random() < 0.55) {
-        this.log("Bluff held. Wardens wave you on.");
-      } else {
-        const fine = Math.min(this.state.credits, 700);
-        this.state.credits -= fine;
-        this.log(`Bluff failed. Fine ₩${fine}.`);
-      }
-    } else if (kind === "trader") {
-      if (choice === "b") this.log("Waved the trader off.");
-      else {
-        const held = GOODS.map((g) => g.id).filter((id) => (this.state.cargo[id] || 0) > 0);
-        if (held.length && Math.random() < 0.55) {
-          const id = held[Math.floor(Math.random() * held.length)];
-          const p = Math.round((this.state.prices[id] || 40) * 1.12);
-          this.state.cargo[id] -= 1;
-          this.state.credits += p;
-          this.log(`Trader bought 1 ${GOODS.find((g) => g.id === id).name} for ₩${p}.`);
-        } else {
-          const g = GOODS[Math.floor(Math.random() * GOODS.length)];
-          const room = this.hull().cargo - this.cargoUsed();
-          const p = Math.round((this.state.prices[g.id] || g.base) * 0.88);
-          if (room >= 1 && this.state.credits >= p) {
-            this.state.credits -= p;
-            this.state.cargo[g.id] += 1;
-            this.log(`Bought 1 ${g.name} off a trader for ₩${p}.`);
-          } else this.log("Trader had nothing you could take.");
-        }
-      }
-    } else if (armed && choice === "a") {
-      const pir = dest.pirate || 3;
-      const odds = 0.55 + this.state.crew * 0.06 - pir * 0.03;
-      if (Math.random() < odds) {
-        const prize = 350 + this.state.crew * 150 + pir * 40;
-        this.state.credits += prize;
-        this.log(`Corsairs broke off. Salvage ₩${prize}.`);
-      } else {
-        const loss = 400 + pir * 50;
-        this.state.credits = Math.max(0, this.state.credits - loss);
-        this.log(`Fight went bad. −₩${loss} repairs.`);
-      }
-    } else if (choice === "a") {
-      let dumped = 0;
-      const take = Math.min(3, 1 + Math.floor((dest.pirate || 3) / 3));
-      const ids = GOODS.map((g) => g.id);
-      while (dumped < take) {
-        const held = ids.filter((id) => this.state.cargo[id] > 0);
-        if (!held.length) break;
-        const id = held[Math.floor(Math.random() * held.length)];
-        this.state.cargo[id] -= 1;
-        dumped += 1;
-      }
-      this.log(dumped ? `Corsairs took ${dumped} cargo.` : "Hold empty — they laugh and leave.");
-    } else {
-      const burn = Math.min(this.state.fuel, 1 + (Math.random() < 0.35 ? 1 : 0));
-      if (this.state.fuel >= 1) {
-        this.state.fuel -= burn;
-        this.log(`Fled. −${burn} fuel.`);
-      } else {
-        this.state.credits = Math.max(0, this.state.credits - 250);
-        this.log("No fuel to flee. Shaken down ₩250.");
-      }
+    
+    const { resolveEncounter } = require("../js/core/combat.js");
+    
+    const result = resolveEncounter({
+      state: this.state,
+      encKind: kind,
+      dest: dest,
+      choice: choice,
+      GOODS: GOODS,
+      hull: this.hull(),
+      cargoUsed: this.cargoUsed(),
+      tickSkill: null,
+      rand: Math.random
+    });
+    
+    // logMsg might contain spaces. We split by '.' or just log the whole thing.
+    if (result.logMsg) {
+      result.logMsg.split('. ').forEach(msg => {
+        if (msg.trim()) this.log(msg.trim() + (msg.endsWith('.') ? '' : '.'));
+      });
     }
+    
     this.pendingEncounter = null;
     return { ok: true, ...this.snapshot() };
   }
