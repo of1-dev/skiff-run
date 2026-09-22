@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.27";
+  const VERSION = "0.9.28";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   let bridgeOn = (() => {
@@ -1231,14 +1231,12 @@
     const on = godEnabled();
     const godPanel = el("god-panel");
     if (godPanel) godPanel.hidden = !on;
-    const box = el("pref-godmode");
-    if (box) {
-      state.prefs = state.prefs || {};
-      if (GOD.isDebugOn(typeof location !== "undefined" ? location.search : "")) {
-        box.checked = true;
-      } else {
-        box.checked = !!state.prefs.godMode;
-      }
+    const btn = el("pref-godmode");
+    if (btn) {
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      btn.textContent = on ? "God tools: on" : "God tools: off";
+      btn.classList.toggle("ember", on);
+      btn.classList.toggle("ghost", !on);
     }
   }
 
@@ -1252,10 +1250,10 @@
   }
   const godPref = el("pref-godmode");
   if (godPref) {
-    godPref.addEventListener("change", () => setGodMode(godPref.checked));
-    godPref.addEventListener("click", () => {
-      /* Fold sometimes skips change; click still toggles checked first */
-    });
+    godPref.onclick = function (e) {
+      e.preventDefault();
+      setGodMode(!godEnabled());
+    };
   }
 
   const wireGod = (id, fn) => {
