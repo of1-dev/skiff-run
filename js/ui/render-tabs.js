@@ -475,9 +475,6 @@
           pressBox.appendChild(hint);
         }
       }
-      if (ui.targetId && ui.chartMode === "local" && ui.targetId !== state.system && !canJumpTo(state.system, ui.targetId)) {
-        ui.targetId = null;
-      }
       renderShipPanel();
       if (typeof renderWaypointChromeFn === "function") renderWaypointChromeFn();
       renderSkillsBox();

@@ -121,6 +121,7 @@ describe("ATDD: press deep-link resolver", () => {
     assert.equal(r.tab, "chart");
     assert.equal(r.targetId, "ash");
     assert.equal(r.chartMode, "sector");
+    assert.equal(r.pin, true);
   });
   it("yard at current dock opens yard tab", () => {
     const r = P.resolvePressAction({ type: "yard", systemId: "ember" }, { hereId: "ember" });

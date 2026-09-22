@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.34";
+  const VERSION = "0.9.35";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const GOD_KEY = "skiff-run-god";
@@ -449,9 +449,6 @@
       : mode === "sector"
         ? "Sector: regional window (~" + SECTOR_RADIUS + " units). Dim = beyond current fuel reach."
         : "Full: entire Ember galaxy (" + SYSTEMS.length + " systems). Dim = beyond current fuel reach.";
-    if (mode === "local" && ui.targetId && !canJumpTo(state.system, ui.targetId) && ui.targetId !== state.system) {
-      ui.targetId = null;
-    }
     drawMap();
     renderTarget();
   }
@@ -833,25 +830,45 @@
   // Thin encounters: chance scales with destination police/pirate; small hulls quieter.
 
 
+  function applyChartLead(id, why) {
+    if (!id || id === state.system) return false;
+    const dest = sys(id);
+    if (!dest) return false;
+    ui.targetId = id;
+    ui.searchHitId = id;
+    ui.courseDest = id;
+    const hint = WP.pinHint({ targetId: id, hereId: state.system });
+    if (hint.ok && !WP.isPinned(state.waypoints, id)) {
+      const tog = WP.toggle(state.waypoints, id);
+      state.waypoints = tog.list;
+    }
+    const mode = CF.viewForLead({
+      hereId: state.system,
+      targetId: id,
+      canJump: canJumpTo(state.system, id),
+      inSector: inSector(state.system, id),
+    });
+    setChartMode(mode);
+    if (globalThis.SkiffHoloRenderer && typeof globalThis.SkiffHoloRenderer.selectSystem === "function") {
+      globalThis.SkiffHoloRenderer.selectSystem(id);
+    }
+    const plan = coursePlan(id);
+    const hops = plan && plan.ok ? plan.jumps : "?";
+    const nm = dest.name || id;
+    log((why || "Lead") + " → " + nm + " pinned · " + hops + " hop(s). Jump / Hop via.");
+    return true;
+  }
+
   function followPressTip(action) {
     const r = SP.resolvePressAction(action, { hereId: state.system });
     if (r.targetId) {
-      ui.targetId = r.targetId;
-      ui.searchHitId = r.targetId;
-      const dest = sys(r.targetId);
-      const mode = CF.viewForLead({
-        hereId: state.system,
-        targetId: r.targetId,
-        canJump: !!(dest && canJumpTo(state.system, r.targetId)),
-        inSector: !!(dest && inSector(state.system, r.targetId)),
-      });
-      setChartMode(mode);
-      const nm = dest ? dest.name : r.targetId;
-      log((r.log || "Press lead") + " → " + nm + ".");
+      applyChartLead(r.targetId, r.log || "Press lead");
+      showTab("chart");
     } else if (r.log) {
       log(r.log);
+      if (r.tab) showTab(r.tab);
     }
-    if (r.tab) showTab(r.tab);
+    save(state);
     render();
   }
 
@@ -1350,6 +1367,7 @@
 
   const pinBtn = el("btn-waypoint");
   if (pinBtn) pinBtn.onclick = () => {
+    reclaimStick();
     const id = ui.targetId;
     const hint = WP.pinHint({ targetId: id, hereId: state.system });
     if (!hint.ok) {

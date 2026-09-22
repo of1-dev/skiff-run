@@ -140,8 +140,8 @@
       if (!sid) {
         return { ok: false, reason: "no_system", tab: "chart", targetId: null, chartMode: "sector", log: "Press named no dock." };
       }
-      const kind = act.type === "quest" ? "Job lead pinned on the chart." : "Press pinned a dock on the chart.";
-      return { ok: true, tab: "chart", targetId: sid, chartMode: "sector", log: kind };
+      const kind = act.type === "quest" ? "Job lead" : "Press lead";
+      return { ok: true, tab: "chart", targetId: sid, chartMode: "sector", pin: true, log: kind };
     }
     return { ok: false, reason: "unknown", tab: null, targetId: null, chartMode: null, log: "Can't follow that clip." };
   }
