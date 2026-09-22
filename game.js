@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.35";
+  const VERSION = "0.9.36";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const GOD_KEY = "skiff-run-god";
@@ -1305,7 +1305,8 @@
     state.prefs.godMode = on;
     writeGodFlag(on);
     log(on ? "God mode ON — Unbowed kit unlocked." : "God mode OFF.");
-    save(state);
+    if (bridgeOn) bridgeAct({ op: "save", state: state });
+    else save(state);
     syncGodUi();
   }
   const godPref = el("pref-godmode");
@@ -1327,22 +1328,40 @@
       fn();
     };
   };
+  // Bridge seat: local save() is a no-op when bridgeOn; poll would wipe grants.
+  // Always POST dedicated god ops so /api/act persists + applyBridgePayload refreshes UI.
   wireGod("god-credits", () => {
+    if (bridgeOn) {
+      bridgeAct({ op: "god_credits", amount: GOD.GRANT_DEFAULT });
+      return;
+    }
     state = GOD.grantCredits(state, GOD.GRANT_DEFAULT);
     log("God: +₩" + GOD.GRANT_DEFAULT.toLocaleString() + ".");
     save(state); render();
   });
   wireGod("god-fuel", () => {
+    if (bridgeOn) {
+      bridgeAct({ op: "god_fuel" });
+      return;
+    }
     state = GOD.fillFuel(state, hull().fuelMax);
     log("God: tanks topped.");
     save(state); render();
   });
   wireGod("god-yard", () => {
+    if (bridgeOn) {
+      bridgeAct({ op: "god_yard" });
+      return;
+    }
     state = GOD.unlockYard(state);
     log("God: full yard unlocked at every dock.");
     save(state); render();
   });
   wireGod("god-unbowed", () => {
+    if (bridgeOn) {
+      bridgeAct({ op: "grant_unbowed" });
+      return;
+    }
     const r = GOD.grantUnbowed(state, SHIPS, GOODS.map((x) => x.id));
     if (!r.ok) return log("God: cannot grant Unbowed (" + r.reason + ").");
     state = r.state;
@@ -1354,6 +1373,10 @@
     save(state); render();
   });
   wireGod("god-wasp", () => {
+    if (bridgeOn) {
+      bridgeAct({ op: "grant_wasp" });
+      return;
+    }
     const r = GOD.grantWasp(state, SHIPS, GOODS.map((x) => x.id));
     if (!r.ok) return log("God: cannot set Wasp Prime (" + r.reason + ").");
     state = r.state;

@@ -1,6 +1,6 @@
 /** Headless Skiff Run engine — mechanical parity with play UI for MCP / tests. */
-export const VERSION = "0.9.35";
-export const RULESET = "skiff-0.9.35";
+export const VERSION = "0.9.36";
+export const RULESET = "skiff-0.9.36";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const AgentActionLog = require("../js/agent-action-log.js");
@@ -95,6 +95,7 @@ export const SHIPS = [
   { id: "skiff-7", name: "Skiff-7", cargo: 20, fuelMax: 14, range: 28, weapons: false, crewMax: 1, price: 0 },
   { id: "hold-barge", name: "Hold Barge", cargo: 40, fuelMax: 18, range: 32, weapons: false, crewMax: 3, price: 9000 },
   { id: "ember-cutter", name: "Ember Cutter", cargo: 16, fuelMax: 16, range: 38, weapons: true, crewMax: 2, price: 12000 },
+  { id: "wasp-prime", name: "Wasp Prime", cargo: 18, fuelMax: 20, range: 44, weapons: true, crewMax: 3, price: 28000 },
   { id: "unbowed", name: "Unbowed", cargo: 12, fuelMax: 16, range: 36, weapons: true, crewMax: 3, price: 0, gated: true },
 ];
 
@@ -633,6 +634,68 @@ export class SkiffGame {
     return { ok: true, ...this.snapshot() };
   }
 
+  /** God: +credits (default ₩50k). */
+  grantCredits(amount = 50000) {
+    const lock = this.requirePilot();
+    if (lock) return lock;
+    const n = Math.max(0, amount == null ? 50000 : (amount | 0));
+    this.state.credits = (this.state.credits | 0) + n;
+    this.log(`God: +₩${n.toLocaleString()}.`);
+    return { ok: true, credits: this.state.credits, ...this.snapshot() };
+  }
+
+  /** God: fill tanks to hull max. */
+  godFillFuel() {
+    const lock = this.requirePilot();
+    if (lock) return lock;
+    const max = this.hull().fuelMax | 0;
+    this.state.fuel = max;
+    this.log("God: tanks topped.");
+    return { ok: true, fuel: this.state.fuel, ...this.snapshot() };
+  }
+
+  /** God: unlock full yard stock (still excludes gated Unbowed). */
+  unlockYard() {
+    const lock = this.requirePilot();
+    if (lock) return lock;
+    this.state.godYard = true;
+    this.log("God: full yard unlocked at every dock.");
+    return { ok: true, godYard: true, ...this.snapshot() };
+  }
+
+  /** God: Wasp Prime + three high Hands. */
+  grantWasp() {
+    const lock = this.requirePilot();
+    if (lock) return lock;
+    const next = this.ship("wasp-prime");
+    if (!next) return { ok: false, error: "unknown_ship" };
+    const ids = Object.keys(this.state.cargo);
+    let used = this.cargoUsed();
+    let jettison = 0;
+    while (used > next.cargo) {
+      let dumped = false;
+      for (let i = ids.length - 1; i >= 0; i--) {
+        const id = ids[i];
+        if ((this.state.cargo[id] || 0) > 0) {
+          this.state.cargo[id] -= 1;
+          used -= 1;
+          jettison += 1;
+          dumped = true;
+          break;
+        }
+      }
+      if (!dumped) break;
+    }
+    this.state.shipId = next.id;
+    this.state.fuel = next.fuelMax;
+    const card = { role: "hand", quirk: "dock-smart", pilot: 7, fighter: 7, trader: 7, engineer: 7 };
+    this.state.roster = [Object.assign({}, card), Object.assign({}, card), Object.assign({}, card)];
+    this.state.crew = this.state.roster.length;
+    const jnote = jettison ? ` — jettisoned ${jettison} cargo.` : ".";
+    this.log(`God: Wasp Prime + hands aboard${jnote}`);
+    return { ok: true, jettison, ...this.snapshot() };
+  }
+
   /**
    * God/debug Unbowed kit — match Fold grantUnbowed / PEAK_UNBOWED_CREW.
    * Not a career path; spectator long-run / MCP grant only.
@@ -839,6 +902,35 @@ export class SkiffGame {
     this.state.dockWorkAt = systemId;
     this.log(`Dock work shift. +₩${DOCK_WORK_PAY}.`);
     return { ok: true, pay: DOCK_WORK_PAY, ...this.snapshot() };
+  }
+
+  /**
+   * Dispatch Fold / bridge ops for headless + ATDD.
+   * God ops: god_credits, god_fuel, god_yard, grant_unbowed, grant_wasp.
+   */
+  runOp(op, body = {}) {
+    switch (op) {
+      case "god_credits":
+        return this.grantCredits(body.amount);
+      case "god_fuel":
+        return this.godFillFuel();
+      case "god_yard":
+        return this.unlockYard();
+      case "grant_unbowed":
+        return this.grantUnbowed();
+      case "grant_wasp":
+        return this.grantWasp();
+      case "buy_press":
+        return this.buyPress();
+      case "fill_cheap":
+        return this.fillCheap();
+      case "sell_expensive":
+        return this.sellExpensive();
+      case "dock_work":
+        return this.dockWork();
+      default:
+        return { ok: false, error: "unknown_op", op };
+    }
   }
 
   /**

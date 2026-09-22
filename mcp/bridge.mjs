@@ -17,32 +17,36 @@ const PORT = Number(process.env.SKIFF_BRIDGE_PORT || 8787);
 const HOST = process.env.SKIFF_BRIDGE_HOST || "127.0.0.1";
 const SAVE_PATH = path.join(__dirname, "session", "save.json");
 
-// Parse ship stats directly from game.js — single source of truth.
-// Extracts the SHIPS array so bridge never holds a stale copy.
+// Parse ship stats from Fold SoT js/data/ships.js (game.js no longer inlines SHIPS).
 function loadShipStats() {
-  try {
-    const src = fs.readFileSync(path.join(ROOT, "game.js"), "utf8");
-    // Match each ship object literal in the SHIPS array
-    const re = /\{\s*id:\s*"([^"]+)"[^}]*cargo:\s*(\d+)[^}]*fuelMax:\s*(\d+)[^}]*range:\s*(\d+)[^}]*weapons:\s*(true|false)[^}]*crewMax:\s*(\d+)[^}]*hullMax:\s*(\d+)[^}]*ammoMax:\s*(\d+)[^}]*price:\s*(\d+)/g;
-    const table = {};
-    let m;
-    while ((m = re.exec(src)) !== null) {
-      table[m[1]] = {
-        cargo: +m[2], fuelMax: +m[3], range: +m[4],
-        weapons: m[5] === "true", crewMax: +m[6],
-        hullMax: +m[7], ammoMax: +m[8], price: +m[9],
-      };
+  const candidates = [
+    path.join(ROOT, "js/data/ships.js"),
+    path.join(ROOT, "game.js"),
+  ];
+  const re = /\{\s*id:\s*"([^"]+)"[^}]*cargo:\s*(\d+)[^}]*fuelMax:\s*(\d+)[^}]*range:\s*(\d+)[^}]*weapons:\s*(true|false)[^}]*crewMax:\s*(\d+)[^}]*hullMax:\s*(\d+)[^}]*ammoMax:\s*(\d+)[^}]*price:\s*(\d+)/g;
+  for (const file of candidates) {
+    try {
+      if (!fs.existsSync(file)) continue;
+      const src = fs.readFileSync(file, "utf8");
+      const table = {};
+      let m;
+      re.lastIndex = 0;
+      while ((m = re.exec(src)) !== null) {
+        table[m[1]] = {
+          cargo: +m[2], fuelMax: +m[3], range: +m[4],
+          weapons: m[5] === "true", crewMax: +m[6],
+          hullMax: +m[7], ammoMax: +m[8], price: +m[9],
+        };
+      }
+      if (Object.keys(table).length === 0) continue;
+      console.error(`[bridge] Loaded ${Object.keys(table).length} ships from ${path.relative(ROOT, file)}`);
+      return table;
+    } catch (e) {
+      console.error("[bridge] Could not read ship stats from", file, e.message);
     }
-    if (Object.keys(table).length === 0) {
-      console.error("[bridge] WARNING: parsed 0 ships from game.js, falling back");
-      return null;
-    }
-    console.error(`[bridge] Loaded ${Object.keys(table).length} ships from game.js`);
-    return table;
-  } catch (e) {
-    console.error("[bridge] Could not read game.js for ship stats:", e.message);
-    return null;
   }
+  console.error("[bridge] WARNING: parsed 0 ships, falling back");
+  return null;
 }
 
 const SHIP_STATS = loadShipStats() || {
@@ -51,8 +55,62 @@ const SHIP_STATS = loadShipStats() || {
 };
 
 function shipFor(id) {
-  return SHIP_STATS[id] || SHIP_STATS["skiff-7"];
+  return SHIP_STATS[id] || SHIP_STATS["skiff-7"] || { cargo: 20, fuelMax: 14, crewMax: 1, hullMax: 40, ammoMax: 0, price: 0 };
 }
+
+/** Peak Unbowed crew — match Fold js/debug-god.js / engine PEAK_UNBOWED_CREW. */
+const PEAK_UNBOWED_CREW = [
+  { role: "helm", quirk: "steady hands", pilot: 9, fighter: 3, trader: 2, engineer: 3 },
+  { role: "guns", quirk: "hot temper", pilot: 3, fighter: 9, trader: 2, engineer: 3 },
+  { role: "wrench", quirk: "cloak-rated", pilot: 3, fighter: 3, trader: 2, engineer: 9, label: "Quiet Hands" },
+];
+
+function waspHands() {
+  const card = { role: "hand", quirk: "dock-smart", pilot: 7, fighter: 7, trader: 7, engineer: 7 };
+  return [Object.assign({}, card), Object.assign({}, card), Object.assign({}, card)];
+}
+
+function cargoUsed(st) {
+  return Object.values(st.cargo || {}).reduce((a, b) => a + Number(b || 0), 0);
+}
+
+function jettisonToFit(st, maxCargo) {
+  const ids = Object.keys(st.cargo || {});
+  let used = cargoUsed(st);
+  let jettison = 0;
+  while (used > maxCargo) {
+    let dumped = false;
+    for (let i = ids.length - 1; i >= 0; i--) {
+      const id = ids[i];
+      if ((st.cargo[id] || 0) > 0) {
+        st.cargo[id] -= 1;
+        used -= 1;
+        jettison += 1;
+        dumped = true;
+        break;
+      }
+    }
+    if (!dumped) break;
+  }
+  return jettison;
+}
+
+function applyHullKit(st, hullId, roster) {
+  const ss = shipFor(hullId);
+  if (!SHIP_STATS[hullId] && hullId !== "skiff-7") {
+    return { ok: false, error: "unknown_ship" };
+  }
+  st.cargo = st.cargo || {};
+  const jettison = jettisonToFit(st, ss.cargo | 0);
+  st.shipId = hullId;
+  st.fuel = ss.fuelMax | 0;
+  if (ss.hullMax != null) st.hull = ss.hullMax | 0;
+  if (ss.ammoMax != null) st.ammo = ss.ammoMax | 0;
+  st.roster = (roster || []).map((c) => Object.assign({}, c)).slice(0, ss.crewMax | 0);
+  st.crew = st.roster.length;
+  return { ok: true, jettison };
+}
+
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -295,6 +353,62 @@ const server = http.createServer(async (req, res) => {
       } else {
         result = { ok: false, log: "Nothing cheap or no space" };
       }
+    } else if (op === "god_credits") {
+      const amount = body.amount == null ? 50000 : (body.amount | 0);
+      st.credits = (st.credits | 0) + Math.max(0, amount);
+      st.log = `God: +₩${Math.max(0, amount).toLocaleString()}.`;
+      result = { ok: true, credits: st.credits, log: st.log };
+    } else if (op === "god_fuel") {
+      const ss = shipFor(st.shipId);
+      st.fuel = ss.fuelMax | 0;
+      st.log = "God: tanks topped.";
+      result = { ok: true, fuel: st.fuel, log: st.log };
+    } else if (op === "god_yard") {
+      st.godYard = true;
+      st.log = "God: full yard unlocked at every dock.";
+      result = { ok: true, godYard: true, log: st.log };
+    } else if (op === "grant_unbowed") {
+      const r = applyHullKit(st, "unbowed", PEAK_UNBOWED_CREW);
+      if (!r.ok) {
+        result = r;
+      } else {
+        const jnote = r.jettison ? ` Jettisoned ${r.jettison} cargo.` : "";
+        st.log = "Unbowed granted — peak crew aboard. Career unlock still locked." + jnote;
+        result = { ok: true, jettison: r.jettison, shipId: st.shipId, crew: st.crew, log: st.log };
+      }
+    } else if (op === "grant_wasp") {
+      const r = applyHullKit(st, "wasp-prime", waspHands());
+      if (!r.ok) {
+        result = r;
+      } else {
+        const jnote = r.jettison ? ` — jettisoned ${r.jettison} cargo.` : ".";
+        st.log = "God: Wasp Prime + hands aboard" + jnote;
+        result = { ok: true, jettison: r.jettison, shipId: st.shipId, crew: st.crew, log: st.log };
+      }
+    } else if (op === "set_prefs") {
+      st.prefs = st.prefs || { autoFuel: true };
+      if (body.autoFuel != null) st.prefs.autoFuel = !!body.autoFuel;
+      if (body.godMode != null) st.prefs.godMode = !!body.godMode;
+      st.log = st.prefs.autoFuel ? "Auto-refuel on arrive: ON." : "Auto-refuel on arrive: OFF.";
+      result = { ok: true, prefs: st.prefs, log: st.log };
+    } else if (op === "new_game") {
+      // Soft reset — keep chart seed if present; Fold usually rebuilds via save blob.
+      st.credits = 3200;
+      st.shipId = "skiff-7";
+      st.fuel = shipFor("skiff-7").fuelMax;
+      st.crew = 0;
+      st.roster = [];
+      st.godYard = false;
+      st.cargo = { ore: 0, grain: 0, optics: 0, meds: 0, spice: 0, scrap: 0 };
+      st.system = "ember";
+      st.dockWorkAt = null;
+      st.pressBoughtAt = null;
+      st.lastPress = null;
+      st.agentLog = [];
+      st.pilot = "human";
+      st.prefs = st.prefs || { autoFuel: true };
+      st.log = "Shared seat wiped — fresh Skiff-7 at Ember Reach.";
+      result = { ok: true, log: st.log };
     } else if (op === "encounter") {
       saved.pendingEncounter = null;
       result = { ok: true };

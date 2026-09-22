@@ -15,7 +15,7 @@ import { z } from "zod";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SAVE_PATH = path.join(__dirname, "session", "save.json");
 const BRIDGE_URL = process.env.SKIFF_BRIDGE_URL || "http://127.0.0.1:8787";
-const VERSION = "0.9.25";
+const VERSION = "0.9.36";
 
 async function forwardOp(body) {
   return new Promise((resolve) => {
@@ -100,6 +100,14 @@ tool("skiff_buy_ship", "Buy hull at yard.", {
 }, ({ ship }) => forwardOp({ op: "buy_ship", ship, actor: "agent" }));
 
 tool("skiff_retire", "Retire at Quiet Moon.", {}, () => forwardOp({ op: "retire", actor: "agent" }));
+
+tool("skiff_god_credits", "God: grant credits (default ₩50000).", {
+  amount: z.number().int().min(0).max(1000000).optional(),
+}, ({ amount }) => forwardOp({ op: "god_credits", amount: amount ?? 50000, actor: "agent" }));
+tool("skiff_god_fuel", "God: fill fuel tanks.", {}, () => forwardOp({ op: "god_fuel", actor: "agent" }));
+tool("skiff_god_yard", "God: unlock full yard stock (Unbowed stays gated).", {}, () => forwardOp({ op: "god_yard", actor: "agent" }));
+tool("skiff_grant_unbowed", "God/debug: grant Unbowed hull + peak crew (Quiet Hands).", {}, () => forwardOp({ op: "grant_unbowed", actor: "agent" }));
+tool("skiff_grant_wasp", "God: grant Wasp Prime + high Hands.", {}, () => forwardOp({ op: "grant_wasp", actor: "agent" }));
 
 server.tool(
   "skiff_act",

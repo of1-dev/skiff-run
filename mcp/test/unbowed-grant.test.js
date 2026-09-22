@@ -21,8 +21,8 @@ describe("ATDD: Unbowed in SHIPS", () => {
   });
 
   it("VERSION/RULESET unified with Fold (one version law)", () => {
-    assert.match(VERSION, /^0\.9\.23$/);
-    assert.match(RULESET, /0\.9\.23/);
+    assert.equal(VERSION, "0.9.36");
+    assert.equal(RULESET, "skiff-0.9.36");
   });
 });
 

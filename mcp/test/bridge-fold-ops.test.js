@@ -17,10 +17,10 @@ function switchSource(file) {
   return readFileSync(path.join(mcpRoot, file), "utf8");
 }
 
-describe("ATDD: one version law 0.9.24", () => {
+describe("ATDD: one version law", () => {
   it("VERSION and RULESET match Fold clock", () => {
-    assert.equal(VERSION, "0.9.24");
-    assert.match(RULESET, /0\.9\.23/);
+    assert.equal(VERSION, "0.9.36");
+    assert.equal(RULESET, "skiff-0.9.36");
   });
 
   it("newGame initializes press/dock/agentLog fields", () => {
@@ -32,15 +32,25 @@ describe("ATDD: one version law 0.9.24", () => {
   });
 });
 
-describe("ATDD: runOp switch includes Fold dock ops", () => {
-  for (const file of ["bridge.mjs", "server.mjs"]) {
-    it(`${file} cases buy_press fill_cheap sell_expensive dock_work`, () => {
-      const src = switchSource(file);
-      for (const op of ["buy_press", "fill_cheap", "sell_expensive", "dock_work"]) {
-        assert.match(src, new RegExp(`case \"${op}\"`));
-      }
-    });
-  }
+describe("ATDD: Fold dock ops present in bridge + engine runOp", () => {
+  it("bridge.mjs handles buy_press fill_cheap sell_expensive dock_work", () => {
+    const src = switchSource("bridge.mjs");
+    for (const op of ["buy_press", "fill_cheap", "sell_expensive", "dock_work"]) {
+      assert.match(src, new RegExp(`op === \"${op}\"`));
+    }
+  });
+  it("engine.mjs runOp cases buy_press fill_cheap sell_expensive dock_work", () => {
+    const src = switchSource("engine.mjs");
+    for (const op of ["buy_press", "fill_cheap", "sell_expensive", "dock_work"]) {
+      assert.match(src, new RegExp(`case \"${op}\"`));
+    }
+  });
+  it("server.mjs forwards Fold dock ops", () => {
+    const src = switchSource("server.mjs");
+    for (const op of ["buy_press", "fill_cheap", "sell_expensive", "dock_work"]) {
+      assert.match(src, new RegExp(op));
+    }
+  });
 });
 
 describe("ATDD: buyPress", () => {
