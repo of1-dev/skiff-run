@@ -30,6 +30,8 @@ npm test
 
 `game.js` is adapters + UI. New behavior → failing acceptance test → then code.
 
+File map for coding agents: [`docs/code-map.md`](code-map.md). Player AIs: [`docs/fair-play.md`](fair-play.md).
+
 ## Still later (not A+ blockers for this climb)
 
 - Chart camera / draw (visual)

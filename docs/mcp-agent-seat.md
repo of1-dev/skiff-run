@@ -1,7 +1,7 @@
 ---
 title: Skiff Run MCP agent seat (experiment)
 created: 2026-09-11
-updated: 2026-09-11
+updated: 2026-09-21
 type: design
 status: active
 dest: of1
@@ -54,8 +54,10 @@ save.pilot = "human" | "agent"
 
 ## Fairness experiment
 
-- Schema-only docs for agents; prompt bans fetching `of1-dev/skiff-run` or Pages HTML.
+- Schema-only docs for **player** agents; prompt bans fetching `of1-dev/skiff-run` or Pages HTML.
 - Ruleset version hash in `skiff_state`.
+- **Sealed player mode** (policy): the playing AI must not read JS/source to farm strategy. Spec: [fair-play.md](fair-play.md). Builder agents use [code-map.md](code-map.md) instead.
+- Player intel matches Fold: local/sector chart, trade fog, paid Dock Press. `skiff_chart` `full` is a map of names/positions, not a price oracle.
 
 ## Implementation path
 

@@ -10,6 +10,8 @@ Sibling to [Hex Wake](https://github.com/of1-dev/hex-wake) — related night pal
 
 Open `index.html` locally or enable GitHub Pages on `main` / root.
 
+**Agents:** builders start at [docs/code-map.md](docs/code-map.md). Player AIs (fly the career) start at [docs/fair-play.md](docs/fair-play.md) and must not read source for strategy.
+
 ## How to play
 
 **Captain’s Notes:** see [GUIDE.md](GUIDE.md) — fold-sized how-to in ’98 shareware voice.
