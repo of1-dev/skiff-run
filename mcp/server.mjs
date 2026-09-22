@@ -35,7 +35,7 @@ async function forwardOp(body) {
         try {
           const s = JSON.parse(fs.readFileSync(SAVE_PATH, "utf8"));
           return resolve({ ok: true, state: s.state || s });
-        } catch (_) {}
+        } catch (e) { console.error("[server] fallback save read failed:", e.message); }
       }
       resolve({
         ok: false,

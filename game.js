@@ -649,7 +649,7 @@
           : "LCARS — orange console homage (fan aesthetic pack).";
     }
     if (persist !== false) {
-      try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
+      try { localStorage.setItem(THEME_KEY, t); } catch (e) { console.warn("[skiff] theme save failed:", e.message); }
     }
     if (typeof ui !== "undefined" && ui && ui.tab === "chart") {
       sizeMap();
@@ -659,7 +659,7 @@
 
   function loadTheme() {
     let t = "cobalt";
-    try { t = localStorage.getItem(THEME_KEY) || "cobalt"; } catch (e) {}
+    try { t = localStorage.getItem(THEME_KEY) || "cobalt"; } catch (e) { console.warn("[skiff] theme read failed:", e.message); }
     applyTheme(t, false);
   }
 

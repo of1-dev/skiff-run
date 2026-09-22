@@ -18,7 +18,8 @@ export function hydrateGame(game) {
     game.pendingEncounter = raw.pendingEncounter || null;
     game.ensurePrefs?.();
     return true;
-  } catch (_) {
+  } catch (e) {
+    console.error("[session-store] write failed:", e.message);
     return false;
   }
 }

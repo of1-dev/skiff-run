@@ -17,6 +17,43 @@ const PORT = Number(process.env.SKIFF_BRIDGE_PORT || 8787);
 const HOST = process.env.SKIFF_BRIDGE_HOST || "127.0.0.1";
 const SAVE_PATH = path.join(__dirname, "session", "save.json");
 
+// Parse ship stats directly from game.js — single source of truth.
+// Extracts the SHIPS array so bridge never holds a stale copy.
+function loadShipStats() {
+  try {
+    const src = fs.readFileSync(path.join(ROOT, "game.js"), "utf8");
+    // Match each ship object literal in the SHIPS array
+    const re = /\{\s*id:\s*"([^"]+)"[^}]*cargo:\s*(\d+)[^}]*fuelMax:\s*(\d+)[^}]*range:\s*(\d+)[^}]*weapons:\s*(true|false)[^}]*crewMax:\s*(\d+)[^}]*hullMax:\s*(\d+)[^}]*ammoMax:\s*(\d+)[^}]*price:\s*(\d+)/g;
+    const table = {};
+    let m;
+    while ((m = re.exec(src)) !== null) {
+      table[m[1]] = {
+        cargo: +m[2], fuelMax: +m[3], range: +m[4],
+        weapons: m[5] === "true", crewMax: +m[6],
+        hullMax: +m[7], ammoMax: +m[8], price: +m[9],
+      };
+    }
+    if (Object.keys(table).length === 0) {
+      console.error("[bridge] WARNING: parsed 0 ships from game.js, falling back");
+      return null;
+    }
+    console.error(`[bridge] Loaded ${Object.keys(table).length} ships from game.js`);
+    return table;
+  } catch (e) {
+    console.error("[bridge] Could not read game.js for ship stats:", e.message);
+    return null;
+  }
+}
+
+const SHIP_STATS = loadShipStats() || {
+  // Last-resort fallback — should never be reached if game.js exists
+  "skiff-7": { cargo: 20, fuelMax: 14, range: 28, weapons: false, crewMax: 1, hullMax: 40, ammoMax: 0, price: 0 },
+};
+
+function shipFor(id) {
+  return SHIP_STATS[id] || SHIP_STATS["skiff-7"];
+}
+
 const MIME = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -63,7 +100,9 @@ function readSave() {
     if (fs.existsSync(SAVE_PATH)) {
       return JSON.parse(fs.readFileSync(SAVE_PATH, "utf8"));
     }
-  } catch (_) {}
+  } catch (e) {
+    console.error("[bridge] readSave failed:", e.message);
+  }
   return null;
 }
 
@@ -72,23 +111,30 @@ function writeSave(data) {
     fs.mkdirSync(path.dirname(SAVE_PATH), { recursive: true });
     fs.writeFileSync(SAVE_PATH, JSON.stringify(data, null, 2), "utf8");
     return true;
-  } catch (_) {
+  } catch (e) {
+    console.error("[bridge] writeSave failed:", e.message);
     return false;
   }
 }
 
 function makeSnapshot(state) {
   if (!state) return null;
+  const s = shipFor(state.shipId);
   const cargoUsed = Object.values(state.cargo || {}).reduce((a, b) => a + Number(b || 0), 0);
   return {
     system: state.system,
+    systemName: state.systemName || state.system,
     credits: state.credits || 0,
     fuel: state.fuel || 0,
-    fuelMax: 14,
+    fuelMax: s.fuelMax,
+    hull: state.hull || 0,
+    hullMax: s.hullMax,
+    ammo: state.ammo || 0,
+    ammoMax: s.ammoMax,
     cargo: state.cargo || {},
     cargoUsed: cargoUsed,
-    cargoMax: 20,
-    ship: { id: state.shipId || "unbowed", cargo: 20, fuelMax: 14, range: 14, weapons: false },
+    cargoMax: s.cargo,
+    ship: { id: state.shipId || "skiff-7", cargo: s.cargo, fuelMax: s.fuelMax, range: s.range, weapons: s.weapons },
     canRetire: state.system === "quiet" && (state.credits || 0) >= 35000,
     prices: state.prices || {},
   };
@@ -113,14 +159,21 @@ const server = http.createServer(async (req, res) => {
     try {
       const raw = await readBody(req);
       body = raw ? JSON.parse(raw) : {};
-    } catch (_) {}
+    } catch (e) {
+      console.error("[bridge] act body parse failed:", e.message);
+    }
 
     const saved = readSave() || { state: {} };
     const st = saved.state || saved;
     const op = body.op;
     let result = { ok: true };
 
-    if (op === "claim") {
+    if (op === "save" && body.state) {
+      // Browser pushing authoritative state after withLocalEval
+      saved.state = body.state;
+      writeSave(saved);
+      return sendJson(res, 200, { ok: true, state: saved.state, snapshot: makeSnapshot(saved.state) });
+    } else if (op === "claim") {
       st.pilot = "agent";
       result = { ok: true, pilot: "agent" };
     } else if (op === "take_stick" || op === "release") {
@@ -157,20 +210,46 @@ const server = http.createServer(async (req, res) => {
         result = { ok: true, log: questMsg };
       }
     } else if (op === "refuel") {
-      st.fuel = 14;
-      st.credits = Math.max(0, (st.credits || 0) - 45);
-      result = { ok: true, fuel: 14 };
+      const ss = shipFor(st.shipId);
+      const need = ss.fuelMax - (st.fuel || 0);
+      if (need > 0 && st.credits >= 5) {
+        const canAfford = Math.min(need, Math.floor(st.credits / 5));
+        st.fuel = (st.fuel || 0) + canAfford;
+        st.credits -= canAfford * 5;
+        result = { ok: true, fuel: st.fuel };
+      } else {
+        result = { ok: false, log: "Tanks full or no credits" };
+      }
     } else if (op === "repair") {
-      st.hull = 150;
-      st.credits = Math.max(0, (st.credits || 0) - 100);
-      result = { ok: true, hull: 150 };
+      const ss = shipFor(st.shipId);
+      const need = ss.hullMax - (st.hull || 0);
+      if (need > 0 && st.credits >= 20) {
+        const canAfford = Math.min(need, Math.floor(st.credits / 20));
+        st.hull = (st.hull || 0) + canAfford;
+        st.credits -= canAfford * 20;
+        result = { ok: true, hull: st.hull };
+      } else {
+        result = { ok: false, log: "Hull intact or no credits" };
+      }
     } else if (op === "rearm") {
-      st.ammo = 50;
-      st.credits = Math.max(0, (st.credits || 0) - 100);
-      result = { ok: true, ammo: 50 };
+      const ss = shipFor(st.shipId);
+      if (!ss.ammoMax) {
+        result = { ok: false, log: "Ship has no weapon mounts" };
+      } else {
+        const need = ss.ammoMax - (st.ammo || 0);
+        if (need > 0 && st.credits >= 50) {
+          const canAfford = Math.min(need, Math.floor(st.credits / 50));
+          st.ammo = (st.ammo || 0) + canAfford;
+          st.credits -= canAfford * 50;
+          result = { ok: true, ammo: st.ammo };
+        } else {
+          result = { ok: false, log: "Ammo full or no credits" };
+        }
+      }
     } else if (op === "jump") {
+      const ss = shipFor(st.shipId);
       st.system = body.system || st.system;
-      st.fuel = Math.max(0, (st.fuel || 14) - 1);
+      st.fuel = Math.max(0, (st.fuel || ss.fuelMax) - 1);
       st.dockWorkAt = null;
       st.pressBoughtAt = null;
       
@@ -198,14 +277,9 @@ const server = http.createServer(async (req, res) => {
         result = { ok: false, log: "Hold empty" };
       }
     } else if (op === "fill_cheap") {
-      const shipMaxCargo = {
-        "mite": 10, "skiff-7": 20, "glass-dart": 12, "tide-runner": 24,
-        "knot-hauler": 32, "hold-barge": 40, "ember-cutter": 16, "ash-lance": 14,
-        "quiet-ark": 50, "wasp-prime": 18, "unbowed": 12
-      };
-      const maxCargo = shipMaxCargo[st.shipId || "skiff-7"] || 10;
+      const ss = shipFor(st.shipId);
       const units = Object.values(st.cargo || {}).reduce((a, b) => a + Number(b || 0), 0);
-      const room = maxCargo - units;
+      const room = ss.cargo - units;
       
       if (room > 0 && st.credits >= 15) {
         const canAfford = Math.min(room, Math.floor(st.credits / 15));
