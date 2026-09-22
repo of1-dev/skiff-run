@@ -6,7 +6,7 @@
   }
 }(typeof globalThis !== 'undefined' ? globalThis : this, function (SkiffSystems, SkiffShips) {
 
-  const WORLD = 100;
+  const WORLD = 160;
 
   function mulberry32(a) {
     return function () {
@@ -123,7 +123,7 @@
       pos[orphan.id] = { x: Math.round(orphan.x * 10) / 10, y: Math.round(orphan.y * 10) / 10 };
     }
 
-    return { seed, pos };
+    return { seed, pos, world: WORLD };
   }
 
   return { buildChart, mulberry32, WORLD, dist };

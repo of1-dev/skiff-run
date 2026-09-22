@@ -58,7 +58,7 @@
   if (!CF) throw new Error("SkiffChartFind missing — load js/chart-find.js before game.js");
   const RT = (typeof SkiffRoute !== "undefined") ? SkiffRoute : null;
   if (!RT) throw new Error("SkiffRoute missing — load js/route.js before game.js");
-  const WORLD = 160;
+  const WORLD = (globalThis.SkiffChartGen && globalThis.SkiffChartGen.WORLD) || 160;
   const TF = (typeof SkiffTradeFog !== "undefined") ? SkiffTradeFog : null;
   if (!TF) throw new Error("SkiffTradeFog missing — load js/trade-fog.js before game.js");
 

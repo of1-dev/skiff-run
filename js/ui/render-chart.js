@@ -54,7 +54,8 @@
           pts.push({ x: here.x - r, y: here.y }, { x: here.x + r, y: here.y });
           pts.push({ x: here.x, y: here.y - r }, { x: here.x, y: here.y + r });
         } else {
-          // sector
+          // sector — square window (same idea as local's range box) so the grid stays even
+          const r = Math.max(SECTOR_RADIUS, 1);
           SYSTEMS.forEach((s) => {
             if (chartVisible(s, here.id, "sector")) pts.push(s);
           });
@@ -62,6 +63,8 @@
             const pin = sys(ui.targetId);
             if (pin) pts.push(pin);
           }
+          pts.push({ x: here.x - r, y: here.y }, { x: here.x + r, y: here.y });
+          pts.push({ x: here.x, y: here.y - r }, { x: here.x, y: here.y + r });
         }
 
         minX = Math.min(...pts.map((p) => p.x));
