@@ -70,9 +70,9 @@ describe("ATDD: agent-pilot CSS must not lock tabbar tabs", () => {
       false,
       "must NOT disable .tabbar .tab under is-agent-pilot"
     );
-    // Mutating panels stay locked.
-    assert.match(css, /\.shell\.is-agent-pilot\s+#tab-market/);
-    assert.match(css, /\.shell\.is-agent-pilot\s+#tab-chart\s+\.target-actions/);
+    // Mutating panels stay locked only on the bridged spectator seat.
+    assert.match(css, /body\.bridge-mode\s+\.shell\.is-agent-pilot\s+#tab-market/);
+    assert.match(css, /body\.bridge-mode\s+\.shell\.is-agent-pilot\s+#tab-chart\s+\.target-actions/);
     assert.match(css, /#btn-take-stick/);
   });
 });

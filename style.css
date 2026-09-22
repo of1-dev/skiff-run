@@ -507,18 +507,19 @@ body.enc-open #btn-exit-holo {
   100% { box-shadow: 0 0 25px rgba(255, 178, 74, 0.4); border-bottom-color: #ffcc77; }
 }
 .pilot-banner[hidden] { display: none !important; }
-.shell.is-agent-pilot #tab-market,
-.shell.is-agent-pilot #tab-chart .target-actions,
-.shell.is-agent-pilot #tab-yard .crew-actions,
-.shell.is-agent-pilot #tab-yard .yard-row .chip,
-.shell.is-agent-pilot #tab-dock .dock-actions {
+/* Spectator lock only on the bridged seat. Solo Pages must still Jump. */
+body.bridge-mode .shell.is-agent-pilot #tab-market,
+body.bridge-mode .shell.is-agent-pilot #tab-chart .target-actions,
+body.bridge-mode .shell.is-agent-pilot #tab-yard .crew-actions,
+body.bridge-mode .shell.is-agent-pilot #tab-yard .yard-row .chip,
+body.bridge-mode .shell.is-agent-pilot #tab-dock .dock-actions {
   pointer-events: none;
   opacity: 0.55;
 }
-.shell.is-agent-pilot #btn-take-stick,
-.shell.is-agent-pilot [data-pilot-pick],
-.shell.is-agent-pilot [data-theme-pick],
-.shell.is-agent-pilot #btn-reset {
+body.bridge-mode .shell.is-agent-pilot #btn-take-stick,
+body.bridge-mode .shell.is-agent-pilot [data-pilot-pick],
+body.bridge-mode .shell.is-agent-pilot [data-theme-pick],
+body.bridge-mode .shell.is-agent-pilot #btn-reset {
   pointer-events: auto;
   opacity: 1;
 }

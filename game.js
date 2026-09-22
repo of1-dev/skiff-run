@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.32";
+  const VERSION = "0.9.33";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const GOD_KEY = "skiff-run-god";
@@ -289,6 +289,7 @@
   }
 
   let state = load() || fresh();
+  if (!bridgeOn) state.pilot = "human";
   state.prefs = state.prefs || { autoFuel: true };
   if (state.prefs.autoFuel == null) state.prefs.autoFuel = true;
   if (!state.prices || !Object.keys(state.prices).length) rollMarket(state);
@@ -350,6 +351,12 @@
 
   function currentPilot() {
     return state.pilot === "agent" ? "agent" : "human";
+  }
+
+  function reclaimStick() {
+    if (currentPilot() !== "agent") return;
+    applyPilot("human", true);
+    if (bridgeOn && typeof bridgeAct === "function") bridgeAct({ op: "take_stick" });
   }
 
   function applyPilot(who, announce) {
@@ -1014,7 +1021,11 @@
   el("btn-fill-cheap").onclick = doFillCheap;
   el("btn-sell-expensive").onclick = doSellExpensive;
   el("btn-warp").onclick = () => {
-    if (!ui.targetId || ui.targetId === state.system) return;
+    reclaimStick();
+    if (!ui.targetId || ui.targetId === state.system) {
+      log("Pick a dock on the chart, then Jump.");
+      return;
+    }
     doTravel(ui.targetId);
   };
   el("btn-retire").onclick = () => {
