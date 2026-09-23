@@ -1,870 +1,186 @@
-(() => {
+/**
+ * Skiff Run — Main Orchestrator & Boot Lifecyle (<= 300 lines)
+ */
+(function () {
   "use strict";
+
   const VERSION = "0.9.37";
-  const SAVE_KEY = "skiff-run-v1";
-  const THEME_KEY = "skiff-run-theme";
+  const WORLD = "skiff-run-v1";
+  const SAVE_KEY = "skiff-run-save";
   const GOD_KEY = "skiff-run-god";
-  let bridgeOn = (() => {
-    try { return new URLSearchParams(location.search).get("bridge") === "1"; }
-    catch { return false; }
-  })();
-  const THEMES = ["cobalt", "coffee", "lcars"];
-  const RETIRE_NET = (globalThis.SkiffMarket && globalThis.SkiffMarket.RETIRE_NET) || 35000;
-  const FUEL_PRICE = (globalThis.SkiffFuel && globalThis.SkiffFuel.FUEL_PRICE) || 45;
-  const CREW_HIRE = 800;
-  // DOCK_WORK_PAY from js/yard-economy.js (SkiffYardEconomy)
-
-  const GOODS = globalThis.SkiffGoods;
-
-  // x/y are map coords (0–100). Links kept for lore; jump range is distance + hull.range.
-  // Named roster is fixed; x/y are filled per New-game chart seed.
-  // tech 0–7, size 0–4, police/pirate 0–7 (Absent…Swarms). Original gov labels.
-  const ACTIVITY = ["Absent", "Minimal", "Few", "Some", "Moderate", "Many", "Abundant", "Swarms"];
-  const TECH_NAME = ["Pre-ag", "Ag", "Low", "Craft", "Early-ind", "Industrial", "Post-ind", "Hi-tech"];
+  const RETIRE_NET = 35000;
+  const FUEL_PRICE = 45;
+  const DOCK_WORK_PAY = 80;
+  const CREW_HIRE = 300;
+  const SECTOR_RADIUS = globalThis.SkiffTradeFog ? globalThis.SkiffTradeFog.SECTOR_RADIUS : 48;
   const SIZE_NAME = ["Tiny", "Small", "Medium", "Large", "Huge"];
-
-  const SYSTEM_DEFS = globalThis.SkiffSystems;
-  let SYSTEMS = SYSTEM_DEFS.map((s) => Object.assign({ x: 50, y: 50 }, s));
+  const TECH_NAME = ["Pre-ag", "Ag", "Low", "Craft", "Early-ind", "Industrial", "Post-ind", "Hi-tech"];
 
   const SHIPS = globalThis.SkiffShips;
-
-  function sys(id) { return SYSTEMS.find((s) => s.id === id); }
-  function ship(id) { return SHIPS.find((s) => s.id === id); }
-  function hull() { return ship(state.shipId) || SHIPS[0]; }
-
-  // Shared hull art — original silhouettes; inline so themes tint via currentColor.
-  const HULL_SVG = globalThis.SkiffHullArt.HULL_SVG;
-
-  const makeHullArt = globalThis.SkiffHullArt.makeHullArt;
-
-
-  // Yard economy — pure logic in js/yard-economy.js (ATDD). Thin adapters only.
-  const YE = globalThis.SkiffYardEconomy;
-  if (!YE) throw new Error("SkiffYardEconomy missing — load js/yard-economy.js before game.js");
-  const GOD = (typeof SkiffDebugGod !== "undefined") ? SkiffDebugGod : null;
-  if (!GOD) throw new Error("SkiffDebugGod missing — load js/debug-god.js before game.js");
-  function readGodFlag() {
-    try { return localStorage.getItem(GOD_KEY) === "1"; }
-    catch { return false; }
-  }
-  function writeGodFlag(on) {
-    try { localStorage.setItem(GOD_KEY, on ? "1" : "0"); }
-    catch (e) { console.warn("[skiff] god flag save failed:", e.message); }
-  }
-  function godEnabled() {
-    if (GOD.isDebugOn(typeof location !== "undefined" ? location.search : "")) return true;
-    if (readGodFlag()) return true;
-    return GOD.isGodEnabled({
-      search: "",
-      prefs: (state && state.prefs) || {},
-    });
-  }
-  const WP = (typeof SkiffWaypoints !== "undefined") ? SkiffWaypoints : null;
-  if (!WP) throw new Error("SkiffWaypoints missing — load js/waypoints.js before game.js");
-  const SK = (typeof SkiffSkills !== "undefined") ? SkiffSkills : null;
-  if (!SK) throw new Error("SkiffSkills missing — load js/skills.js before game.js");
-  const CR = (typeof SkiffCrew !== "undefined") ? SkiffCrew : null;
-  if (!CR) throw new Error("SkiffCrew missing — load js/crew.js before game.js");
-  const CF = (typeof SkiffChartFind !== "undefined") ? SkiffChartFind : null;
-  if (!CF) throw new Error("SkiffChartFind missing — load js/chart-find.js before game.js");
-  const RT = (typeof SkiffRoute !== "undefined") ? SkiffRoute : null;
-  if (!RT) throw new Error("SkiffRoute missing — load js/route.js before game.js");
-  const WORLD = (globalThis.SkiffChartGen && globalThis.SkiffChartGen.WORLD) || 160;
-  const TF = (typeof SkiffTradeFog !== "undefined") ? SkiffTradeFog : null;
-  if (!TF) throw new Error("SkiffTradeFog missing — load js/trade-fog.js before game.js");
-
-  const DOCK_WORK_PAY = YE.DOCK_WORK_PAY;
-  function hullStock(s) { return YE.hullStock(s); }
-  function yardOffered() {
-    const stock = GOD.effectiveStock(!!state.godYard, hullStock(sys(state.system)));
-    return YE.yardOffered(stock, SHIPS);
-  }
-  function dumpToFit(maxCargo) {
-    const ids = GOODS.map((g) => g.id);
-    const r = YE.dumpToFit(state.cargo, ids, maxCargo);
-    state.cargo = r.cargo;
-    return r.dumped;
-  }
-
+  const GOODS = globalThis.SkiffGoods;
+  const SYSTEM_DEFS = globalThis.SkiffSystems;
+  const HULL_SVG = globalThis.SkiffHullArt;
   const SF = globalThis.SkiffFuel;
   const SM = globalThis.SkiffMarket;
-  const SE = globalThis.SkiffEncounter;
-  if (!SF || !SM || !SE) throw new Error("Skiff fuel/market/encounter modules missing — load js/*.js before game.js");
+  const YE = globalThis.SkiffYardEconomy;
+  const CR = globalThis.SkiffCrew;
   const SP = globalThis.SkiffDockPress;
-  if (!SP) throw new Error("SkiffDockPress missing — load js/dock-press.js before game.js");
+  const WP = globalThis.SkiffWaypoints;
+  const CF = globalThis.SkiffChartFind;
+  const RT = globalThis.SkiffRoute;
+  const SK = globalThis.SkiffSkills;
+  const GOD = globalThis.SkiffDebugGod;
+  const TF = globalThis.SkiffTradeFog;
 
-  function applyChart(chart) {
-    if (!chart || !chart.pos) return;
-    SYSTEMS = SYSTEM_DEFS.map((s) => {
-      const p = chart.pos[s.id] || { x: 50, y: 50 };
-      return Object.assign({}, s, { x: p.x, y: p.y });
+  let SYSTEMS = SYSTEM_DEFS.map((s) => Object.assign({ x: 50, y: 50 }, s));
+  let bridgeOn = new URLSearchParams(window.location.search).get("bridge") === "1";
+
+  const el = (id) => document.getElementById(id);
+  const log = (msg) => { if (globalThis.SkiffCaptainLog) globalThis.SkiffCaptainLog.log(msg); };
+
+  function buildChart(seed) {
+    return globalThis.SkiffChartGen.buildChart({
+      seed,
+      world: WORLD,
+      systemDefs: SYSTEM_DEFS,
+      minDist: 10,
+      safeStartPadding: 16,
     });
   }
 
-  // Same names every run; positions reshuffle. Keep the graph skiff-reachable.
-  const buildChart = globalThis.SkiffChartGen.buildChart;
+  const galaxyState = globalThis.SkiffGalaxyState.setup({
+    VERSION, SAVE_KEY, GOD_KEY, WORLD, SYSTEM_DEFS, SHIPS, GOODS, SF, SM, WP, SK, YE,
+    buildChart,
+    getSystems: () => SYSTEMS,
+    setSystems: (next) => { SYSTEMS = next; },
+  });
 
-  function hash32(str) { return SM.hash32(str); }
+  const {
+    sys, ship, readGodFlag, writeGodFlag, godEnabled: rawGodEnabled,
+    hullStock, yardOffered: rawYardOffered, dumpToFit: rawDumpToFit,
+    applyChart, hash32, priceFor, activityLabel, riskFill,
+    bestLaneEdge, cargoMarginAt: rawCargoMarginAt, dist, fuelCost, inRange: rawInRange,
+    fuelReachDistance: rawFuelReachDistance, canJumpTo: rawCanJumpTo,
+    reachableFrom: rawReachableFrom, fresh, rollMarket, peekPrices,
+    bestDealHint, load, save: rawSave,
+  } = galaxyState;
 
-  // Stable prices so remote peek matches arrival.
-  function priceFor(system, good) { return SM.priceFor(system, good); }
-
-  function activityLabel(n) {
-    const i = Math.max(0, Math.min(ACTIVITY.length - 1, n | 0));
-    return ACTIVITY[i];
-  }
-
-  function isVisited(id) {
-    return !!(state.visited && state.visited[id]);
-  }
-
-  function markVisited(id) {
-    if (!state.visited) state.visited = {};
-    state.visited[id] = true;
-  }
-
-  // Semantic chart colors (readable across themes).
-  function riskFill(pirate) {
-    const p = pirate | 0;
-    // Bast tokens: ok / warn / danger — ember reserved for selected-hop + CTA
-    if (p <= 1) return "#7A9E7E";
-    if (p <= 3) return "#C4A35A";
-    return "#C45C4A";
-  }
-
-  function bestLaneEdge(herePrices, therePrices) { return SM.bestLaneEdge(herePrices, therePrices, GOODS); }
-
-  // Expected credit delta if you sell current hold at target vs here.
-  function cargoMarginAt(toId) {
-    const here = state.prices;
-    const there = peekPrices(toId);
-    let total = 0;
-    let units = 0;
-    GOODS.forEach((g) => {
-      const n = state.cargo[g.id] || 0;
-      if (n < 1) return;
-      total += n * ((there[g.id] || 0) - (here[g.id] || 0));
-      units += n;
-    });
-    return { total, units };
-  }
-
-  function dist(a, b) { return SF.dist(a, b); }
-
-  function fuelCost(fromId, toId) {
-    return SF.fuelCost(sys(fromId), sys(toId));
-  }
-
-  function inRange(fromId, toId) {
-    return SF.inRange(sys(fromId), sys(toId), hull().range);
-  }
-
-  /** Max world distance you can jump with current fuel, capped by hull.range (Palm ST–style chart circle). */
-  function fuelReachDistance() {
-    return SF.fuelReachDistance(state.fuel, hull().range);
-  }
-
-  /** Hull range AND enough fuel for fuelCost — chart “in reach” / Local visibility. */
-  function canJumpTo(fromId, toId) {
-    return SF.canJumpTo({ from: sys(fromId), to: sys(toId), hullRange: hull().range, fuel: state.fuel });
-  }
-
-  function reachableFrom(fromId) {
-    return SYSTEMS.filter((s) => s.id !== fromId && inRange(fromId, s.id));
-  }
-
-  function fresh() {
-    const chart = buildChart();
-    applyChart(chart);
-    const startShip = ship("unbowed") || SHIPS.find((s) => s.id === "unbowed") || SHIPS[0];
-    return {
-      v: VERSION,
-      system: "ember",
-      credits: 3200,
-      fuel: startShip.fuelMax,
-      hull: startShip.hullMax,
-      ammo: startShip.ammoMax,
-      cargo: Object.fromEntries(GOODS.map((g) => [g.id, 0])),
-      prices: {},
-      shipId: "unbowed",
-      crew: 0,
-      roster: [],
-      epoch: 1,
-      chart,
-      visited: { ember: true },
-      pilot: "human",
-      prefs: { autoFuel: true, godMode: false },
-      dockWorkAt: null,
-      pressBoughtAt: null,
-      lastPress: null,
-      godYard: false,
-      waypoints: [],
-      skills: SK.normalize(null),
-      log: "Skiff-7 cleared Ember Reach. New chart this run — same systems, new lanes.",
-    };
-  }
-
-  function cargoUsed(st) { return SM.cargoUsed(st.cargo); }
-  function netWorth(st) { return SM.netWorth(st, GOODS, SHIPS); }
-
-  function rollMarket(st) {
-    const s = sys(st.system);
-    st.prices = {};
-    GOODS.forEach((g) => { st.prices[g.id] = priceFor(s, g); });
-  }
-
-  function peekPrices(systemId) {
-    const s = sys(systemId);
-    const out = {};
-    GOODS.forEach((g) => { out[g.id] = priceFor(s, g); });
-    return out;
-  }
-
-  function bestDealHint(herePrices, therePrices) { return SM.bestDealHint(herePrices, therePrices, GOODS); }
-
-  function load() {
-    try {
-      const raw = localStorage.getItem(SAVE_KEY);
-      if (!raw) return null;
-      const st = JSON.parse(raw);
-      if (!st || !st.v) return null;
-      st.v = VERSION;
-      if (!st.shipId) st.shipId = "skiff-7";
-      const h = ship(st.shipId) || SHIPS[0];
-      if (st.hull == null) st.hull = h.hullMax || 20;
-      if (st.ammo == null) st.ammo = h.ammoMax || 0;
-      if (st.crew == null) st.crew = 0;
-      if (!st.epoch) st.epoch = 1;
-      if (!st.visited) {
-        st.visited = {};
-        if (st.system) st.visited[st.system] = true;
-        else st.visited.ember = true;
-      }
-      if (st.dockWorkAt === undefined) st.dockWorkAt = null;
-      if (st.pressBoughtAt === undefined) st.pressBoughtAt = null;
-      if (st.lastPress === undefined) st.lastPress = null;
-      if (st.godYard === undefined) st.godYard = false;
-      st.waypoints = WP.normalize(st.waypoints);
-      st.skills = SK.normalize(st.skills);
-      if (st.pilot !== "human" && st.pilot !== "agent") st.pilot = "human";
-      {
-        const hh = ship(st.shipId) || SHIPS[0];
-        if (!Array.isArray(st.roster)) st.roster = CR.migrateLegacy(st.crew | 0);
-        st.roster = CR.normalizeRoster(st.roster, hh.crewMax);
-        st.crew = CR.syncHeadcount(st.roster);
-      }
-      st.prefs = st.prefs || { autoFuel: true };
-      if (st.prefs.autoFuel == null) st.prefs.autoFuel = true;
-      if (st.prefs.godMode == null) st.prefs.godMode = false;
-      if (readGodFlag()) st.prefs.godMode = true;
-      st.shipId = h.id;
-      st.crew = Math.min(st.crew, h.crewMax);
-      if (st.fuel > h.fuelMax) st.fuel = h.fuelMax;
-      // Drop cargo overflow if downgrading somehow
-      let used = cargoUsed(st);
-      if (used > h.cargo) {
-        for (const g of GOODS) {
-          while (st.cargo[g.id] > 0 && used > h.cargo) {
-            st.cargo[g.id] -= 1;
-            used -= 1;
-          }
-        }
-      }
-      if (!st.chart || !st.chart.pos) st.chart = buildChart(hash32("legacy:" + (st.system || "ember")));
-      // Roster grew (e.g. 0.8 → 0.9 galaxy): keep seed, reshuffle full named set.
-      const posKeys = Object.keys(st.chart.pos || {});
-      if (posKeys.length < SYSTEM_DEFS.length || st.chart.world !== WORLD) {
-        st.chart = buildChart(st.chart.seed || hash32("expand:" + (st.system || "ember")));
-        st.log = (st.log ? st.log + " " : "") + "Chart remapped — farther Ember sky.";
-      }
-      applyChart(st.chart);
-      if (!sys(st.system)) st.system = "ember";
-      return st;
-    } catch { return null; }
-  }
-
-  function save(st) {
-    if (bridgeOn) return; // shared seat owns persistence via /api/act
-    localStorage.setItem(SAVE_KEY, JSON.stringify(st));
+  function hull() { return ship(state.shipId) || SHIPS[0]; }
+  function godEnabled() { return rawGodEnabled(state); }
+  function yardOffered() { return rawYardOffered(state); }
+  function dumpToFit(max) { return rawDumpToFit(state, max); }
+  function cargoMarginAt(toId) { return rawCargoMarginAt(state, toId); }
+  function inRange(f, t) { return rawInRange(f, t, hull().range); }
+  function fuelReachDistance() { return rawFuelReachDistance(state.fuel, hull().range); }
+  function canJumpTo(f, t) { return rawCanJumpTo(f, t, hull().range, state.fuel); }
+  function reachableFrom(f) { return rawReachableFrom(f, hull().range); }
+  function isVisited(id) { return !!(state.visited && state.visited[id]); }
+  function markVisited(id) { state.visited = state.visited || {}; state.visited[id] = true; }
+  function inSector(f, t) { return dist(sys(f), sys(t)) <= SECTOR_RADIUS + 0.01; }
+  function canSeeTrade(t) { return TF.canSeeTradeIntel({ dist: dist(sys(state.system), sys(t)), sectorRadius: SECTOR_RADIUS }); }
+  function cargoUsed(st) { return SM.cargoUsed((st || state).cargo); }
+  function netWorth(st) { return SM.netWorth(st || state, GOODS, SHIPS); }
+  function save(st) { rawSave(st || state, bridgeOn); }
+  function tickSkill(id, ann) {
+    const r = SK.drift(state.skills, id);
+    state.skills = r.skills;
+    if (ann && r.gained) log(r.gained[0].toUpperCase() + r.gained.slice(1) + " ticked up.");
   }
 
   let state = load() || fresh();
   if (!bridgeOn) state.pilot = "human";
   state.prefs = state.prefs || { autoFuel: true };
-  if (state.prefs.autoFuel == null) state.prefs.autoFuel = true;
-  if (!state.prices || !Object.keys(state.prices).length) rollMarket(state);
-
-  const el = (id) => document.getElementById(id);
-  const log = (msg) => { state.log = msg; el("log").textContent = msg; };
-
-  function cssVar(name, fallback) {
-    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-    return v || fallback;
-  }
-
-  function themeColors() {
-    return {
-      bg: cssVar("--map-bg", cssVar("--bg-deep", "#0C0A09")),
-      here: cssVar("--map-here", cssVar("--signal", "#D97757")),
-      sel: cssVar("--selected-hop", cssVar("--map-sel", "#D97757")),
-      reach: cssVar("--map-reach", "#C4B9AC"),
-      far: cssVar("--map-far", "#57534E"),
-      label: cssVar("--map-label", cssVar("--text", "#E7E0D6")),
-      mute: cssVar("--map-mute", cssVar("--mute", "#A39A90")),
-      grid: cssVar("--map-grid", "rgba(68,64,60,0.55)"),
-      ring: cssVar("--map-ring", "rgba(217,119,87,0.55)"),
-      link: cssVar("--map-link", "rgba(122,158,126,0.55)"),
-      linkDim: cssVar("--map-link-dim", "rgba(68,64,60,0.4)"),
-      ok: cssVar("--ok", "#7A9E7E"),
-      warn: cssVar("--warn", "#C4A35A"),
-      danger: cssVar("--danger", "#C45C4A"),
-      threat: cssVar("--threat", "#C45C4A"),
-      cta: cssVar("--cta", "#D97757"),
-    };
-  }
-
-  function applyTheme(name, persist) {
-    const t = THEMES.includes(name) ? name : "cobalt";
-    document.documentElement.setAttribute("data-theme", t);
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", cssVar("--bg", cssVar("--wall", "#1C1917")));
-    document.querySelectorAll("[data-theme-pick]").forEach((b) => {
-      b.classList.toggle("active", b.dataset.themePick === t);
-    });
-    const hint = el("theme-hint");
-    if (hint) {
-      hint.textContent = t === "cobalt"
-        ? "Cobalt — Bast charcoal HUD, ember signal."
-        : t === "coffee"
-          ? "Coffee — warm stone panels, same ember hero."
-          : "LCARS — orange console homage (fan aesthetic pack).";
-    }
-    if (persist !== false) {
-      try { localStorage.setItem(THEME_KEY, t); } catch (e) { console.warn("[skiff] theme save failed:", e.message); }
-    }
-    if (typeof ui !== "undefined" && ui && ui.tab === "chart") {
-      sizeMap();
-      drawMap();
-    }
-  }
-
-  function loadTheme() {
-    let t = "cobalt";
-    try { t = localStorage.getItem(THEME_KEY) || "cobalt"; } catch (e) { console.warn("[skiff] theme read failed:", e.message); }
-    applyTheme(t, false);
-  }
-
-  function currentPilot() {
-    return state.pilot === "agent" ? "agent" : "human";
-  }
-
-  function reclaimStick() {
-    if (currentPilot() !== "agent") return;
-    applyPilot("human", true);
-    if (bridgeOn && typeof bridgeAct === "function") bridgeAct({ op: "take_stick" });
-  }
-
-  function applyPilot(who, announce) {
-    const p = who === "agent" ? "agent" : "human";
-    state.pilot = p;
-    const shell = el("app");
-    if (shell) shell.classList.toggle("is-agent-pilot", p === "agent");
-    const banner = el("pilot-banner");
-    if (banner) banner.hidden = p !== "agent";
-    const ticker = el("top-agent-ticker");
-    if (ticker) ticker.hidden = p !== "agent";
-    const btxt = el("pilot-banner-text");
-    if (btxt) btxt.textContent = "Agent has the stick — watching until you take over.";
-    document.querySelectorAll("[data-pilot-pick]").forEach((b) => {
-      b.classList.toggle("active", b.dataset.pilotPick === p);
-    });
-    const hint = el("pilot-hint");
-    if (hint) {
-      hint.textContent = p === "agent"
-        ? "Agent seat armed. MCP can fly this save when connected; Take stick anytime."
-        : "You have the stick. Hand to Agent when you want the LLM to fly.";
-    }
-    if (announce) {
-      log(p === "agent" ? "Agent has the stick." : "Captain took the stick.");
-    }
-    save(state);
-  }
-
-
 
   const qtyMap = Object.fromEntries(GOODS.map((g) => [g.id, 1]));
   function qtyFor(id) { return qtyMap[id] || 1; }
-  function setQty(id, n) {
-    qtyMap[id] = Math.max(1, Math.min(hull().cargo, n | 0));
-    render();
-  }
+  function setQty(id, n) { qtyMap[id] = Math.max(1, Math.min(hull().cargo, n | 0)); render(); }
 
-  // Sector = regional window around current dock; Full = entire roster.
-  const SECTOR_RADIUS = TF.SECTOR_RADIUS;
+  const ui = { tab: "dock", chartMode: "local", targetId: null, searchHitId: null, courseDest: null };
 
-  function inSector(fromId, toId) {
-    return dist(sys(fromId), sys(toId)) <= SECTOR_RADIUS + 0.01;
-  }
-  function canSeeTrade(toId) {
-    return TF.canSeeTradeIntel({ dist: dist(sys(state.system), sys(toId)), sectorRadius: SECTOR_RADIUS });
-  }
+  let chartRenderer = null;
+  function sizeMap() { if (chartRenderer) chartRenderer.sizeMap(); }
+  function drawMap() { if (chartRenderer) chartRenderer.drawMap(); }
+  function pickSystemAt(x, y) { return chartRenderer ? chartRenderer.pickSystemAt(x, y) : null; }
 
-  const ui = {
-    tab: "dock",
-    chartMode: "local", // local | sector | full
-    targetId: null,
-    searchHitId: null,
-    courseDest: null,
-  };
+  let bridgeClient = null;
+  function bridgeAct(body) { return bridgeClient ? bridgeClient.bridgeAct(body) : Promise.resolve(null); }
+  function bridgePoll() { return bridgeClient ? bridgeClient.bridgePoll() : Promise.resolve(); }
 
-  const chartRenderer = globalThis.SkiffChartRenderer ? globalThis.SkiffChartRenderer.setup({
-    el, sys, getState: function () { return state; }, ui, themeColors, fuelReachDistance, SYSTEMS,
+  const themePilot = globalThis.SkiffThemePilot.setup({
+    el, log, save, sizeMap, drawMap,
+    getState: () => state,
+    getUi: () => ui,
+    getBridgeOn: () => bridgeOn,
+    bridgeAct,
+  });
+  const { cssVar, themeColors, applyTheme, loadTheme, currentPilot, reclaimStick, applyPilot } = themePilot;
+
+  const chartView = globalThis.SkiffChartView.setup({
+    el, sys, WP, CF, SECTOR_RADIUS,
+    getState: () => state,
+    getUi: () => ui,
+    systems: () => SYSTEMS,
+    sizeMap, drawMap,
+    canJumpTo, inSector,
+    renderTarget: () => renderTarget(),
+  });
+  const { showTab, setChartMode, renderWaypointChrome } = chartView;
+
+  chartRenderer = globalThis.SkiffChartRenderer ? globalThis.SkiffChartRenderer.setup({
+    el, sys, getState: () => state, ui, themeColors, fuelReachDistance, SYSTEMS,
     canJumpTo, isVisited, riskFill, canSeeTrade, bestLaneEdge,
     peekPrices, WP, CF, fuelCost, inSector, WORLD, SECTOR_RADIUS
   }) : null;
 
+  const chartApi = globalThis.SkiffChartInteractions.setup({
+    getState: () => state, getUi: () => ui, sys, hull, systems: () => SYSTEMS,
+    log, render: () => render(), save, showTab, setChartMode, canJumpTo, inSector, WP, CF, RT
+  });
+  function applyChartLead(id, why) { return chartApi.applyChartLead(id, why); }
+  const { courseDest, coursePlan, followPressTip, runChartSearch } = chartApi;
 
+  const encApi = globalThis.SkiffEncounterDialog.setup({
+    getState: () => state, getBridgeOn: () => bridgeOn, hull, cargoUsed,
+    log, render: () => render(), bridgeAct, tickSkill, sys, el, activityLabel
+  });
+  const { maybeEncounter, openEncounter, resolveEncounter } = encApi;
 
+  const actionsApi = globalThis.SkiffActions.setup({
+    getState: () => state, getUi: () => ui, getBridgeOn: () => bridgeOn, currentPilot,
+    sys, ship, hull, cargoUsed, hullStock, yardOffered, dumpToFit,
+    log, render: () => render(), save, bridgeAct, tickSkill, markVisited, rollMarket,
+    inRange, fuelCost, courseDest, coursePlan, maybeEncounter, priceFor,
+    systems: () => SYSTEMS, GOODS, FUEL_PRICE, YE, CR, SP, SM, SF
+  });
+  const { doTravel, doRefuel, doRepair, doRearm, doBuyShip, doDockWork, doHireCrew, doFireCrew, doBuyPress } = actionsApi;
 
-
-  function showTab(name) {
-    ui.tab = name;
-    document.querySelectorAll(".panel").forEach((p) => {
-      const on = p.dataset.tab === name;
-      p.hidden = !on;
-      p.classList.toggle("active", on);
-    });
-    document.querySelectorAll(".tabbar .tab").forEach((b) => {
-      b.classList.toggle("active", b.dataset.tab === name);
-    });
-    if (name === "chart") {
-      requestAnimationFrame(() => { sizeMap(); drawMap(); });
-    }
-  }
-
-  function setChartMode(mode) {
-    if (mode !== "local" && mode !== "sector" && mode !== "full") mode = "local";
-    ui.chartMode = mode;
-    el("mode-local").classList.toggle("active", mode === "local");
-    el("mode-sector").classList.toggle("active", mode === "sector");
-    const fullBtn = el("mode-full");
-    if (fullBtn) fullBtn.classList.toggle("active", mode === "full");
-    el("chart-hint").textContent = mode === "local"
-      ? "Local: systems inside your fuel reach circle (like Palm ST). Tap to target, then Jump."
-      : mode === "sector"
-        ? "Sector: regional window (~" + SECTOR_RADIUS + " units). Dim = beyond current fuel reach."
-        : "Full: entire Ember galaxy (" + SYSTEMS.length + " systems). Dim = beyond current fuel reach.";
-    drawMap();
-    renderTarget();
-  }
-
-  function sizeMap() {
-    if (chartRenderer) chartRenderer.sizeMap();
-  }
-  function drawMap() {
-    if (chartRenderer) chartRenderer.drawMap();
-  }
-  function pickSystemAt(clientX, clientY) {
-    return chartRenderer ? chartRenderer.pickSystemAt(clientX, clientY) : null;
-  }
-
-
-  function renderWaypointChrome() {
-    const box = el("waypoint-list");
-    const pinBtn = el("btn-waypoint");
-    const ids = WP.normalize(state.waypoints);
-    if (pinBtn) {
-      const targeted = ui.targetId && ui.targetId !== state.system;
-      const pinned = targeted && WP.isPinned(ids, ui.targetId);
-      pinBtn.textContent = pinned ? "Unpin" : "Pin";
-      pinBtn.disabled = false;
-    }
-    if (!box) return;
-    box.innerHTML = "";
-    if (!ids.length) {
-      box.textContent = "No pins. Target a dock (not this one), then Pin. Numbered dots show on the chart.";
-      return;
-    }
-    const label = document.createElement("div");
-    label.textContent = "Pins — tap to target:";
-    box.appendChild(label);
-    ids.forEach(function (id, i) {
-      const s = sys(id);
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "chip wp-jump";
-      b.textContent = (i + 1) + " · " + (s ? s.name : id);
-      b.onclick = function () {
-        ui.targetId = id;
-        ui.searchHitId = id;
-        setChartMode(CF.viewForLead({
-          hereId: state.system,
-          targetId: id,
-          canJump: canJumpTo(state.system, id),
-          inSector: inSector(state.system, id),
-        }));
-        log("Chart → " + (s ? s.name : id) + ".");
-        showTab("chart");
-        render();
-      };
-      box.appendChild(b);
-    });
-  }
+  const marketActions = globalThis.SkiffMarketActions.setup({
+    getState: () => state, getBridgeOn: () => bridgeOn, currentPilot,
+    hull, log, render: () => render(), bridgeAct, tickSkill, systems: () => SYSTEMS,
+    SM, GOODS
+  });
+  const { doBuy, doSell, doSellAll, doFillCheap, doSellExpensive } = marketActions;
 
   let tabsRenderer = null;
   function getTabsRenderer() {
     if (!tabsRenderer && globalThis.SkiffTabsRenderer) {
       tabsRenderer = globalThis.SkiffTabsRenderer.setup({
-        el, sys, getState: function () { return state; }, ui, hull, cargoUsed, netWorth, VERSION,
+        el, sys, getState: () => state, ui, hull, cargoUsed, netWorth, VERSION,
         currentPilot, formatTickerLine: (window.SkiffAgentActionLog && window.SkiffAgentActionLog.formatTickerLine),
-        GOODS, SM, SYSTEMS, qtyFor, setQty, doBuy, doSell,
-        reachableFrom, SP, doBuyPress, followPressTip,
+        GOODS, SM, SYSTEMS, qtyFor, setQty, doBuy, doSell, reachableFrom, SP, doBuyPress, followPressTip,
         canJumpTo, inRange, fuelCost, dist, bestDealHint, bestLaneEdge, peekPrices,
         coursePlan, isVisited, SIZE_NAME, TECH_NAME, activityLabel,
-        makeHullArt, hullStock, yardOffered, YE, doBuyShip,
+        makeHullArt: (h) => HULL_SVG && HULL_SVG[h.id], hullStock, yardOffered, YE, doBuyShip,
         DOCK_WORK_PAY, doDockWork, CREW_HIRE, doHireCrew, doFireCrew,
-        CR, SK, syncGodUi, sizeMap, drawMap, RETIRE_NET, save,
+        CR, SK, syncGodUi: () => syncGodUi(), sizeMap, drawMap, RETIRE_NET, save,
         canSeeTrade, cargoMarginAt, renderWaypointChrome
       });
     }
     return tabsRenderer;
   }
-
-  function renderTarget(opts) {
-    const r = getTabsRenderer();
-    if (r) r.renderTarget(opts);
-  }
-  function renderAgentActionLog() {
-    const r = getTabsRenderer();
-    if (r) r.renderAgentActionLog();
-  }
-  function render(options) {
-    const r = getTabsRenderer();
-    if (r) r.render(options);
-  }
-
-  function tickSkill(id, announce) {
-    const r = SK.drift(state.skills, id);
-    state.skills = r.skills;
-    if (announce && r.gained) log(r.gained[0].toUpperCase() + r.gained.slice(1) + " ticked up.");
-  }
-
-  function doBuy(id, qty) {
-    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
-    const r = SM.applyBuy({
-      cargo: state.cargo, credits: state.credits, prices: state.prices,
-      goods: GOODS, holdMax: hull().cargo, id: id, qty: qty,
-    });
-    if (!r.ok) return log(r.reason === "hold_full" ? "Hold full." : "Not enough credits.");
-    state.credits = r.credits;
-    state.cargo = r.cargo;
-    const p = state.prices[id];
-    log("Bought " + r.n + " " + GOODS.find((g) => g.id === id).name + " for ₩" + (p * r.n) + ".");
-    tickSkill("trader", true);
-    render();
-    if (bridgeOn) bridgeAct({ op: "save", state: state });
-  }
-
-  function doSell(id, qty) {
-    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
-    const r = SM.applySell({
-      cargo: state.cargo, credits: state.credits, prices: state.prices,
-      goods: GOODS, id: id, qty: qty,
-    });
-    if (!r.ok) return log("Nothing to sell.");
-    state.credits = r.credits;
-    state.cargo = r.cargo;
-    const p = state.prices[id];
-    log("Sold " + r.n + " " + GOODS.find((g) => g.id === id).name + " for ₩" + (p * r.n) + ".");
-    tickSkill("trader", true);
-    render();
-    if (bridgeOn) bridgeAct({ op: "save", state: state });
-  }
-
-  function doSellAll() {
-    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
-    const r = SM.applySellAll({
-      cargo: state.cargo, credits: state.credits, prices: state.prices, goods: GOODS,
-    });
-    if (!r.ok) return log("Hold empty.");
-    state.credits = r.credits;
-    state.cargo = r.cargo;
-    log("Sold all (" + r.units + " units) for ₩" + r.total.toLocaleString() + ".");
-    render();
-    if (bridgeOn) bridgeAct({ op: "save", state: state });
-  }
-
-  function galaxyAvgs() {
-    return Object.fromEntries(GOODS.map((g) => [g.id, SM.galaxyAveragePrice(SYSTEMS, g)]));
-  }
-
-  function doFillCheap() {
-    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
-    const r = SM.applyFillCheap({
-      cargo: state.cargo, credits: state.credits, prices: state.prices,
-      goods: GOODS, holdMax: hull().cargo, avgs: galaxyAvgs(),
-    });
-    log(SM.fillCheapLog(r));
-    if (!r.ok) return;
-    state.credits = r.credits;
-    state.cargo = r.cargo;
-    tickSkill("trader", true);
-    render();
-    if (bridgeOn) bridgeAct({ op: "save", state: state });
-  }
-
-  function doSellExpensive() {
-    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
-    const r = SM.applySellExpensive({
-      cargo: state.cargo, credits: state.credits, prices: state.prices,
-      goods: GOODS, avgs: galaxyAvgs(),
-    });
-    log(SM.sellExpensiveLog(r));
-    if (!r.ok) return;
-    state.credits = r.credits;
-    state.cargo = r.cargo;
-    tickSkill("trader", true);
-    render();
-    if (bridgeOn) bridgeAct({ op: "save", state: state });
-  }
-
-  let chartApi = null;
-  let encApi = null;
-  let actionsApi = null;
-  let godApi = null;
-
-  function courseDest() { return chartApi.courseDest(); }
-  function coursePlan(destId) { return chartApi.coursePlan(destId); }
-  function applyChartLead(id, why) { return chartApi.applyChartLead(id, why); }
-  function followPressTip(action) { return chartApi.followPressTip(action); }
-  function runChartSearch(raw) { return chartApi.runChartSearch(raw); }
-  function maybeEncounter(toId) { return encApi.maybeEncounter(toId); }
-  function openEncounter(kind, dest) { return encApi.openEncounter(kind, dest); }
-  function resolveEncounter(choice) { return encApi.resolveEncounter(choice); }
-  function doTravel(toId) { return actionsApi.doTravel(toId); }
-  function doRefuel() { return actionsApi.doRefuel(); }
-  function doRepair() { return actionsApi.doRepair(); }
-  function doRearm() { return actionsApi.doRearm(); }
-  function doBuyShip(id) { return actionsApi.doBuyShip(id); }
-  function doDockWork() { return actionsApi.doDockWork(); }
-  function doHireCrew() { return actionsApi.doHireCrew(); }
-  function doFireCrew() { return actionsApi.doFireCrew(); }
-  function doBuyPress() { return actionsApi.doBuyPress(); }
-  function syncGodUi() { return godApi.syncGodUi(); }
-
-  if (!globalThis.SkiffChartInteractions) throw new Error("SkiffChartInteractions missing — load js/ui/chart-interactions.js before game.js");
-  if (!globalThis.SkiffEncounterDialog) throw new Error("SkiffEncounterDialog missing — load js/ui/encounter-dialog.js before game.js");
-  if (!globalThis.SkiffActions) throw new Error("SkiffActions missing — load js/core/actions.js before game.js");
-  if (!globalThis.SkiffGodPanel) throw new Error("SkiffGodPanel missing — load js/ui/god-panel.js before game.js");
-
-  chartApi = globalThis.SkiffChartInteractions.setup({
-    getState: function () { return state; },
-    getUi: function () { return ui; },
-    sys: sys,
-    hull: hull,
-    systems: function () { return SYSTEMS; },
-    log: log,
-    render: render,
-    save: save,
-    showTab: showTab,
-    setChartMode: setChartMode,
-    canJumpTo: canJumpTo,
-    inSector: inSector,
-    WP: WP,
-    CF: CF,
-    RT: RT,
-  });
-
-  encApi = globalThis.SkiffEncounterDialog.setup({
-    getState: function () { return state; },
-    getBridgeOn: function () { return bridgeOn; },
-    hull: hull,
-    cargoUsed: cargoUsed,
-    log: log,
-    render: render,
-    bridgeAct: bridgeAct,
-    tickSkill: tickSkill,
-    sys: sys,
-    el: el,
-    activityLabel: activityLabel,
-  });
-
-  actionsApi = globalThis.SkiffActions.setup({
-    getState: function () { return state; },
-    getUi: function () { return ui; },
-    getBridgeOn: function () { return bridgeOn; },
-    currentPilot: currentPilot,
-    sys: sys,
-    ship: ship,
-    hull: hull,
-    cargoUsed: cargoUsed,
-    hullStock: hullStock,
-    yardOffered: yardOffered,
-    dumpToFit: dumpToFit,
-    log: log,
-    render: render,
-    save: save,
-    bridgeAct: bridgeAct,
-    tickSkill: tickSkill,
-    markVisited: markVisited,
-    rollMarket: rollMarket,
-    inRange: inRange,
-    fuelCost: fuelCost,
-    courseDest: function () { return chartApi.courseDest(); },
-    coursePlan: function (id) { return chartApi.coursePlan(id); },
-    maybeEncounter: function (id) { return encApi.maybeEncounter(id); },
-    priceFor: priceFor,
-    systems: function () { return SYSTEMS; },
-    GOODS: GOODS,
-    FUEL_PRICE: FUEL_PRICE,
-    YE: YE,
-    CR: CR,
-    SP: SP,
-    SM: SM,
-    SF: SF,
-  });
-
-  el("btn-refuel").onclick = doRefuel;
-  el("btn-repair").onclick = doRepair;
-  el("btn-rearm").onclick = doRearm;
-  el("btn-sell-all").onclick = doSellAll;
-  el("btn-fill-cheap").onclick = doFillCheap;
-  el("btn-sell-expensive").onclick = doSellExpensive;
-  el("btn-warp").onclick = () => {
-    reclaimStick();
-    if (!ui.targetId || ui.targetId === state.system) {
-      log("Pick a dock on the chart, then Jump.");
-      return;
-    }
-    doTravel(ui.targetId);
-  };
-  el("btn-retire").onclick = () => {
-    if (!(sys(state.system).retire && netWorth(state) >= RETIRE_NET)) return;
-    log("Retired on Quiet Moon. Net ₩" + netWorth(state).toLocaleString() + ". Victory.");
-    alert("You retire on Quiet Moon. Game clear — New starts a fresh captain.");
-  };
-  el("btn-reset").onclick = () => {
-    if (!confirm("Wipe save and start fresh?")) return;
-    state = fresh();
-    ui.targetId = null;
-    rollMarket(state);
-    applyPilot("human", false);
-    showTab("dock");
-    render();
-  };
-
-  document.querySelectorAll(".tabbar .tab").forEach((b) => {
-    b.onclick = () => {
-      const holoOn = document.getElementById("holo-canvas") &&
-        document.getElementById("holo-canvas").style.display === "block";
-      if (holoOn && globalThis.SkiffHoloRenderer) {
-        const exit = document.getElementById("btn-exit-holo");
-        if (exit) exit.click();
-      }
-      showTab(b.dataset.tab);
-    };
-  });
-  document.querySelectorAll("[data-goto]").forEach((b) => {
-    b.onclick = () => showTab(b.dataset.goto);
-  });
-  el("mode-local").onclick = () => setChartMode("local");
-  el("mode-sector").onclick = () => setChartMode("sector");
-  if (el("mode-full")) el("mode-full").onclick = () => setChartMode("full");
-  const findForm = el("chart-find-form");
-  if (findForm) {
-    findForm.onsubmit = (e) => {
-      e.preventDefault();
-      runChartSearch((el("chart-search") || {}).value || "");
-    };
-  }
-
-  el("map").addEventListener("pointerdown", (e) => {
-    const s = pickSystemAt(e.clientX, e.clientY);
-    if (!s) return;
-    if (s.id === state.system) {
-      ui.targetId = null;
-    } else {
-      ui.targetId = s.id;
-      if ((ui.chartMode === "sector" || ui.chartMode === "full") && !inRange(state.system, s.id)) {
-        // allow select out of range to show distance; Jump stays disabled
-      }
-    }
-    drawMap();
-    renderTarget();
-  });
-
-  window.addEventListener("resize", () => {
-    if (ui.tab !== "chart") return;
-    sizeMap();
-    drawMap();
-  });
-
-  document.querySelectorAll("[data-theme-pick]").forEach((b) => {
-    b.onclick = () => applyTheme(b.dataset.themePick, true);
-  });
-  document.querySelectorAll("[data-pilot-pick]").forEach((b) => {
-    b.onclick = () => applyPilot(b.dataset.pilotPick, true);
-  });
-  
-  document.querySelectorAll("[data-renderer-pick]").forEach((b) => {
-    b.onclick = () => {
-      document.querySelectorAll("[data-renderer-pick]").forEach(btn => btn.classList.toggle("active", btn === b));
-      if (b.dataset.rendererPick === "holo") {
-        document.getElementById("holo-canvas").style.display = "block";
-        document.getElementById("holo-search-wrap").style.display = "block";
-        document.getElementById("btn-exit-holo").style.display = "block";
-        if (globalThis.SkiffHoloRenderer) {
-          globalThis.SkiffHoloRenderer.start(state, HULL_SVG, SYSTEMS, {
-            onTravel: doTravel,
-            onRefuel: doRefuel,
-            onRepair: doRepair,
-            onRearm: doRearm,
-            onPin: function (id) {
-              if (!id || id === state.system) return log("That's your current dock.");
-              ui.targetId = id;
-              ui.courseDest = id;
-              const hint = WP.pinHint({ targetId: id, hereId: state.system });
-              if (hint.ok && !WP.isPinned(state.waypoints, id)) {
-                const r = WP.toggle(state.waypoints, id);
-                state.waypoints = r.list;
-              }
-              const plan = coursePlan(id);
-              const jumps = plan && plan.ok ? plan.jumps : "?";
-              log("Course pinned: " + ((sys(id) || {}).name || id) + " — " + jumps + " hops. Engage hop; not a warp.");
-              save(state);
-              render();
-            },
-          });
-        }
-      } else {
-        document.getElementById("holo-canvas").style.display = "none";
-        document.getElementById("holo-search-wrap").style.display = "none";
-        document.getElementById("btn-exit-holo").style.display = "none";
-        if (globalThis.SkiffHoloRenderer) globalThis.SkiffHoloRenderer.stop();
-      }
-    };
-  });
-  
-  const holoFindForm = document.getElementById("holo-find-form");
-  if (holoFindForm) {
-    holoFindForm.onsubmit = (e) => {
-      e.preventDefault();
-      const q = (document.getElementById("holo-search") || {}).value || "";
-      runChartSearch(q);
-    };
-  }
-
-  const exitHolo = document.getElementById("btn-exit-holo");
-  if (exitHolo) {
-    exitHolo.onclick = () => {
-      document.querySelector('[data-renderer-pick="classic"]').click();
-    };
-  }
-
-  const takeStick = el("btn-take-stick");
-  if (takeStick) takeStick.onclick = () => applyPilot("human", true);
-  loadTheme();
-  applyPilot(state.pilot || "human", false);
+  function renderTarget(opts) { const r = getTabsRenderer(); if (r) r.renderTarget(opts); }
+  function renderAgentActionLog() { const r = getTabsRenderer(); if (r) r.renderAgentActionLog(); }
+  function render(options) { const r = getTabsRenderer(); if (r) r.render(options); }
 
   function syncPrefsUi() {
     const box = el("pref-autofuel");
@@ -873,103 +189,36 @@
     box.checked = !!state.prefs.autoFuel;
   }
 
-  if (!globalThis.SkiffBridgeClient) {
-    throw new Error("SkiffBridgeClient missing — load js/bridge-client.js before game.js");
-  }
-  const bridgeClient = globalThis.SkiffBridgeClient.setup({
-    getState: () => state,
-    setState: (st) => { state = st; },
-    applyChart,
-    rollMarket,
-    applyPilot,
-    syncPrefsUi,
-    showTab,
-    render,
-    renderAgentActionLog,
-    log,
-    sys,
-    openEncounter,
-    currentPilot,
-    getEncKind: () => encApi.getEncKind(),
-    getDlg: () => ({ open: encApi.isDialogOpen() }),
-    setUiTargetNull: () => { ui.targetId = null; },
+  bridgeClient = globalThis.SkiffBridgeClient ? globalThis.SkiffBridgeClient.setup({
+    getState: () => state, setState: (st) => { state = st; }, applyChart, rollMarket, applyPilot,
+    syncPrefsUi, showTab, render, renderAgentActionLog, log, sys, openEncounter, currentPilot,
+    getEncKind: () => encApi.getEncKind(), getDlg: () => ({ open: encApi.isDialogOpen() }),
+    setUiTargetNull: () => { ui.targetId = null; }
+  }) : null;
+  if (bridgeOn && bridgeClient) bridgeClient.initBridge();
+
+  const godApi = globalThis.SkiffGodPanel.setup({
+    getState: () => state, setState: (s) => { state = s; }, getBridgeOn: () => bridgeOn,
+    godEnabled, writeGodFlag, el, log, save, render, bridgeAct, hull, GOD, CR, SHIPS, GOODS
   });
+  function syncGodUi() { return godApi.syncGodUi(); }
 
-  function bridgeAct(body) {
-    if (bridgeClient) return bridgeClient.bridgeAct(body);
-    return Promise.resolve(null);
+  function resetGame() {
+    state = fresh();
+    ui.targetId = null;
+    rollMarket(state);
+    applyPilot("human", false);
+    showTab("dock");
+    render();
   }
 
-  function bridgePoll() {
-    if (bridgeClient) return bridgeClient.bridgePoll();
-    return Promise.resolve();
-  }
-
-  const prefBox = el("pref-autofuel");
-  if (prefBox) {
-    syncPrefsUi();
-    prefBox.onchange = () => {
-      state.prefs = state.prefs || { autoFuel: true };
-      state.prefs.autoFuel = !!prefBox.checked;
-      if (bridgeOn) {
-        bridgeAct({ op: "set_prefs", autoFuel: state.prefs.autoFuel });
-      } else {
-        log(state.prefs.autoFuel ? "Auto-refuel on arrive: ON." : "Auto-refuel on arrive: OFF.");
-        save(state);
-        render();
-      }
-    };
-  }
-
-  if (bridgeOn && bridgeClient) {
-    bridgeClient.initBridge();
-  }
-
-
-  godApi = globalThis.SkiffGodPanel.setup({
-    getState: function () { return state; },
-    setState: function (s) { state = s; },
-    getBridgeOn: function () { return bridgeOn; },
-    godEnabled: godEnabled,
-    writeGodFlag: writeGodFlag,
-    el: el,
-    log: log,
-    save: save,
-    render: render,
-    bridgeAct: bridgeAct,
-    hull: hull,
-    GOD: GOD,
-    CR: CR,
-    SHIPS: SHIPS,
-    GOODS: GOODS,
+  globalThis.SkiffDomWire.setup({
+    el, getUi: () => ui, getState: () => state, getBridgeOn: () => bridgeOn, systems: () => SYSTEMS,
+    HULL_SVG, WP, sys, netWorth, RETIRE_NET, log, save, render, renderTarget, sizeMap, drawMap, pickSystemAt,
+    showTab, setChartMode, applyTheme, applyPilot, reclaimStick, coursePlan, runChartSearch,
+    doRefuel, doRepair, doRearm, doSellAll, doFillCheap, doSellExpensive, doTravel, resetGame,
+    syncPrefsUi, bridgeAct
   });
-
-  const pinBtn = el("btn-waypoint");
-  if (pinBtn) pinBtn.onclick = () => {
-    reclaimStick();
-    const id = ui.targetId;
-    const hint = WP.pinHint({ targetId: id, hereId: state.system });
-    if (!hint.ok) {
-      const box = el("waypoint-list");
-      if (box) box.textContent = hint.log;
-      return log(hint.log);
-    }
-    const r = WP.toggle(state.waypoints, id);
-    state.waypoints = r.list;
-    let msg;
-    if (r.full) msg = "Waypoint list full (" + WP.MAX_WAYPOINTS + "). Unpin one first.";
-    else if (r.added) msg = "Pinned " + ((sys(id) || {}).name || id) + " (#" + r.list.length + "). Numbered dot on the chart.";
-    else if (r.removed) msg = "Unpinned " + ((sys(id) || {}).name || id) + ".";
-    else msg = "Pin did nothing.";
-    log(msg);
-    save(state); render();
-  };
-  const wpClear = el("btn-wp-clear");
-  if (wpClear) wpClear.onclick = () => {
-    state.waypoints = WP.clear(state.waypoints);
-    log("Waypoints cleared.");
-    save(state); render();
-  };
 
   function logAgentAct(op, res) {
     if (globalThis.SkiffAgentActionLog && typeof globalThis.SkiffAgentActionLog.append === "function") {
@@ -988,58 +237,29 @@
     const oldPilot = state.pilot;
     bridgeOn = false;
     encApi.setLocalEval(true);
-    try {
-      fn();
-    } finally {
+    try { fn(); } finally {
       encApi.setLocalEval(false);
       state.pilot = oldPilot;
       bridgeOn = wasBridge;
     }
-    if (wasBridge) bridgeAct({ op: "save", state: state });
+    if (wasBridge) bridgeAct({ op: "save", state });
   }
 
-  if (!globalThis.SkiffAgentAPI) {
-    throw new Error("SkiffAgentAPI missing — load js/agent-api.js before game.js");
-  }
   const api = globalThis.SkiffAgentAPI.createAPI({
-    VERSION,
-    getState: () => state,
-    sys,
-    hull,
-    cargoUsed,
-    netWorth,
-    currentPilot,
-    applyPilot,
-    logAgentAct,
-    withLocalEval,
-    doBuy,
-    doSell,
-    doSellAll,
-    doFillCheap,
-    doRepair,
-    doRearm,
-    doSellExpensive,
-    doRefuel,
-    doTravel,
-    doDockWork,
-    doBuyPress,
-    doBuyShip,
-    resolveEncounter,
-    getEncKind: () => encApi.getEncKind(),
-    getEncDest: () => encApi.getEncDest(),
-    RETIRE_NET,
-    el,
-    getSystems: () => SYSTEMS,
-    inRange,
-    fuelCost,
+    VERSION, getState: () => state, sys, hull, cargoUsed, netWorth, currentPilot, applyPilot,
+    logAgentAct, withLocalEval, doBuy, doSell, doSellAll, doFillCheap, doRepair, doRearm,
+    doSellExpensive, doRefuel, doTravel, doDockWork, doBuyPress, doBuyShip, resolveEncounter,
+    getEncKind: () => encApi.getEncKind(), getEncDest: () => encApi.getEncDest(), RETIRE_NET, el,
+    getSystems: () => SYSTEMS, inRange, fuelCost
   });
   globalThis.SkiffAPI = api;
   if (globalThis.SkiffWebMCP && typeof globalThis.SkiffWebMCP.init === "function") {
     globalThis.SkiffWebMCP.init(api);
   }
 
+  loadTheme();
+  applyPilot(state.pilot || "human", false);
   syncGodUi();
-
   showTab("dock");
   render();
   syncPrefsUi();
