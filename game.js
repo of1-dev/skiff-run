@@ -873,69 +873,36 @@
     box.checked = !!state.prefs.autoFuel;
   }
 
-  let lastAgentT = 0;
-  function applyBridgePayload(data) {
-    if (!data || !data.state) return;
-    state = data.state;
-    state.prefs = state.prefs || { autoFuel: true };
-    if (state.prefs.autoFuel == null) state.prefs.autoFuel = true;
-    if (state.chart) applyChart(state.chart);
-    if (!state.prices || !Object.keys(state.prices).length) rollMarket(state);
-    applyPilot(state.pilot || "human", false);
-    syncPrefsUi();
-    ui.targetId = null;
-    render();
-    renderAgentActionLog();
+  if (!globalThis.SkiffBridgeClient) {
+    throw new Error("SkiffBridgeClient missing — load js/bridge-client.js before game.js");
+  }
+  const bridgeClient = globalThis.SkiffBridgeClient.setup({
+    getState: () => state,
+    setState: (st) => { state = st; },
+    applyChart,
+    rollMarket,
+    applyPilot,
+    syncPrefsUi,
+    showTab,
+    render,
+    renderAgentActionLog,
+    log,
+    sys,
+    openEncounter,
+    currentPilot,
+    getEncKind: () => encApi.getEncKind(),
+    getDlg: () => ({ open: encApi.isDialogOpen() }),
+    setUiTargetNull: () => { ui.targetId = null; },
+  });
 
-    if (state.pilot === "agent" && state.agentLog && state.agentLog.length > 0) {
-      const last = state.agentLog[state.agentLog.length - 1];
-      if (last.t && last.t > lastAgentT) {
-        lastAgentT = last.t;
-        const op = last.op;
-        if (op === "jump") showTab("chart");
-        else if (op === "buy_press" || op === "dock_work" || op === "buy_ship") showTab("dock");
-        else if (op === "sell_all" || op === "sell_expensive" || op === "fill_cheap") showTab("market");
-        else if (op === "retire") showTab("captain");
-      }
-    }
-
-    // Surface pending encounter from shared seat (once)
-    if (data.pendingEncounter && currentPilot() === "human" && !encApi.getEncKind()) {
-      const pe = data.pendingEncounter;
-      const dest = sys(pe.systemId) || sys(state.system);
-      if (pe.kind && dest) openEncounter(pe.kind, dest);
-    } else if (!data.pendingEncounter && encApi.getEncKind() && encApi.isDialogOpen()) {
-      /* keep local dialog until resolved via act */
-    }
+  function bridgeAct(body) {
+    if (bridgeClient) return bridgeClient.bridgeAct(body);
+    return Promise.resolve(null);
   }
 
-  async function bridgeAct(body) {
-    try {
-      const r = await fetch("/api/act", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body || {}),
-      });
-      const data = await r.json();
-      applyBridgePayload(data);
-      if (data.result && data.result.ok === false && data.result.error) {
-        log(String(data.result.error) + (data.result.hint ? (" — " + data.result.hint) : ""));
-      }
-      return data;
-    } catch (e) {
-      log("Bridge act failed: " + e);
-      return null;
-    }
-  }
-
-  async function bridgePoll() {
-    try {
-      const r = await fetch("/api/state", { cache: "no-store" });
-      const data = await r.json();
-      applyBridgePayload(data);
-    } catch (e) {
-      console.warn("[bridgePoll] offline or frame skip:", e.message);
-    }
+  function bridgePoll() {
+    if (bridgeClient) return bridgeClient.bridgePoll();
+    return Promise.resolve();
   }
 
   const prefBox = el("pref-autofuel");
@@ -954,24 +921,8 @@
     };
   }
 
-  // Bridge mode: Take stick / pilot picks go through /api/act
-  if (bridgeOn) {
-    document.querySelectorAll("[data-pilot-pick]").forEach((b) => {
-      b.onclick = () => {
-        const who = b.dataset.pilotPick;
-        if (who === "human") bridgeAct({ op: "take_stick" });
-        else bridgeAct({ op: "claim" });
-      };
-    });
-    const takeStickBtn = el("btn-take-stick");
-    if (takeStickBtn) takeStickBtn.onclick = () => bridgeAct({ op: "take_stick" });
-    el("btn-reset").onclick = () => {
-      if (!confirm("Wipe save and start fresh on the shared seat?")) return;
-      bridgeAct({ op: "new_game" });
-    };
-    document.body.classList.add("bridge-mode");
-    bridgePoll();
-    setInterval(bridgePoll, 500);
+  if (bridgeOn && bridgeClient) {
+    bridgeClient.initBridge();
   }
 
 
@@ -1047,241 +998,41 @@
     if (wasBridge) bridgeAct({ op: "save", state: state });
   }
 
-  const api = {
-    VERSION: VERSION,
-    getState: function () {
-      const h = hull();
-      const s = sys(state.system);
-      return {
-        system: state.system,
-        systemName: (s || {}).name,
-        credits: state.credits,
-        fuel: state.fuel,
-        fuelMax: h.fuelMax,
-        ship: h,
-        cargo: Object.assign({}, state.cargo),
-        cargoUsed: cargoUsed(state),
-        cargoMax: h.cargo,
-        prices: Object.assign({}, state.prices),
-        netWorth: netWorth(state),
-        pilot: currentPilot(),
-        dockWorkAvailable: state.dockWorkAt !== state.system,
-        pressAvailable: state.pressBoughtAt !== state.system,
-        canRetire: !!(s && s.retire && netWorth(state) >= RETIRE_NET),
-        pendingEncounter: encApi.getEncKind() ? { kind: encApi.getEncKind(), systemId: (encApi.getEncDest() ? encApi.getEncDest().id : state.system) } : null,
-        agentLog: Array.isArray(state.agentLog) ? state.agentLog.slice() : [],
-      };
-    },
-    getChart: function (mode) {
-      const from = state.system;
-      const list = SYSTEMS.map(function (s) {
-        const dist = Math.hypot((s.x || 0) - ((sys(from) || {}).x || 0), (s.y || 0) - ((sys(from) || {}).y || 0));
-        const inJmp = inRange(from, s.id);
-        const cost = fuelCost(from, s.id);
-        return {
-          id: s.id,
-          name: s.name,
-          distance: Math.round(dist * 10) / 10,
-          inRange: inJmp,
-          fuelCost: cost,
-          canJump: inJmp && state.fuel >= cost,
-          yard: !!s.yard,
-          pirate: s.pirate,
-          police: s.police,
-        };
-      });
-      return mode === "local" ? list.filter(function (s) { return s.inRange; }) : list;
-    },
-    claim: function () {
-      applyPilot("agent", true);
-      const res = { ok: true, pilot: "agent", log: "Agent claimed the stick." };
-      logAgentAct("claim", res);
-      return res;
-    },
-    release: function () {
-      applyPilot("human", true);
-      const res = { ok: true, pilot: "human", log: "Agent released the stick." };
-      logAgentAct("release", res);
-      return res;
-    },
-    buy: function (goodId, qty) {
-      const prevCredits = state.credits;
-      const q = qty || 1;
-      withLocalEval(() => {
-        for (let i = 0; i < q; i++) doBuy(goodId);
-      });
-      const bought = Math.floor((prevCredits - state.credits) / (state.prices[goodId] || 1));
-      const ok = bought > 0;
-      const res = {
-        ok: ok,
-        good: goodId,
-        qty: bought,
-        spent: prevCredits - state.credits,
-        log: ok ? ("Bought " + bought + " " + goodId) : "Buy failed",
-      };
-      logAgentAct("buy", res);
-      return res;
-    },
-    sell: function (goodId, qty) {
-      const prevCredits = state.credits;
-      const q = qty || 1;
-      withLocalEval(() => {
-        for (let i = 0; i < q; i++) doSell(goodId);
-      });
-      const sold = Math.floor((state.credits - prevCredits) / (state.prices[goodId] || 1));
-      const ok = sold > 0;
-      const res = {
-        ok: ok,
-        good: goodId,
-        qty: sold,
-        earned: state.credits - prevCredits,
-        log: ok ? ("Sold " + sold + " " + goodId) : "Sell failed",
-      };
-      logAgentAct("sell", res);
-      return res;
-    },
-    sellAll: function () {
-      const prevCredits = state.credits;
-      const prevUsed = cargoUsed(state);
-      withLocalEval(() => doSellAll());
-      const sold = prevUsed - cargoUsed(state);
-      const ok = sold > 0;
-      const res = {
-        ok: ok,
-        unitsSold: sold,
-        earned: state.credits - prevCredits,
-        log: ok ? ("Sold all " + sold + " units for ₩" + (state.credits - prevCredits).toLocaleString()) : "Hold was empty",
-      };
-      logAgentAct("sell_all", res);
-      return res;
-    },
-    fillCheap: function () {
-      const prevCredits = state.credits;
-      const prevUsed = cargoUsed(state);
-      withLocalEval(() => doFillCheap());
-      const loaded = cargoUsed(state) - prevUsed;
-      const ok = loaded > 0;
-      const res = {
-        ok: ok,
-        unitsLoaded: loaded,
-        spent: prevCredits - state.credits,
-        log: ok ? ("Filled " + loaded + " units cheap") : "Nothing cheap loaded",
-      };
-      logAgentAct("fill_cheap", res);
-      return res;
-    },
-    repair: function () {
-      const prev = state.hull || 0;
-      withLocalEval(() => doRepair());
-      const res = {
-        ok: (state.hull || 0) > prev,
-        repaired: (state.hull || 0) - prev,
-        log: `Repaired ${(state.hull || 0) - prev} hull points.`,
-      };
-      logAgentAct("repair", res);
-      return res;
-    },
-    rearm: function () {
-      const prev = state.ammo || 0;
-      withLocalEval(() => doRearm());
-      const res = {
-        ok: (state.ammo || 0) > prev,
-        loaded: (state.ammo || 0) - prev,
-        log: `Loaded ${(state.ammo || 0) - prev} ordnance.`,
-      };
-      logAgentAct("rearm", res);
-      return res;
-    },
-    sellExpensive: function () {
-      const prevCredits = state.credits;
-      const prevUsed = cargoUsed(state);
-      withLocalEval(() => doSellExpensive());
-      const sold = prevUsed - cargoUsed(state);
-      const ok = sold > 0;
-      const res = {
-        ok: ok,
-        unitsSold: sold,
-        earned: state.credits - prevCredits,
-        log: ok ? ("Sold " + sold + " units for ₩" + (state.credits - prevCredits).toLocaleString() + " at premium") : "Nothing expensive in hold",
-      };
-      logAgentAct("sell_expensive", res);
-      return res;
-    },
-    refuel: function () {
-      const prevFuel = state.fuel;
-      withLocalEval(() => doRefuel());
-      const added = state.fuel - prevFuel;
-      const ok = added > 0;
-      const res = {
-        ok: ok,
-        fuelAdded: added,
-        log: ok ? ("Refueled +" + added) : "Tanks full or cannot afford",
-      };
-      logAgentAct("refuel", res);
-      return res;
-    },
-    jump: function (destId) {
-      const from = state.system;
-      withLocalEval(() => doTravel(destId));
-      const ok = state.system === destId;
-      const res = {
-        ok: ok,
-        from: from,
-        system: state.system,
-        log: ok ? ("Jumped to " + (sys(state.system) || {}).name) : "Jump failed",
-      };
-      logAgentAct("jump", res);
-      return res;
-    },
-    dockWork: function () {
-      const prevCredits = state.credits;
-      withLocalEval(() => doDockWork());
-      const earned = state.credits - prevCredits;
-      const ok = earned > 0;
-      const res = { ok: ok, earned: earned, log: ok ? "Worked the docks" : "Already worked" };
-      logAgentAct("dock_work", res);
-      return res;
-    },
-    buyPress: function () {
-      const prevCredits = state.credits;
-      withLocalEval(() => doBuyPress());
-      const ok = state.credits < prevCredits;
-      const res = { ok: ok, log: ok ? "Bought the Dock Press" : "Could not buy press" };
-      logAgentAct("buy_press", res);
-      return res;
-    },
-    buyShip: function (shipId) {
-      const oldId = state.shipId;
-      withLocalEval(() => doBuyShip(shipId));
-      const ok = state.shipId === shipId && oldId !== shipId;
-      const res = { ok: ok, log: ok ? ("Traded hull for " + shipId) : "Ship trade failed" };
-      logAgentAct("buy_ship", res);
-      return res;
-    },
-    resolveEncounter: function (choice) {
-      if (!encApi.getEncKind()) return { ok: false, error: "no_active_encounter" };
-      const had = encApi.getEncKind();
-      resolveEncounter(choice);
-      const res = {
-        ok: true,
-        resolved: had,
-        choice: choice,
-        log: "Encounter resolved (" + choice + ")",
-      };
-      logAgentAct("encounter", res);
-      return res;
-    },
-    retire: function () {
-      const s = sys(state.system);
-      const canRetire = s && s.retire && netWorth(state) >= RETIRE_NET;
-      if (!canRetire) return { ok: false, error: "cannot_retire" };
-      const b = el("btn-retire");
-      if (b) b.click();
-      const res = { ok: true, retired: true, log: "Retired on Quiet Moon!" };
-      logAgentAct("retire", res);
-      return res;
-    },
-  };
+  if (!globalThis.SkiffAgentAPI) {
+    throw new Error("SkiffAgentAPI missing — load js/agent-api.js before game.js");
+  }
+  const api = globalThis.SkiffAgentAPI.createAPI({
+    VERSION,
+    getState: () => state,
+    sys,
+    hull,
+    cargoUsed,
+    netWorth,
+    currentPilot,
+    applyPilot,
+    logAgentAct,
+    withLocalEval,
+    doBuy,
+    doSell,
+    doSellAll,
+    doFillCheap,
+    doRepair,
+    doRearm,
+    doSellExpensive,
+    doRefuel,
+    doTravel,
+    doDockWork,
+    doBuyPress,
+    doBuyShip,
+    resolveEncounter,
+    getEncKind: () => encApi.getEncKind(),
+    getEncDest: () => encApi.getEncDest(),
+    RETIRE_NET,
+    el,
+    getSystems: () => SYSTEMS,
+    inRange,
+    fuelCost,
+  });
   globalThis.SkiffAPI = api;
   if (globalThis.SkiffWebMCP && typeof globalThis.SkiffWebMCP.init === "function") {
     globalThis.SkiffWebMCP.init(api);
