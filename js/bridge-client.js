@@ -14,8 +14,6 @@
       getState,
       setState,
       applyChart,
-      buildChart,
-      hash32,
       rollMarket,
       applyPilot,
       syncPrefsUi,
@@ -41,9 +39,6 @@
 
       // Ensure chart fallback if bridge session lacks pos
       if (state.chart && state.chart.pos) {
-        applyChart(state.chart);
-      } else if (typeof buildChart === "function" && typeof hash32 === "function") {
-        state.chart = buildChart(hash32("bridge:" + (state.system || "ember")));
         applyChart(state.chart);
       }
 

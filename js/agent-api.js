@@ -37,7 +37,7 @@
       getEncDest,
       RETIRE_NET,
       el,
-      SYSTEMS,
+      getSystems,
       inRange,
       fuelCost,
     } = ctx;
@@ -73,7 +73,7 @@
       getChart: function (mode) {
         const state = getState();
         const from = state.system;
-        const list = SYSTEMS.map(function (s) {
+        const list = getSystems().map(function (s) {
           const dist = Math.hypot((s.x || 0) - ((sys(from) || {}).x || 0), (s.y || 0) - ((sys(from) || {}).y || 0));
           const inJmp = inRange(from, s.id);
           const cost = fuelCost(from, s.id);

@@ -1428,7 +1428,7 @@
     getEncDest: () => encDest,
     RETIRE_NET,
     el,
-    SYSTEMS,
+    getSystems: () => SYSTEMS,
     inRange,
     fuelCost,
   }) : {};
