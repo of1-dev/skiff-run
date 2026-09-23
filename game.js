@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const VERSION = "0.9.36";
+  const VERSION = "0.9.37";
   const SAVE_KEY = "skiff-run-v1";
   const THEME_KEY = "skiff-run-theme";
   const GOD_KEY = "skiff-run-god";
@@ -126,10 +126,10 @@
   // Semantic chart colors (readable across themes).
   function riskFill(pirate) {
     const p = pirate | 0;
-    if (p <= 1) return "#2FA4A0";
+    // Bast tokens: ok / warn / danger — ember reserved for selected-hop + CTA
+    if (p <= 1) return "#7A9E7E";
     if (p <= 3) return "#C4A35A";
-    if (p <= 5) return "#D97757";
-    return "#C44C4C";
+    return "#C45C4A";
   }
 
   function bestLaneEdge(herePrices, therePrices) { return SM.bestLaneEdge(herePrices, therePrices, GOODS); }
@@ -304,17 +304,22 @@
 
   function themeColors() {
     return {
-      bg: cssVar("--map-bg", "#04070F"),
-      here: cssVar("--map-here", "#2F6FED"),
-      sel: cssVar("--map-sel", "#D6E4F5"),
-      reach: cssVar("--map-reach", "#9BB4D4"),
-      far: cssVar("--map-far", "#33445C"),
-      label: cssVar("--map-label", "#D6E4F5"),
-      mute: cssVar("--map-mute", "#5A7394"),
-      grid: cssVar("--map-grid", "rgba(30,58,95,0.65)"),
-      ring: cssVar("--map-ring", "rgba(47,111,237,0.55)"),
-      link: cssVar("--map-link", "rgba(47,164,160,0.55)"),
-      linkDim: cssVar("--map-link-dim", "rgba(30,58,95,0.4)"),
+      bg: cssVar("--map-bg", cssVar("--bg-deep", "#0C0A09")),
+      here: cssVar("--map-here", cssVar("--signal", "#D97757")),
+      sel: cssVar("--selected-hop", cssVar("--map-sel", "#D97757")),
+      reach: cssVar("--map-reach", "#C4B9AC"),
+      far: cssVar("--map-far", "#57534E"),
+      label: cssVar("--map-label", cssVar("--text", "#E7E0D6")),
+      mute: cssVar("--map-mute", cssVar("--mute", "#A39A90")),
+      grid: cssVar("--map-grid", "rgba(68,64,60,0.55)"),
+      ring: cssVar("--map-ring", "rgba(217,119,87,0.55)"),
+      link: cssVar("--map-link", "rgba(122,158,126,0.55)"),
+      linkDim: cssVar("--map-link-dim", "rgba(68,64,60,0.4)"),
+      ok: cssVar("--ok", "#7A9E7E"),
+      warn: cssVar("--warn", "#C4A35A"),
+      danger: cssVar("--danger", "#C45C4A"),
+      threat: cssVar("--threat", "#C45C4A"),
+      cta: cssVar("--cta", "#D97757"),
     };
   }
 
@@ -322,16 +327,16 @@
     const t = THEMES.includes(name) ? name : "cobalt";
     document.documentElement.setAttribute("data-theme", t);
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", cssVar("--wall", "#060A14"));
+    if (meta) meta.setAttribute("content", cssVar("--bg", cssVar("--wall", "#1C1917")));
     document.querySelectorAll("[data-theme-pick]").forEach((b) => {
       b.classList.toggle("active", b.dataset.themePick === t);
     });
     const hint = el("theme-hint");
     if (hint) {
       hint.textContent = t === "cobalt"
-        ? "Cobalt — dark navy hull console."
+        ? "Cobalt — Bast charcoal HUD, ember signal."
         : t === "coffee"
-          ? "Coffee — the earlier stone and clay look."
+          ? "Coffee — warm stone panels, same ember hero."
           : "LCARS — orange console homage (fan aesthetic pack).";
     }
     if (persist !== false) {

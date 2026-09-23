@@ -1,6 +1,6 @@
 /** Headless Skiff Run engine — mechanical parity with play UI for MCP / tests. */
-export const VERSION = "0.9.36";
-export const RULESET = "skiff-0.9.36";
+export const VERSION = "0.9.37";
+export const RULESET = "skiff-0.9.37";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const AgentActionLog = require("../js/agent-action-log.js");

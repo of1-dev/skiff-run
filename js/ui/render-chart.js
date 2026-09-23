@@ -220,7 +220,7 @@
           if (edge && edge.edge >= 4) {
             c2d.beginPath();
             c2d.arc(px, py, r + 3, 0, Math.PI * 2);
-            c2d.strokeStyle = edge.edge >= 12 ? "rgba(47,164,160,0.9)" : "rgba(47,164,160,0.45)";
+            c2d.strokeStyle = edge.edge >= 12 ? "rgba(122,158,126,0.9)" : "rgba(122,158,126,0.45)";
             c2d.lineWidth = edge.edge >= 12 ? 2.5 : 1.5;
             c2d.stroke();
           }
@@ -236,9 +236,9 @@
         if (wpIdx >= 0) {
           c2d.beginPath();
           c2d.arc(px, py - r - 6, 5.5, 0, Math.PI * 2);
-          c2d.fillStyle = "rgba(232,160,106,0.95)";
+          c2d.fillStyle = tc.sel || tc.here;
           c2d.fill();
-          c2d.fillStyle = "#1a120c";
+          c2d.fillStyle = tc.bg;
           c2d.font = "700 9px ui-sans-serif, system-ui, sans-serif";
           c2d.textAlign = "center";
           c2d.fillText(String(wpIdx + 1), px, py - r - 3);

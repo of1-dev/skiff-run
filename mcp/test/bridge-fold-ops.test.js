@@ -19,8 +19,8 @@ function switchSource(file) {
 
 describe("ATDD: one version law", () => {
   it("VERSION and RULESET match Fold clock", () => {
-    assert.equal(VERSION, "0.9.36");
-    assert.equal(RULESET, "skiff-0.9.36");
+    assert.equal(VERSION, "0.9.37");
+    assert.equal(RULESET, "skiff-0.9.37");
   });
 
   it("newGame initializes press/dock/agentLog fields", () => {

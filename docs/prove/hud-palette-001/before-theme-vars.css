@@ -1,0 +1,84 @@
+/* Theme packs: data-theme on <html> — cobalt (default) | coffee | lcars */
+:root,
+[data-theme="cobalt"] {
+  --wall: #060A14;
+  --raised: #0C1424;
+  --line: #1E3A5F;
+  --type: #D6E4F5;
+  --dim: #8FA6C4;
+  --mute: #5A7394;
+  --ember: #2F6FED; /* accent (kept name for less churn) */
+  --sage: #2FA4A0;
+  --accent-soft: rgba(47, 111, 237, 0.22);
+  --map-bg: #04070F;
+  --map-here: #2F6FED;
+  --map-sel: #D6E4F5;
+  --map-reach: #9BB4D4;
+  --map-far: #33445C;
+  --map-label: #D6E4F5;
+  --map-mute: #5A7394;
+  --map-grid: rgba(30, 58, 95, 0.65);
+  --map-ring: rgba(47, 111, 237, 0.55);
+  --map-link: rgba(47, 164, 160, 0.55);
+  --map-link-dim: rgba(30, 58, 95, 0.4);
+  --radius: 0px;
+  --font: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --h2-track: 0.12em;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --tab-h: 56px;
+}
+
+[data-theme="coffee"] {
+  --wall: #0C0A09;
+  --raised: #1C1917;
+  --line: #3F3A36;
+  --type: #E7E0D6;
+  --dim: #A8A29E;
+  --mute: #78716C;
+  --ember: #D97757;
+  --sage: #6B8F7A;
+  --accent-soft: rgba(217, 119, 87, 0.2);
+  --map-bg: #0C0A09;
+  --map-here: #D97757;
+  --map-sel: #E7E0D6;
+  --map-reach: #C4B9AC;
+  --map-far: #57534E;
+  --map-label: #E7E0D6;
+  --map-mute: #78716C;
+  --map-grid: rgba(63, 58, 54, 0.55);
+  --map-ring: rgba(217, 119, 87, 0.45);
+  --map-link: rgba(107, 143, 122, 0.55);
+  --map-link-dim: rgba(63, 58, 54, 0.35);
+  --radius: 0px;
+  --font: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --h2-track: 0.12em;
+}
+
+[data-theme="lcars"] {
+  --wall: #000000;
+  --raised: #0A0A0A;
+  --line: #FF9900;
+  --type: #FFCC99;
+  --dim: #FF9966;
+  --mute: #CC6666;
+  --ember: #FF9900;
+  --sage: #9999FF;
+  --accent-soft: rgba(255, 153, 0, 0.25);
+  --map-bg: #000000;
+  --map-here: #FF9900;
+  --map-sel: #FFCC99;
+  --map-reach: #9999FF;
+  --map-far: #444466;
+  --map-label: #FFCC99;
+  --map-mute: #CC6666;
+  --map-grid: rgba(255, 153, 0, 0.25);
+  --map-ring: rgba(255, 153, 0, 0.55);
+  --map-link: rgba(153, 153, 255, 0.55);
+  --map-link-dim: rgba(68, 68, 102, 0.4);
+  --radius: 18px;
+  --font: "Helvetica Neue", Helvetica, Arial, ui-sans-serif, sans-serif;
+  --h2-track: 0.18em;
+}

@@ -1,0 +1,13 @@
+--bg: #1C1917
+--bg-deep: #0C0A09
+--text: #E7E0D6
+--mute: #A39A90
+--signal: #D97757
+--cta: #D97757
+--tab-active: #E7E0D6
+--tab-idle: #A39A90
+--selected-hop: #D97757
+--ok: #7A9E7E
+--warn: #C4A35A
+--danger: #C45C4A
+--threat: #C45C4A

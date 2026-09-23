@@ -81,12 +81,39 @@
     };
   }
 
+  function cssVar(name, fallback) {
+    try {
+      const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      return v || fallback;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  function hud() {
+    return {
+      bgDeep: cssVar("--bg-deep", "#0C0A09"),
+      bg: cssVar("--bg", "#1C1917"),
+      text: cssVar("--text", "#E7E0D6"),
+      mute: cssVar("--mute", "#A39A90"),
+      signal: cssVar("--signal", "#D97757"),
+      selectedHop: cssVar("--selected-hop", "#D97757"),
+      ok: cssVar("--ok", "#7A9E7E"),
+      warn: cssVar("--warn", "#C4A35A"),
+      danger: cssVar("--danger", "#C45C4A"),
+      threat: cssVar("--threat", "#C45C4A"),
+      cta: cssVar("--cta", "#D97757"),
+      tabActive: cssVar("--tab-active", "#E7E0D6"),
+      tabIdle: cssVar("--tab-idle", "#A39A90"),
+    };
+  }
+
   function riskFill(pirate) {
     const p = pirate | 0;
-    if (p <= 1) return "#2FA4A0";
-    if (p <= 3) return "#C4A35A";
-    if (p <= 5) return "#D97757";
-    return "#C44C4C";
+    const h = hud();
+    if (p <= 1) return h.ok;
+    if (p <= 3) return h.warn;
+    return h.danger;
   }
 
   function fuelCostBetween(a, b) {
@@ -287,7 +314,7 @@
     if (posKeys.length === 0) return;
     
     // Clear background with subtle persistence
-    ctx.fillStyle = "rgba(4, 7, 15, 0.35)";
+    ctx.fillStyle = "rgba(12, 10, 9, 0.45)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     const time = Date.now() / 1000;
@@ -315,7 +342,7 @@
     const W = worldSize();
 
     // Same even grid as 2D Full (step 20 on the 160 sky)
-    ctx.strokeStyle = "rgba(30, 58, 95, 0.45)";
+    ctx.strokeStyle = "rgba(68, 64, 60, 0.45)";
     ctx.lineWidth = 1;
     for (let g = 0; g <= W + 1e-6; g += 20) {
       const v0 = cam.toScreen(g, 0);
@@ -348,7 +375,7 @@
       if (i === 0) ctx.moveTo(tx, ty);
       else ctx.lineTo(tx, ty);
     }
-    ctx.strokeStyle = "rgba(255, 178, 74, 0.55)";
+    ctx.strokeStyle = hud().signal + "99";
     ctx.lineWidth = 3.5;
     ctx.stroke();
     trail = trail.filter(t => t.age < 35);
@@ -366,7 +393,7 @@
       // Max Hull Range ring
       ctx.beginPath();
       ctx.arc(currentSx, currentSy, rangeVal * scale, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(47, 111, 237, 0.2)";
+      ctx.strokeStyle = "rgba(217, 119, 87, 0.2)";
       ctx.lineWidth = 1;
       ctx.stroke();
 
@@ -374,7 +401,7 @@
       if (fuelReach > 0) {
         ctx.beginPath();
         ctx.arc(currentSx, currentSy, fuelReach * scale, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(126, 200, 232, 0.35)";
+        ctx.strokeStyle = "rgba(163, 154, 144, 0.35)";
         ctx.setLineDash([4, 4]);
         ctx.lineWidth = 1.5;
         ctx.stroke();
@@ -389,7 +416,7 @@
       );
       if (plan && plan.ok && plan.hops && plan.hops.length > 1) {
         ctx.save();
-        ctx.strokeStyle = "rgba(255, 178, 74, 0.9)";
+        ctx.strokeStyle = hud().selectedHop;
         ctx.lineWidth = 2;
         ctx.setLineDash([7, 5]);
         ctx.beginPath();
@@ -408,7 +435,7 @@
 
     // Links: only legal jumps from HERE (2D Chart law — not every pair in range)
     if (targetSys) {
-      ctx.strokeStyle = "rgba(47, 164, 160, 0.55)";
+      ctx.strokeStyle = "rgba(122, 158, 126, 0.55)";
       ctx.lineWidth = 1.5;
       const herePt = cam.toScreen(targetSys.x, targetSys.y);
       const sysList = currentSystems && currentSystems.length
@@ -444,7 +471,7 @@
       const isVisited = !!(currentState.visited && currentState.visited[id]) || isHere;
       const pir = pos.pirate != null ? pos.pirate : 0;
       const reach = isHere || (targetSys && canJumpFromHere(targetSys, pos, rangeVal, currentFuel));
-      const fill = isHere ? "#7ec8e8" : riskFill(pir);
+      const fill = isHere ? hud().signal : riskFill(pir);
       const r = isHere ? 6.5 : isSelected ? 6 : 4.5;
       const glow = (isHere || isSelected) && !isMoving ? (Math.sin(time * 5) * 0.5 + 0.5) : 0;
 
@@ -454,7 +481,7 @@
       if (isSelected || isHovered) {
         ctx.beginPath();
         ctx.arc(x, y, r + 5 + glow * 2, 0, Math.PI * 2);
-        ctx.strokeStyle = isSelected ? "#7ec8e8" : "rgba(126, 200, 232, 0.7)";
+        ctx.strokeStyle = isSelected ? hud().selectedHop : "rgba(163, 154, 144, 0.7)";
         ctx.lineWidth = 1.5;
         ctx.stroke();
       }
@@ -465,7 +492,7 @@
         ctx.fillStyle = fill;
         ctx.fill();
       } else {
-        ctx.fillStyle = "#04070F";
+        ctx.fillStyle = hud().bgDeep;
         ctx.fill();
         ctx.strokeStyle = fill;
         ctx.lineWidth = 2;
@@ -482,7 +509,7 @@
         if (edge && edge.edge >= 4) {
           ctx.beginPath();
           ctx.arc(x, y, r + 3, 0, Math.PI * 2);
-          ctx.strokeStyle = edge.edge >= 12 ? "rgba(47,164,160,0.9)" : "rgba(47,164,160,0.45)";
+          ctx.strokeStyle = edge.edge >= 12 ? "rgba(122,158,126,0.9)" : "rgba(122,158,126,0.45)";
           ctx.lineWidth = edge.edge >= 12 ? 2.5 : 1.5;
           ctx.stroke();
         }
@@ -492,9 +519,9 @@
       if (wpIdx >= 0) {
         ctx.beginPath();
         ctx.arc(x, y - r - 6, 5.5, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(232,160,106,0.95)";
+        ctx.fillStyle = hud().signal;
         ctx.fill();
-        ctx.fillStyle = "#1a120c";
+        ctx.fillStyle = hud().bgDeep;
         ctx.font = "bold 9px monospace";
         ctx.textAlign = "center";
         ctx.fillText(String(wpIdx + 1), x, y - r - 3);
@@ -511,12 +538,12 @@
         : (isHere || isSelected);
       if (showLabel) {
         const nm = pos.name || id;
-        ctx.fillStyle = isVisited ? "#D6E4F5" : "#5A7394";
+        ctx.fillStyle = isVisited ? hud().text : hud().mute;
         ctx.font = isHere ? "bold 13px monospace" : "12px monospace";
         ctx.fillText(nm, x + 8, y + 3);
         if (reach && !isHere && isSelected) {
           const cost = fuelCostBetween(targetSys, pos);
-          ctx.fillStyle = "#5A7394";
+          ctx.fillStyle = hud().mute;
           ctx.font = "11px monospace";
           ctx.fillText(cost + "f", x + 9, y + 16);
         }
@@ -574,26 +601,26 @@
   }
 
   function drawHudStatus() {
-    ctx.fillStyle = "#ffb24a";
+    ctx.fillStyle = hud().signal;
     ctx.font = "bold 15px monospace";
     ctx.fillText(`CAPTAIN ON DECK | ₩${(currentState.credits || 0).toLocaleString()}`, 24, 38);
     
-    ctx.fillStyle = "#7ec8e8";
+    ctx.fillStyle = hud().text;
     ctx.font = "13px monospace";
     ctx.fillText(`LOCATION: ${String(currentState.system || "UNKNOWN").toUpperCase()}`, 24, 58);
     
     const maxes = getHullMaxes();
     const hullPct = Math.round(((currentState.hull || 0) / (maxes.hullMax || 1)) * 100);
-    ctx.fillStyle = hullPct < 40 ? "#ff7b72" : "#48bb78";
+    ctx.fillStyle = hullPct < 40 ? hud().danger : hud().ok;
     ctx.fillText(`HULL: ${currentState.hull != null ? currentState.hull : 20}/${maxes.hullMax || 20} (${hullPct}%)  |  AMMO: ${currentState.ammo != null ? currentState.ammo : 0}/${maxes.ammoMax || 0}`, 24, 78);
     
     const fuelVal = currentState.fuel != null ? currentState.fuel : 10;
-    ctx.fillStyle = fuelVal < 3 ? "#ff7b72" : "#ffb24a";
+    ctx.fillStyle = fuelVal < 3 ? hud().danger : hud().warn;
     ctx.fillText(`FUEL: ${fuelVal}/${maxes.fuelMax || 14} (Range: ${getShipRange()})`, 24, 98);
 
     const nLeads = (currentState.quests && currentState.quests.length) || 0;
     if (nLeads > 0) {
-      ctx.fillStyle = "#ffd166";
+      ctx.fillStyle = hud().warn;
       ctx.fillText(nLeads === 1 ? "1 LEAD (Captain tab)" : nLeads + " LEADS (Captain tab)", 24, 118);
     }
   }
@@ -633,15 +660,15 @@
     if (maxes.ammoMax > 0) actionBtns.push(btnRearm);
 
     for (const b of actionBtns) {
-      ctx.fillStyle = b.active ? "rgba(22, 36, 56, 0.9)" : "rgba(15, 20, 28, 0.7)";
-      ctx.strokeStyle = b.active ? "#7ec8e8" : "#334155";
+      ctx.fillStyle = b.active ? "rgba(41, 37, 36, 0.92)" : "rgba(28, 25, 23, 0.75)";
+      ctx.strokeStyle = b.active ? hud().signal : "#44403C";
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.roundRect ? ctx.roundRect(b.x, b.y, b.w, b.h, 4) : ctx.rect(b.x, b.y, b.w, b.h);
       ctx.fill();
       ctx.stroke();
 
-      ctx.fillStyle = b.active ? "#7ec8e8" : "#64748b";
+      ctx.fillStyle = b.active ? hud().tabActive || hud().text : hud().mute;
       ctx.font = "bold 12px monospace";
       ctx.textAlign = "center";
       ctx.fillText(b.label, b.x + b.w / 2, b.y + 22);
@@ -657,8 +684,8 @@
     const cardX = canvas.width - cardW - 24;
     const cardY = canvas.height - cardH - 24;
 
-    ctx.fillStyle = "rgba(8, 14, 26, 0.92)";
-    ctx.strokeStyle = "#ffb24a";
+    ctx.fillStyle = "rgba(12, 10, 9, 0.94)";
+    ctx.strokeStyle = hud().signal;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.roundRect ? ctx.roundRect(cardX, cardY, cardW, cardH, 6) : ctx.rect(cardX, cardY, cardW, cardH);
@@ -666,7 +693,7 @@
     ctx.stroke();
 
     // Title
-    ctx.fillStyle = "#ffb24a";
+    ctx.fillStyle = hud().signal;
     ctx.font = "bold 16px monospace";
     ctx.fillText(`${(dest.name || dest.id).toUpperCase()}`, cardX + 16, cardY + 28);
 
@@ -702,16 +729,16 @@
     // Pirate & Police Danger Intel
     const pirLevel = dest.pirate != null ? dest.pirate : 0;
     const pirLabel = activityLabel(pirLevel);
-    ctx.fillStyle = pirLevel >= 5 ? "#ff7b72" : (pirLevel >= 3 ? "#ffb24a" : "#48bb78");
+    ctx.fillStyle = pirLevel >= 5 ? hud().threat : (pirLevel >= 3 ? hud().warn : hud().ok);
     ctx.font = "12px monospace";
     ctx.fillText(`☠️ PIRATES: ${pirLabel.toUpperCase()} (${pirLevel}/7)`, cardX + 16, cardY + 52);
 
     const polLevel = dest.police != null ? dest.police : 0;
-    ctx.fillStyle = "#7ec8e8";
+    ctx.fillStyle = hud().text;
     ctx.fillText(`🛡️ POLICE : ${activityLabel(polLevel).toUpperCase()} (${polLevel}/7)`, cardX + 16, cardY + 70);
 
     // Facilities & Distance
-    ctx.fillStyle = "#cbd5e1";
+    ctx.fillStyle = hud().mute;
     const facilities = [];
     if (dest.yard) facilities.push("Shipyard");
     if (dest.retire) facilities.push("Retire Dock");
@@ -739,15 +766,15 @@
       const btnLabel = engage.label;
       const btnEnabled = engage.enabled;
 
-      ctx.fillStyle = btnEnabled ? "rgba(47, 111, 237, 0.9)" : "rgba(30, 41, 59, 0.8)";
-      ctx.strokeStyle = btnEnabled ? "#7ec8e8" : "#475569";
+      ctx.fillStyle = btnEnabled ? hud().cta : "rgba(41, 37, 36, 0.85)";
+      ctx.strokeStyle = btnEnabled ? hud().signal : "#57534E";
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.roundRect ? ctx.roundRect(btnX, btnY, btnW, btnH, 4) : ctx.rect(btnX, btnY, btnW, btnH);
       ctx.fill();
       ctx.stroke();
 
-      ctx.fillStyle = btnEnabled ? "#ffffff" : "#64748b";
+      ctx.fillStyle = btnEnabled ? hud().bgDeep : hud().mute;
       ctx.font = "bold 13px monospace";
       ctx.textAlign = "center";
       ctx.fillText(btnLabel, btnX + btnW / 2, btnY + 22);
@@ -765,13 +792,13 @@
         });
       }
 
-      ctx.fillStyle = "rgba(30, 41, 59, 0.9)";
-      ctx.strokeStyle = "#ffb24a";
+      ctx.fillStyle = "rgba(41, 37, 36, 0.9)";
+      ctx.strokeStyle = hud().signal;
       ctx.beginPath();
       ctx.roundRect ? ctx.roundRect(btnX, pinY, btnW, btnH, 4) : ctx.rect(btnX, pinY, btnW, btnH);
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = "#ffb24a";
+      ctx.fillStyle = hud().signal;
       ctx.font = "bold 12px monospace";
       ctx.textAlign = "center";
       ctx.fillText("PIN AS COURSE", btnX + btnW / 2, pinY + 21);
@@ -784,7 +811,7 @@
         }
       });
     } else {
-      ctx.fillStyle = "#7ec8e8";
+      ctx.fillStyle = hud().text;
       ctx.font = "italic 13px monospace";
       ctx.fillText("Currently docked here.", cardX + 16, cardY + 144);
     }
