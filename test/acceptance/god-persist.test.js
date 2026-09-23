@@ -97,10 +97,10 @@ describe("ATDD: god persist round-trip (skiff-god-persist-001)", () => {
 });
 
 describe("ATDD: Fold god buttons must POST bridge ops when bridgeOn", () => {
-  it("game.js wires god_* / grant_* ops through bridgeAct", () => {
+  it("god-panel.js wires god_* / grant_* ops through bridgeAct", () => {
     const fs = require("node:fs");
     const path = require("node:path");
-    const src = fs.readFileSync(path.join(__dirname, "../../game.js"), "utf8");
+    const src = fs.readFileSync(path.join(__dirname, "../../js/ui/god-panel.js"), "utf8");
     for (const op of ["god_credits", "grant_unbowed", "grant_wasp", "god_fuel", "god_yard"]) {
       assert.match(src, new RegExp('op:\\s*"' + op + '"'));
     }

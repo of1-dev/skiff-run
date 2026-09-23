@@ -628,414 +628,102 @@
     if (bridgeOn) bridgeAct({ op: "save", state: state });
   }
 
-  function applyRefuelInternal(prefix) {
-    const r = SF.applyRefuel({ fuel: state.fuel, fuelMax: hull().fuelMax, credits: state.credits });
-    if (!r.ok) {
-      if (!prefix && r.reason === "credits") log("Can't afford fuel.");
-      return false;
-    }
-    state.fuel = r.fuel;
-    state.credits = r.credits;
-    if (r.partial) {
-      log((prefix || "Partial refuel") + " +" + r.bought + " for ₩" + (r.bought * FUEL_PRICE) + ".");
-    } else if (prefix) {
-      log(prefix + " full for ₩" + (r.bought * FUEL_PRICE) + ".");
-    } else {
-      log("Refueled for ₩" + (r.bought * FUEL_PRICE) + ".");
-    }
-    return true;
-  }
+  let chartApi = null;
+  let encApi = null;
+  let actionsApi = null;
+  let godApi = null;
 
-  function maybeAutoRefuel() {
-    state.prefs = state.prefs || { autoFuel: true };
-    if (!state.prefs.autoFuel) return;
-    applyRefuelInternal("Auto-refuel");
-  }
+  function courseDest() { return chartApi.courseDest(); }
+  function coursePlan(destId) { return chartApi.coursePlan(destId); }
+  function applyChartLead(id, why) { return chartApi.applyChartLead(id, why); }
+  function followPressTip(action) { return chartApi.followPressTip(action); }
+  function runChartSearch(raw) { return chartApi.runChartSearch(raw); }
+  function maybeEncounter(toId) { return encApi.maybeEncounter(toId); }
+  function openEncounter(kind, dest) { return encApi.openEncounter(kind, dest); }
+  function resolveEncounter(choice) { return encApi.resolveEncounter(choice); }
+  function doTravel(toId) { return actionsApi.doTravel(toId); }
+  function doRefuel() { return actionsApi.doRefuel(); }
+  function doRepair() { return actionsApi.doRepair(); }
+  function doRearm() { return actionsApi.doRearm(); }
+  function doBuyShip(id) { return actionsApi.doBuyShip(id); }
+  function doDockWork() { return actionsApi.doDockWork(); }
+  function doHireCrew() { return actionsApi.doHireCrew(); }
+  function doFireCrew() { return actionsApi.doFireCrew(); }
+  function doBuyPress() { return actionsApi.doBuyPress(); }
+  function syncGodUi() { return godApi.syncGodUi(); }
 
-  function courseDest() {
-    const pins = WP.normalize(state.waypoints);
-    const far = pins.find(function (id) { return id && id !== state.system; });
-    if (far) return far;
-    if (ui.courseDest && ui.courseDest !== state.system) return ui.courseDest;
-    if (ui.targetId && ui.targetId !== state.system) return ui.targetId;
-    return null;
-  }
+  if (!globalThis.SkiffChartInteractions) throw new Error("SkiffChartInteractions missing — load js/ui/chart-interactions.js before game.js");
+  if (!globalThis.SkiffEncounterDialog) throw new Error("SkiffEncounterDialog missing — load js/ui/encounter-dialog.js before game.js");
+  if (!globalThis.SkiffActions) throw new Error("SkiffActions missing — load js/core/actions.js before game.js");
+  if (!globalThis.SkiffGodPanel) throw new Error("SkiffGodPanel missing — load js/ui/god-panel.js before game.js");
 
-  function coursePlan(destId) {
-    if (!destId) return null;
-    return RT.shortestPath(state.system, destId, SYSTEMS, hull().range);
-  }
+  chartApi = globalThis.SkiffChartInteractions.setup({
+    getState: function () { return state; },
+    getUi: function () { return ui; },
+    sys: sys,
+    hull: hull,
+    systems: function () { return SYSTEMS; },
+    log: log,
+    render: render,
+    save: save,
+    showTab: showTab,
+    setChartMode: setChartMode,
+    canJumpTo: canJumpTo,
+    inSector: inSector,
+    WP: WP,
+    CF: CF,
+    RT: RT,
+  });
 
-  function doTravel(toId) {
-    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
-    let dest = toId;
-    const goal = courseDest();
-    if (!inRange(state.system, dest)) {
-      const plan = coursePlan(dest);
-      if (!plan || !plan.ok || !plan.next) return log("Out of jump range.");
-      dest = plan.next;
-      ui.courseDest = goal || toId;
-    }
-    if (!inRange(state.system, dest)) return log("Out of jump range.");
-    const cost = fuelCost(state.system, dest);
-    if (state.fuel < cost) return log("Need " + cost + " fuel.");
-    state.fuel -= cost;
-    state.system = dest;
-    markVisited(dest);
-    state.dockWorkAt = null;
-    state.pressBoughtAt = null;
-    
-    // Resolve quests
-    state.quests = state.quests || [];
-    const completed = state.quests.filter(q => q.dest === state.system);
-    state.quests = state.quests.filter(q => q.dest !== state.system);
-    
-    if (completed.length > 0) {
-      const totalReward = completed.reduce((sum, q) => sum + q.reward, 0);
-      state.credits = (state.credits || 0) + totalReward;
-      log(`Completed ${completed.length} quest(s) for ₩${totalReward}!`);
-    }
+  encApi = globalThis.SkiffEncounterDialog.setup({
+    getState: function () { return state; },
+    getBridgeOn: function () { return bridgeOn; },
+    hull: hull,
+    cargoUsed: cargoUsed,
+    log: log,
+    render: render,
+    bridgeAct: bridgeAct,
+    tickSkill: tickSkill,
+    sys: sys,
+    el: el,
+    activityLabel: activityLabel,
+  });
 
-    rollMarket(state);
-    const still = (goal && goal !== dest) ? goal : courseDest();
-    if (still && still !== dest) {
-      ui.courseDest = still;
-      const plan = coursePlan(still);
-      ui.targetId = (plan && plan.next) ? plan.next : still;
-      const left = plan && plan.jumps ? plan.jumps : "?";
-      log("Arrived " + sys(dest).name + " (−" + cost + " fuel). Course still " + (sys(still) || {}).name + " — " + left + " jumps.");
-    } else {
-      ui.courseDest = null;
-      ui.targetId = null;
-      log("Arrived " + sys(dest).name + " (−" + cost + " fuel).");
-    }
-    maybeAutoRefuel();
-    render();
-    tickSkill("pilot", true);
-    if (bridgeOn) bridgeAct({ op: "save", state: state });
-    maybeEncounter(dest);
-  }
-  function doRefuel() {
-    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
-    const need = hull().fuelMax - state.fuel;
-    if (need <= 0) return log("Tanks full.");
-    if (!applyRefuelInternal(null)) return;
-    // rewrite last log for manual (non-auto) wording when full/partial already logged
-    tickSkill("engineer", true);
-    render();
-    if (bridgeOn) bridgeAct({ op: "save", state: state });
-  }
+  actionsApi = globalThis.SkiffActions.setup({
+    getState: function () { return state; },
+    getUi: function () { return ui; },
+    getBridgeOn: function () { return bridgeOn; },
+    currentPilot: currentPilot,
+    sys: sys,
+    ship: ship,
+    hull: hull,
+    cargoUsed: cargoUsed,
+    hullStock: hullStock,
+    yardOffered: yardOffered,
+    dumpToFit: dumpToFit,
+    log: log,
+    render: render,
+    save: save,
+    bridgeAct: bridgeAct,
+    tickSkill: tickSkill,
+    markVisited: markVisited,
+    rollMarket: rollMarket,
+    inRange: inRange,
+    fuelCost: fuelCost,
+    courseDest: function () { return chartApi.courseDest(); },
+    coursePlan: function (id) { return chartApi.coursePlan(id); },
+    maybeEncounter: function (id) { return encApi.maybeEncounter(id); },
+    priceFor: priceFor,
+    systems: function () { return SYSTEMS; },
+    GOODS: GOODS,
+    FUEL_PRICE: FUEL_PRICE,
+    YE: YE,
+    CR: CR,
+    SP: SP,
+    SM: SM,
+    SF: SF,
+  });
 
-  function doRepair() {
-    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
-    const h = hull();
-    if (!h.hullMax) return log("Hull has no integrity rating.");
-    const need = h.hullMax - (state.hull || 0);
-    if (need <= 0) return log("Hull is at 100%.");
-    const costPer = 20;
-    const canAfford = Math.floor(state.credits / costPer);
-    if (canAfford <= 0) return log("Not enough credits for repairs.");
-    const repair = Math.min(need, canAfford);
-    state.credits -= repair * costPer;
-    state.hull = (state.hull || 0) + repair;
-    log(`Repaired ${repair} hull points (-${repair * costPer} ₩).`);
-    render();
-    if (bridgeOn) bridgeAct({ op: "save", state: state });
-  }
-
-  function doRearm() {
-    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
-    const h = hull();
-    if (!h.ammoMax) return log("Ship has no weapon mounts.");
-    const need = h.ammoMax - (state.ammo || 0);
-    if (need <= 0) return log("Ammo bays full.");
-    const costPer = 50;
-    const canAfford = Math.floor(state.credits / costPer);
-    if (canAfford <= 0) return log("Not enough credits for ammo.");
-    const loaded = Math.min(need, canAfford);
-    state.credits -= loaded * costPer;
-    state.ammo = (state.ammo || 0) + loaded;
-    log(`Loaded ${loaded} ordnance (-${loaded * costPer} ₩).`);
-    render();
-    if (bridgeOn) bridgeAct({ op: "save", state: state });
-  }
-
-  function doBuyShip(id) {
-    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
-    const next = ship(id);
-    if (!next) return;
-    const stock = hullStock(sys(state.system));
-    if (!yardOffered().some((s) => s.id === id)) {
-      return log(stock === "none" ? "Dry dock — no hull stock here." : "That hull isn't on this pad.");
-    }
-    if (cargoUsed(state) > next.cargo) {
-      if (next.id === "mite") {
-        const n = dumpToFit(next.cargo);
-        if (cargoUsed(state) > next.cargo) return log("Can't lighten enough for a Mite.");
-        log("Jettisoned " + n + " cargo to squeeze into a Mite.");
-      } else {
-        return log("Dump cargo before taking a smaller hold.");
-      }
-    }
-    const delta = YE.tradeDelta(hull().price || 0, next.price);
-    const due = YE.tradeDue(delta);
-    const surplus = YE.tradeSurplus(delta);
-    if (state.credits < due) return log("Need ₩" + due.toLocaleString() + " after trade-in.");
-    state.credits -= due;
-    state.credits += surplus;
-    state.shipId = next.id;
-    state.roster = CR.normalizeRoster(state.roster || [], next.crewMax);
-    state.crew = CR.syncHeadcount(state.roster);
-    if (state.fuel > next.fuelMax) state.fuel = next.fuelMax;
-    let pay = "Paid ₩" + due.toLocaleString();
-    if (surplus > 0) pay = "Scrap payout ₩" + surplus.toLocaleString();
-    else if (due === 0) pay = "No cash due";
-    log("Signed for " + next.name + (next.weapons ? " (armed)" : "") + ". " + pay + ".");
-    render();
-    if (bridgeOn) bridgeAct({ op: "save", state: state });
-  }
-
-  function doDockWork() {
-    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
-    const shift = YE.afterDockWork(state.dockWorkAt, state.system, state.credits);
-    if (!shift.ok) return log("Already worked this stay.");
-    state.dockWorkAt = shift.dockWorkAt;
-    state.credits = shift.credits;
-    log("Dock shift done. +₩" + shift.pay + " — limp stake toward a Mite or yard.");
-    render();
-    if (bridgeOn) bridgeAct({ op: "save", state: state });
-  }
-
-  function doHireCrew() {
-    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
-    const h = hull();
-    const offer = CR.makeOffer();
-    const gate = CR.canHire(state.roster || [], h.crewMax, state.credits, offer);
-    if (!gate.ok) return log(gate.reason === "no_bunks" ? "No bunks left." : "Can't afford crew.");
-    state.credits -= gate.cost;
-    state.roster = CR.afterHire(state.roster || [], offer, h.crewMax);
-    state.crew = CR.syncHeadcount(state.roster);
-    log("Hired " + offer.label + " (— " + offer.quirk + ") for ₩" + gate.cost + ". Crew " + state.crew + "/" + h.crewMax + ".");
-    render();
-    if (bridgeOn) bridgeAct({ op: "save", state: state });
-  }
-
-  function doFireCrew() {
-    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
-    const fired = CR.afterDismiss(state.roster || [], null);
-    if (!fired.ok) return log("No crew to dismiss.");
-    state.roster = fired.roster;
-    state.crew = CR.syncHeadcount(state.roster);
-    state.credits += fired.refund;
-    log("Dismissed a hand. +₩" + fired.refund + ".");
-    render();
-    if (bridgeOn) bridgeAct({ op: "save", state: state });
-  }
-
-  // Thin encounters: chance scales with destination police/pirate; small hulls quieter.
-
-
-  function applyChartLead(id, why) {
-    if (!id || id === state.system) return false;
-    const dest = sys(id);
-    if (!dest) return false;
-    ui.targetId = id;
-    ui.searchHitId = id;
-    ui.courseDest = id;
-    const hint = WP.pinHint({ targetId: id, hereId: state.system });
-    if (hint.ok && !WP.isPinned(state.waypoints, id)) {
-      const tog = WP.toggle(state.waypoints, id);
-      state.waypoints = tog.list;
-    }
-    const mode = CF.viewForLead({
-      hereId: state.system,
-      targetId: id,
-      canJump: canJumpTo(state.system, id),
-      inSector: inSector(state.system, id),
-    });
-    setChartMode(mode);
-    if (globalThis.SkiffHoloRenderer && typeof globalThis.SkiffHoloRenderer.selectSystem === "function") {
-      globalThis.SkiffHoloRenderer.selectSystem(id);
-    }
-    const plan = coursePlan(id);
-    const hops = plan && plan.ok ? plan.jumps : "?";
-    const nm = dest.name || id;
-    log((why || "Lead") + " → " + nm + " pinned · " + hops + " hop(s). Jump / Hop via.");
-    return true;
-  }
-
-  function followPressTip(action) {
-    const r = SP.resolvePressAction(action, { hereId: state.system });
-    if (r.targetId) {
-      applyChartLead(r.targetId, r.log || "Press lead");
-      showTab("chart");
-    } else if (r.log) {
-      log(r.log);
-      if (r.tab) showTab(r.tab);
-    }
-    save(state);
-    render();
-  }
-
-  function runChartSearch(raw) {
-    const hits = CF.findSystems(SYSTEMS, raw);
-    const best = CF.pickBest(hits, raw);
-    if (!best) {
-      log("No dock matches “" + String(raw || "").trim() + "”.");
-      return;
-    }
-    ui.targetId = best.id;
-    ui.searchHitId = best.id;
-    const mode = CF.viewForLead({
-      hereId: state.system,
-      targetId: best.id,
-      canJump: canJumpTo(state.system, best.id),
-      inSector: inSector(state.system, best.id),
-    });
-    setChartMode(mode);
-    const extra = hits.length > 1 ? (" (— " + hits.length + " hits)") : "";
-    log("Chart found " + best.name + extra + ".");
-    if (globalThis.SkiffHoloRenderer && typeof globalThis.SkiffHoloRenderer.selectSystem === "function") {
-      globalThis.SkiffHoloRenderer.selectSystem(best.id);
-    }
-    showTab("chart");
-    render();
-  }
-
-  function doBuyPress() {
-    if (bridgeOn && currentPilot() === "agent") return log("Agent has the stick.");
-    const buy = SP.buyPress({
-      credits: state.credits,
-      pressBoughtAt: state.pressBoughtAt,
-      systemId: state.system,
-    });
-    if (!buy.ok) {
-      return log(buy.reason === "already"
-        ? "Already bought today's Press at this dock."
-        : "Need ₩" + SP.PRESS_PRICE + " for the Dock Press.");
-    }
-    state.credits = buy.credits;
-    state.pressBoughtAt = buy.pressBoughtAt;
-    const edition = SP.rollEdition({
-      hereId: state.system,
-      systems: SYSTEMS,
-      goods: GOODS,
-      priceFor: priceFor,
-    });
-    state.pressEdition = edition;
-    state.lastPress = edition;
-    
-    state.quests = state.quests || [];
-    if (Math.random() < 0.6) {
-      const sysKeys = SYSTEMS.filter(s => s.id !== state.system);
-      if (sysKeys.length > 0) {
-        const destObj = sysKeys[Math.floor(Math.random() * sysKeys.length)];
-        const dest = destObj.id;
-        const isBounty = Math.random() < 0.5;
-        const reward = isBounty ? 8000 : 5000;
-        const title = isBounty ? `Bounty: Pirate Lord at ${destObj.name}` : `Delivery: Medical Supplies to ${destObj.name}`;
-        state.quests.push({ id: Date.now().toString(), dest, title, reward });
-        edition.lines.push(`*** NEW QUEST: ${title} (Reward: ₩${reward}) ***`);
-      }
-    }
-    
-    log("Dock Press ₩" + buy.paid + " — " + edition.masthead);
-    render();
-    if (bridgeOn) bridgeAct({ op: "save", state: state });
-  }
-
-  function maybeEncounter(toId) {
-    const dest = sys(toId) || sys(state.system);
-    const kind = SE.pickEncounter(SE.encounterOdds(dest, hull()), Math.random);
-    if (kind !== "none") openEncounter(kind, dest);
-  }
-
-  const dlg = el("encounter");
-  let encKind = null;
-  let encDest = null;
-  let isLocalEval = false;
-
-  function openEncounter(kind, dest) {
-    encKind = kind;
-    encDest = dest || sys(state.system);
-    const armed = hull().weapons && state.crew > 0 && (state.ammo || 0) > 0;
-    
-    // If agent has the stick or running via WebMCP agent call, auto-resolve
-    if (state.pilot === "agent" || isLocalEval) {
-      let choice = "b";
-      if (kind === "warden") {
-        choice = state.credits >= 400 ? "a" : "b";
-      } else if (kind === "trader") {
-        choice = "a";
-      } else {
-        // Corsairs
-        choice = armed ? "a" : (state.fuel >= 2 ? "b" : "a");
-      }
-      return resolveEncounter(choice);
-    }
-
-    const pir = activityLabel(encDest.pirate);
-    const pol = activityLabel(encDest.police);
-    if (kind === "warden") {
-      el("enc-title").textContent = "Ledger Wardens";
-      el("enc-body").textContent =
-        "Patrol lock inbound (" + encDest.name + " · police " + pol + "). Inspection fine ₩400 — or bluff.";
-      el("enc-a").textContent = "Pay fine";
-      el("enc-b").textContent = "Bluff";
-    } else if (kind === "trader") {
-      el("enc-title").textContent = "Lane trader";
-      el("enc-body").textContent =
-        "A free hauler pings you near " + encDest.name + ". Hail for a quick deal, or wave them off.";
-      el("enc-a").textContent = "Hail";
-      el("enc-b").textContent = "Wave off";
-    } else {
-      el("enc-title").textContent = "Ash Corsairs";
-      if (armed) {
-        el("enc-body").textContent =
-          "Raiders on the lane to " + encDest.name + " (pirates " + pir + "). Fight or burn fuel fleeing.";
-        el("enc-a").textContent = "Fight";
-        el("enc-b").textContent = "Flee (−fuel)";
-      } else {
-        el("enc-body").textContent =
-          "Raiders on the lane to " + encDest.name + " (pirates " + pir + "). Dump cargo or flee.";
-        el("enc-a").textContent = "Dump cargo";
-        el("enc-b").textContent = "Flee (−fuel)";
-      }
-    }
-    try {
-      dlg.showModal();
-    } catch (err) {
-      /* already open */
-    }
-    if (typeof document !== "undefined" && document.body) {
-      document.body.classList.add("enc-open");
-    }
-  }
-
-  function resolveEncounter(choice) {
-    if (typeof document !== "undefined" && document.body) {
-      document.body.classList.remove("enc-open");
-    }
-    if (dlg && dlg.open) dlg.close();
-    const result = globalThis.SkiffCombat.resolveEncounter({
-      state,
-      encKind,
-      dest: encDest,
-      choice,
-      GOODS: globalThis.SkiffGoods,
-      hull: hull(),
-      cargoUsed: cargoUsed(state),
-      tickSkill: tickSkill
-    });
-    log(result.logMsg);
-    encKind = null;
-    encDest = null;
-    render();
-    if (bridgeOn) bridgeAct({ op: "save", state: state });
-  }
-
-  el("enc-a").onclick = () => resolveEncounter("a");
-  el("enc-b").onclick = () => resolveEncounter("b");
   el("btn-refuel").onclick = doRefuel;
   el("btn-repair").onclick = doRepair;
   el("btn-rearm").onclick = doRearm;
@@ -1212,11 +900,11 @@
     }
 
     // Surface pending encounter from shared seat (once)
-    if (data.pendingEncounter && currentPilot() === "human" && !encKind) {
+    if (data.pendingEncounter && currentPilot() === "human" && !encApi.getEncKind()) {
       const pe = data.pendingEncounter;
       const dest = sys(pe.systemId) || sys(state.system);
       if (pe.kind && dest) openEncounter(pe.kind, dest);
-    } else if (!data.pendingEncounter && encKind && dlg && dlg.open) {
+    } else if (!data.pendingEncounter && encApi.getEncKind() && encApi.isDialogOpen()) {
       /* keep local dialog until resolved via act */
     }
   }
@@ -1287,110 +975,22 @@
   }
 
 
-  function syncGodUi() {
-    const on = godEnabled();
-    const godPanel = el("god-panel");
-    if (godPanel) {
-      if (on) godPanel.removeAttribute("hidden");
-      else godPanel.setAttribute("hidden", "");
-    }
-    const btn = el("pref-godmode");
-    if (btn) {
-      btn.setAttribute("aria-pressed", on ? "true" : "false");
-      btn.textContent = on ? "God tools: on" : "God tools: off";
-      btn.classList.toggle("ember", on);
-      btn.classList.toggle("ghost", !on);
-    }
-  }
-
-  let godClickLock = false;
-  function setGodMode(on) {
-    on = !!on;
-    state.prefs = state.prefs || { autoFuel: true };
-    state.prefs.godMode = on;
-    writeGodFlag(on);
-    log(on ? "God mode ON — Unbowed kit unlocked." : "God mode OFF.");
-    if (bridgeOn) bridgeAct({ op: "save", state: state });
-    else save(state);
-    syncGodUi();
-  }
-  const godPref = el("pref-godmode");
-  if (godPref) {
-    godPref.addEventListener("click", function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      if (godClickLock) return;
-      godClickLock = true;
-      setGodMode(!godEnabled());
-      setTimeout(function () { godClickLock = false; }, 250);
-    });
-  }
-
-  const wireGod = (id, fn) => {
-    const b = el(id);
-    if (b) b.onclick = () => {
-      if (!godEnabled()) return log("Enable God mode on Captain first.");
-      fn();
-    };
-  };
-  // Bridge seat: local save() is a no-op when bridgeOn; poll would wipe grants.
-  // Always POST dedicated god ops so /api/act persists + applyBridgePayload refreshes UI.
-  wireGod("god-credits", () => {
-    if (bridgeOn) {
-      bridgeAct({ op: "god_credits", amount: GOD.GRANT_DEFAULT });
-      return;
-    }
-    state = GOD.grantCredits(state, GOD.GRANT_DEFAULT);
-    log("God: +₩" + GOD.GRANT_DEFAULT.toLocaleString() + ".");
-    save(state); render();
-  });
-  wireGod("god-fuel", () => {
-    if (bridgeOn) {
-      bridgeAct({ op: "god_fuel" });
-      return;
-    }
-    state = GOD.fillFuel(state, hull().fuelMax);
-    log("God: tanks topped.");
-    save(state); render();
-  });
-  wireGod("god-yard", () => {
-    if (bridgeOn) {
-      bridgeAct({ op: "god_yard" });
-      return;
-    }
-    state = GOD.unlockYard(state);
-    log("God: full yard unlocked at every dock.");
-    save(state); render();
-  });
-  wireGod("god-unbowed", () => {
-    if (bridgeOn) {
-      bridgeAct({ op: "grant_unbowed" });
-      return;
-    }
-    const r = GOD.grantUnbowed(state, SHIPS, GOODS.map((x) => x.id));
-    if (!r.ok) return log("God: cannot grant Unbowed (" + r.reason + ").");
-    state = r.state;
-    if (typeof CR !== "undefined" && CR.normalizeRoster) {
-      state.roster = CR.normalizeRoster(state.roster, hull().crewMax);
-      state.crew = CR.syncHeadcount(state.roster);
-    }
-    log("Unbowed granted — peak crew aboard. Career unlock still locked." + (r.jettison ? (" Jettisoned " + r.jettison + " cargo.") : ""));
-    save(state); render();
-  });
-  wireGod("god-wasp", () => {
-    if (bridgeOn) {
-      bridgeAct({ op: "grant_wasp" });
-      return;
-    }
-    const r = GOD.grantWasp(state, SHIPS, GOODS.map((x) => x.id));
-    if (!r.ok) return log("God: cannot set Wasp Prime (" + r.reason + ").");
-    state = r.state;
-    if (typeof CR !== "undefined" && CR.normalizeRoster) {
-      state.roster = CR.normalizeRoster(state.roster, hull().crewMax);
-      state.crew = CR.syncHeadcount(state.roster);
-    }
-    log("God: Wasp Prime + hands aboard" + (r.jettison ? (" — jettisoned " + r.jettison + " cargo.") : "."));
-    save(state); render();
+  godApi = globalThis.SkiffGodPanel.setup({
+    getState: function () { return state; },
+    setState: function (s) { state = s; },
+    getBridgeOn: function () { return bridgeOn; },
+    godEnabled: godEnabled,
+    writeGodFlag: writeGodFlag,
+    el: el,
+    log: log,
+    save: save,
+    render: render,
+    bridgeAct: bridgeAct,
+    hull: hull,
+    GOD: GOD,
+    CR: CR,
+    SHIPS: SHIPS,
+    GOODS: GOODS,
   });
 
   const pinBtn = el("btn-waypoint");
@@ -1436,11 +1036,11 @@
     const wasBridge = bridgeOn;
     const oldPilot = state.pilot;
     bridgeOn = false;
-    isLocalEval = true;
+    encApi.setLocalEval(true);
     try {
       fn();
     } finally {
-      isLocalEval = false;
+      encApi.setLocalEval(false);
       state.pilot = oldPilot;
       bridgeOn = wasBridge;
     }
@@ -1468,7 +1068,7 @@
         dockWorkAvailable: state.dockWorkAt !== state.system,
         pressAvailable: state.pressBoughtAt !== state.system,
         canRetire: !!(s && s.retire && netWorth(state) >= RETIRE_NET),
-        pendingEncounter: encKind ? { kind: encKind, systemId: (encDest ? encDest.id : state.system) } : null,
+        pendingEncounter: encApi.getEncKind() ? { kind: encApi.getEncKind(), systemId: (encApi.getEncDest() ? encApi.getEncDest().id : state.system) } : null,
         agentLog: Array.isArray(state.agentLog) ? state.agentLog.slice() : [],
       };
     },
@@ -1659,8 +1259,8 @@
       return res;
     },
     resolveEncounter: function (choice) {
-      if (!encKind) return { ok: false, error: "no_active_encounter" };
-      const had = encKind;
+      if (!encApi.getEncKind()) return { ok: false, error: "no_active_encounter" };
+      const had = encApi.getEncKind();
       resolveEncounter(choice);
       const res = {
         ok: true,
