@@ -1,0 +1,120 @@
+/* Theme packs: data-theme on <html> — cobalt (default Bast HUD) | coffee | lcars
+ * Bast SoT: memories/skiff_hud_palette_tokens_2026-09-22.md (Phase B wire)
+ * NO: #FFFFFF / #000000, matrix green, neon, rainbow-equal accents, equal-loud tabs.
+ */
+:root,
+[data-theme="cobalt"] {
+  /* Bast HUD tokens (SoT hexes — do not invent) */
+  --bg: #1C1917;
+  --bg-deep: #0C0A09;
+  --text: #E7E0D6;
+  --mute: #A39A90;
+  --signal: #D97757;
+  --cta: #D97757;
+  --tab-active: #E7E0D6;
+  --tab-idle: #A39A90;
+  --selected-hop: #D97757;
+  --ok: #7A9E7E;
+  --warn: #C4A35A;
+  --danger: #C45C4A;
+  --threat: #C45C4A;
+  --signal-mute: rgba(217, 119, 87, 0.4);
+  --hull-plate: #8B9AA8; /* Unbowed plate only — not a second HUD hero */
+
+  /* Legacy aliases → Bast */
+  --wall: var(--bg);
+  --raised: #292524;
+  --line: #44403C;
+  --type: var(--text);
+  --dim: #D6D3D1;
+  --ember: var(--signal);
+  --sage: var(--ok);
+  --accent-soft: rgba(217, 119, 87, 0.22);
+  --map-bg: var(--bg-deep);
+  --map-here: var(--signal);
+  --map-sel: var(--selected-hop);
+  --map-reach: #C4B9AC;
+  --map-far: #57534E;
+  --map-label: var(--text);
+  --map-mute: var(--mute);
+  --map-grid: rgba(68, 64, 60, 0.55);
+  --map-ring: rgba(217, 119, 87, 0.55);
+  --map-link: rgba(122, 158, 126, 0.55);
+  --map-link-dim: rgba(68, 64, 60, 0.4);
+  --radius: 0px;
+  --font: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --h2-track: 0.12em;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --tab-h: 56px;
+}
+
+[data-theme="coffee"] {
+  /* Warm stone flavor — same Bast heroes, coffee panel stack */
+  --bg: #1C1917;
+  --bg-deep: #0C0A09;
+  --text: #E7E0D6;
+  --mute: #A39A90;
+  --signal: #D97757;
+  --cta: #D97757;
+  --tab-active: #E7E0D6;
+  --tab-idle: #A39A90;
+  --selected-hop: #D97757;
+  --ok: #7A9E7E;
+  --warn: #C4A35A;
+  --danger: #C45C4A;
+  --threat: #C45C4A;
+  --signal-mute: rgba(217, 119, 87, 0.4);
+  --hull-plate: #8B9AA8;
+
+  --wall: var(--bg-deep);
+  --raised: var(--bg);
+  --line: #3F3A36;
+  --type: var(--text);
+  --dim: #A8A29E;
+  --ember: var(--signal);
+  --sage: var(--ok);
+  --accent-soft: rgba(217, 119, 87, 0.2);
+  --map-bg: var(--bg-deep);
+  --map-here: var(--signal);
+  --map-sel: var(--selected-hop);
+  --map-reach: #C4B9AC;
+  --map-far: #57534E;
+  --map-label: var(--text);
+  --map-mute: var(--mute);
+  --map-grid: rgba(63, 58, 54, 0.55);
+  --map-ring: rgba(217, 119, 87, 0.45);
+  --map-link: rgba(122, 158, 126, 0.55);
+  --map-link-dim: rgba(63, 58, 54, 0.35);
+  --radius: 0px;
+  --font: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --h2-track: 0.12em;
+}
+
+[data-theme="lcars"] {
+  /* LCARS flavor — one amber hero; no pure black/white */
+  --bg: #1A1208;
+  --bg-deep: #0C0A09;
+  --text: #FFCC99;
+  --mute: #C4A070;
+  --signal: #FF9900;
+  --cta: #FF9900;
+  --tab-active: #FFCC99;
+  --tab-idle: #C4A070;
+  --selected-hop: #FF9900;
+  --ok: #7A9E7E;
+  --warn: #C4A35A;
+  --danger: #C45C4A;
+  --threat: #C45C4A;
+  --signal-mute: rgba(255, 153, 0, 0.35);
+  --hull-plate: #8B9AA8;
+
+  --wall: var(--bg-deep);
+  --raised: var(--bg);
+  --line: #FF9900;
+  --type: var(--text);
+  --dim: #FF9966;
+  --ember: var(--signal);
+  --sage: #7A8ACC; /* quieter secondary — not equal hero */

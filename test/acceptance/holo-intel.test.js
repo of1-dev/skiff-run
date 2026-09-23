@@ -25,9 +25,11 @@ describe("ATDD: holo 2D-parity intel", () => {
     assert.equal(/ACTIVE LEADS:/.test(src), false);
     assert.equal(/q\.title/.test(src), false);
   });
-  it("riskFill matches 2D Chart pirate bands", () => {
-    assert.equal(H.riskFill(0), "#2FA4A0");
-    assert.equal(H.riskFill(5), "#D97757");
-    assert.equal(H.riskFill(7), "#C44C4C");
+  it("riskFill matches 2D Chart pirate bands (Bast ok/warn/danger)", () => {
+    // Ember reserved for selected-hop + CTA — risk uses ok/warn/danger only.
+    assert.equal(H.riskFill(0), "#7A9E7E");
+    assert.equal(H.riskFill(3), "#C4A35A");
+    assert.equal(H.riskFill(5), "#C45C4A");
+    assert.equal(H.riskFill(7), "#C45C4A");
   });
 });
