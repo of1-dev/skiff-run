@@ -21,10 +21,13 @@ If you are **playing** Skiff as the captain-AI, stop. Use MCP tools plus [GUIDE.
 2. Rules modules (pure, ATDD): yard, chart-gen, combat, fuel, market, encounter, dock-press, debug-god, waypoints, chart-find, route, skills, crew, trade-fog, agent-action-log, captain-log
 3. UI: `js/ui/render-chart.js`, `js/ui/render-tabs.js`
 4. Holo overlay: `js/renderer-holo.js`
-5. Coordinator: `game.js` (save, travel, adapters, event wiring)
-6. In-page agent bridge: `js/webmcp.js`
+5. Gameplay actions & UI dialogs: `js/core/actions.js`, `js/ui/encounter-dialog.js`, `js/ui/god-panel.js`, `js/ui/chart-interactions.js`
+6. Agent API & Bridge: `js/agent-api.js`, `js/bridge-client.js`
+7. Modular core & UI: `js/core/galaxy-state.js`, `js/core/market-actions.js`, `js/ui/theme-pilot.js`, `js/ui/chart-view.js`, `js/ui/dom-wire.js`
+8. Coordinator (<= 300 lines): `game.js` (orchestrator, boot sequence, lifecycle)
+9. In-page agent bridge: `js/webmcp.js`
 
-`game.js` is an IIFE. It owns the live `state` / `ui`, persist, `doTravel`, and wires DOM. Chart pixels and tab HTML live in `js/ui/`. Holo is a second view of the same `state`; jumps still go through `doTravel`.
+`game.js` is an IIFE kept under a strict 300-line soft cap. It orchestrates the live `state` / `ui`, persist, and wires domain modules.
 
 ## File roles
 
@@ -32,7 +35,17 @@ If you are **playing** Skiff as the captain-AI, stop. Use MCP tools plus [GUIDE.
 |------|------|
 | `index.html` | Shell, tabs, holo canvas, script tags |
 | `style.css` | Themes + layout |
-| `game.js` | Coordinator: save, jump, refuel, market adapters, chart pick, holo start |
+| `game.js` | Coordinator / orchestrator (<= 300 lines): store, boot, render loop |
+| `js/core/galaxy-state.js` | Save/load, chart seeding/healing, fuel/range/prices math |
+| `js/core/actions.js` | Core mutations: travel, refuel, repair, rearm, yard trade, dock work |
+| `js/core/market-actions.js` | Market trading: buy, sell, sell all, fill cheap, sell expensive |
+| `js/agent-api.js` | `window.SkiffAPI` implementation for WebMCP |
+| `js/bridge-client.js` | `/api/act` POSTs & `/api/state` polling |
+| `js/ui/encounter-dialog.js` | Modal dialog for Ash Corsairs / Ledger Wardens / Traders |
+| `js/ui/god-panel.js` | Captain god tools & grant buttons |
+| `js/ui/chart-interactions.js` | Fuzzy chart find, course planning, Press leads |
+| `js/ui/chart-view.js` | Tab switching, chart mode toggling, waypoint chrome |
+| `js/ui/dom-wire.js` | DOM event listeners, forms, buttons, renderer switching |
 | `js/ui/render-chart.js` | 2D chart draw + camera |
 | `js/ui/render-tabs.js` | Dock / market / yard / captain / target card (`Hop via`) |
 | `js/renderer-holo.js` | 2.5D overlay; far click hops via `SkiffRoute` |
