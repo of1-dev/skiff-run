@@ -4,7 +4,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "0.9.37";
+  const VERSION = "0.9.39";
   const WORLD = "skiff-run-v1";
   const SAVE_KEY = "skiff-run-save";
   const GOD_KEY = "skiff-run-god";
@@ -88,6 +88,7 @@
   }
 
   let state = load() || fresh();
+  if (!state.prices || !Object.keys(state.prices).length) rollMarket(state);
   if (!bridgeOn) state.pilot = "human";
   state.prefs = state.prefs || { autoFuel: true };
 
