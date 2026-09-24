@@ -12,21 +12,46 @@ Open `index.html` locally or enable GitHub Pages on `main` / root.
 
 **Agents:** builders start at [docs/code-map.md](docs/code-map.md). Player AIs (fly the career) start at [docs/fair-play.md](docs/fair-play.md) and must not read source for strategy.
 
-## How to play
+## Quick Start & Player Guide
 
-**Captain’s Notes:** see [GUIDE.md](GUIDE.md) — fold-sized how-to in ’98 shareware voice.
+Open `index.html` in any browser (or tap into your deployed GitHub Pages URL). No installation, servers, or build tools required.
 
-Fold-friendly **tabs**: Dock · Market · Chart (Local / Sector / Full) · Yard · Captain. Warp from the chart.
+### The Core Loop
+You are a freelance merchant captain in the Ember Reach galaxy. You begin with a standard **Skiff-7**, ₩3,200 in credits, and a full tank of fuel. Your goal: accumulate **₩35,000 net worth** (cash + cargo value + ship equity) and navigate to **Quiet Moon** to retire.
 
+### Cockpit Navigation: The 5 Tabs
+- **Dock**: Your home station. Read arrival news bulletins, accept **Dock Press** rumors and courier/bounty quests, earn backup cash via **Dock Work** (₩80), and press **Retire** once your ledger qualifies.
+- **Market**: Exchange commercial goods. View local rates, price cues vs. galaxy averages (**Cheap — buy**, **Fair**, **Expensive — sell**), and one-tap utility actions:
+  - **Fill cheap**: Instantly purchases the best-margin bargain into remaining hold space.
+  - **Sell expensive**: Liquidates only goods trading at local premiums.
+  - **Sell all**: Dumps entire cargo hold for immediate cash.
+- **Chart**: Galaxy map and route navigation.
+  - **Local view**: Highlights systems within immediate jump range; fuel reach circle shows reachable systems.
+  - **Sector view**: Displays a ~48-unit regional cluster.
+  - **Full view**: Complete 64-system galaxy map.
+  - **Course plotting**: Tap any remote dock to view shortest BFS path; multi-hop routes enable **Hop via [System]**.
+  - **Waypoints**: Tap **Pin** to bookmark destinations on your HUD.
+  - **3D Holo View**: Toggle the Holo overlay for an interactive 2.5D wireframe star map with camera controls.
+- **Yard**: Upgrade ships and crew up.
+  - Trade in hulls for heavier haulers (**Hold Barge**, **Quiet Ark**) or agile fighters (**Ember Cutter**).
+  - Trading down to lighter hulls refunds scrap value into your pockets.
+  - Hire specialized crew members (Helm, Guns, Wrench) to boost navigation, combat odds, and fuel efficiency.
+  - If broke, scrap for a free **Mite** to limp back into trade lanes.
+- **Captain**: System preferences and flight control.
+  - **Theme Select**: Toggle between **Cobalt** (charcoal & Bast ember), **Coffee**, and **LCARS**.
+  - **Pilot Stick**: Switch control between **Human** (manual play) and **Agent** (WebMCP / autonomous AI pilot).
+  - **Auto-refuel on arrive**: Automatically top off tanks at docks when affordable (default ON).
+  - **God Mode**: Debug sandbox toggles for testing galaxy mechanics.
 
-1. Buy low / sell high across systems. Use **+/−** qty, then Buy/Sell.
-2. Check the **chart** (Local = jump range, Sector = regional, Full = whole galaxy) and peeks — neighbor prices + fuel cost by distance. **New** reshuffles the same named systems into a new layout.
-3. Refuel at each stop. Jump range depends on your hull.
-4. Yards at Ember Reach / Ash Meridian / Knot Harbor and other yard docks: trade up to Hold Barge or armed Ember Cutter. Hire crew for bunks.
-5. Encounters: **Ledger Wardens** or **Ash Corsairs** (armed+crewed can fight).
-6. Reach **₩35,000** net and retire on **Quiet Moon**.
+### Survival & Trading Strategy
+1. **Never jump on an empty tank**: Fuel costs ₩45/unit. Running dry leaves you stranded or vulnerable to pirates.
+2. **Read the threat colors**: Systems are color-coded by pirate risk (teal = peaceful, yellow = contested, red = high pirate activity).
+3. **Encounters on the lane**:
+   - **Ash Corsairs**: Armed + crewed ships can **Fight** for salvage payouts; unarmed ships must **Dump cargo** or burn fuel to **Flee**.
+   - **Ledger Wardens**: Pay routine inspection tariffs or attempt a **Bluff**.
+   - **Lane Traders**: Hail for quick in-flight trade deals.
 
-Save is automatic (`localStorage`).
+For the complete retro-shareware handbook, see [GUIDE.md](GUIDE.md).
 
 ## Pages
 

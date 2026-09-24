@@ -11,7 +11,6 @@
 
   function setup(ctx) {
     const {
-      getState,
       setState,
       applyChart,
       rollMarket,

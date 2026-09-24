@@ -85,7 +85,7 @@
     try {
       const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
       return v || fallback;
-    } catch (_) {
+    } catch {
       return fallback;
     }
   }
@@ -336,8 +336,6 @@
     }
 
     const cam = viewCam();
-    const cx = cam.cx;
-    const cy = cam.cy;
     const scale = cam.scale;
     const W = worldSize();
 

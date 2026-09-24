@@ -56,9 +56,9 @@
   });
 
   const {
-    sys, ship, readGodFlag, writeGodFlag, godEnabled: rawGodEnabled,
+    sys, ship, writeGodFlag, godEnabled: rawGodEnabled,
     hullStock, yardOffered: rawYardOffered, dumpToFit: rawDumpToFit,
-    applyChart, hash32, priceFor, activityLabel, riskFill,
+    applyChart, priceFor, activityLabel, riskFill,
     bestLaneEdge, cargoMarginAt: rawCargoMarginAt, dist, fuelCost, inRange: rawInRange,
     fuelReachDistance: rawFuelReachDistance, canJumpTo: rawCanJumpTo,
     reachableFrom: rawReachableFrom, fresh, rollMarket, peekPrices,
@@ -104,7 +104,6 @@
 
   let bridgeClient = null;
   function bridgeAct(body) { return bridgeClient ? bridgeClient.bridgeAct(body) : Promise.resolve(null); }
-  function bridgePoll() { return bridgeClient ? bridgeClient.bridgePoll() : Promise.resolve(); }
 
   const themePilot = globalThis.SkiffThemePilot.setup({
     el, log, save, sizeMap, drawMap,
@@ -113,7 +112,7 @@
     getBridgeOn: () => bridgeOn,
     bridgeAct,
   });
-  const { cssVar, themeColors, applyTheme, loadTheme, currentPilot, reclaimStick, applyPilot } = themePilot;
+  const { themeColors, applyTheme, loadTheme, currentPilot, reclaimStick, applyPilot } = themePilot;
 
   const chartView = globalThis.SkiffChartView.setup({
     el, sys, WP, CF, SECTOR_RADIUS,
@@ -136,7 +135,7 @@
     getState: () => state, getUi: () => ui, sys, hull, systems: () => SYSTEMS,
     log, render: () => render(), save, showTab, setChartMode, canJumpTo, inSector, WP, CF, RT
   });
-  function applyChartLead(id, why) { return chartApi.applyChartLead(id, why); }
+  function applyChartLead(id, why) { return chartApi.applyChartLead(id, why); } // eslint-disable-line no-unused-vars
   const { courseDest, coursePlan, followPressTip, runChartSearch } = chartApi;
 
   const encApi = globalThis.SkiffEncounterDialog.setup({

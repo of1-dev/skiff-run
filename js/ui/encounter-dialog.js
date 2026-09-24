@@ -85,7 +85,7 @@
       }
       try {
         dlg.showModal();
-      } catch (err) {
+      } catch {
         /* already open */
       }
       if (typeof document !== "undefined" && document.body) {
