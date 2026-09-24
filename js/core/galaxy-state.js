@@ -21,6 +21,7 @@
       WP,
       SK,
       YE,
+      GOD,
       buildChart,
       getSystems,
       setSystems,
@@ -41,6 +42,9 @@
       }
     }
     function godEnabled(st) {
+      if (typeof location !== "undefined" && GOD && typeof GOD.isDebugOn === "function" && GOD.isDebugOn(location.search)) {
+        return true;
+      }
       return readGodFlag() || !!(st && st.prefs && st.prefs.godMode);
     }
 
@@ -133,7 +137,7 @@
     function fresh() {
       const chart = buildChart();
       applyChart(chart);
-      const startShip = ship("unbowed") || SHIPS.find(function (s) { return s.id === "unbowed"; }) || SHIPS[0];
+      const startShip = ship("skiff-7") || SHIPS.find(function (s) { return s.id === "skiff-7"; }) || SHIPS[0];
       return {
         v: VERSION,
         system: "ember",
@@ -143,7 +147,7 @@
         ammo: startShip.ammoMax,
         cargo: Object.fromEntries(GOODS.map(function (g) { return [g.id, 0]; })),
         prices: {},
-        shipId: "unbowed",
+        shipId: "skiff-7",
         crew: 0,
         roster: [],
         epoch: 1,
@@ -200,6 +204,10 @@
         if (st.pressBoughtAt === undefined) st.pressBoughtAt = null;
         if (st.lastPress === undefined) st.lastPress = null;
         if (st.godYard === undefined) st.godYard = false;
+        st.prefs = st.prefs || { autoFuel: true, godMode: false };
+        if (st.prefs.autoFuel == null) st.prefs.autoFuel = true;
+        if (st.prefs.godMode == null) st.prefs.godMode = false;
+        if (readGodFlag()) st.prefs.godMode = true;
         st.waypoints = WP.normalize(st.waypoints);
         st.skills = SK.normalize(st.skills);
         if (st.pilot !== "human" && st.pilot !== "agent") st.pilot = "human";

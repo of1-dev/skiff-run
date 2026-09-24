@@ -49,7 +49,7 @@
   }
 
   const galaxyState = globalThis.SkiffGalaxyState.setup({
-    VERSION, SAVE_KEY, GOD_KEY, WORLD, SYSTEM_DEFS, SHIPS, GOODS, SF, SM, WP, SK, YE,
+    VERSION, SAVE_KEY, GOD_KEY, WORLD, SYSTEM_DEFS, SHIPS, GOODS, SF, SM, WP, SK, YE, GOD,
     buildChart,
     getSystems: () => SYSTEMS,
     setSystems: (next) => { SYSTEMS = next; },

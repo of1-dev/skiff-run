@@ -102,3 +102,57 @@ describe("ATDD: god Unbowed kit", () => {
     assert.equal(r.ok, false);
   });
 });
+
+describe("ATDD: galaxy-state God mode integration and fresh starting ship", () => {
+  const GalaxyState = require("../../js/core/galaxy-state.js");
+  const SF = require("../../js/fuel.js");
+  const SM = require("../../js/market.js");
+  const WP = require("../../js/waypoints.js");
+  const SK = require("../../js/skills.js");
+  const YE = require("../../js/yard-economy.js");
+  const GOODS = require("../../js/data/goods.js");
+  const SYSTEM_DEFS = require("../../js/data/systems.js");
+
+  function makeStateHelper(searchStr) {
+    globalThis.location = { search: searchStr || "" };
+    return GalaxyState.setup({
+      VERSION: "0.9.37",
+      SAVE_KEY: "test-save-key",
+      GOD_KEY: "test-god-key",
+      WORLD: "skiff-run-v1",
+      SYSTEM_DEFS: SYSTEM_DEFS,
+      SHIPS: SHIPS,
+      GOODS: GOODS,
+      SF: SF,
+      SM: SM,
+      WP: WP,
+      SK: SK,
+      YE: YE,
+      GOD: G,
+      buildChart: () => ({ pos: { ember: { x: 50, y: 50 } }, seed: 1234 }),
+      getSystems: () => SYSTEM_DEFS,
+      setSystems: () => {},
+    });
+  }
+
+  it("fresh() starts in Skiff-7, not Unbowed", () => {
+    const gs = makeStateHelper("");
+    const st = gs.fresh();
+    assert.equal(st.shipId, "skiff-7");
+    assert.equal(st.system, "ember");
+    assert.equal(st.prefs.godMode, false);
+  });
+
+  it("godEnabled activates when ?debug=1 or ?god=1 is in URL", () => {
+    const gsDebug = makeStateHelper("?debug=1");
+    assert.equal(gsDebug.godEnabled({ prefs: { godMode: false } }), true);
+    const gsGod = makeStateHelper("?god=1");
+    assert.equal(gsGod.godEnabled({ prefs: { godMode: false } }), true);
+  });
+
+  it("godEnabled respects Captain prefs and local storage flag without URL param", () => {
+    const gsNone = makeStateHelper("");
+    assert.equal(gsNone.godEnabled({ prefs: { godMode: false } }), false);
+    assert.equal(gsNone.godEnabled({ prefs: { godMode: true } }), true);
+  });
+});
