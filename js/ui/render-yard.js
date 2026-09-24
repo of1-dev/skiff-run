@@ -10,7 +10,7 @@
   function setup(ctx) {
     const {
       el, sys, hull, cargoUsed,
-      GOODS, CR, SK, YE,
+      CR, SK, YE,
       makeHullArt, hullStock, yardOffered,
       doBuyShip, DOCK_WORK_PAY, doDockWork, CREW_HIRE, doHireCrew, doFireCrew,
     } = ctx;

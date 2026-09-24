@@ -1,4 +1,4 @@
-# SKIFF RUN 0.9.37
+# SKIFF RUN 0.9.39
 
 Browser trade-run through the Ember chart. Original systems, goods, and ships.
 
@@ -72,7 +72,7 @@ Yard shows original class silhouettes (`assets/hulls/`). Common classes for all 
 
 Systems have tech / gov / size / police / pirate activity. Chart node color = pirate risk; teal reward ring = expected trade edge from here. Target card shows dossier + margin stub.
 
-## Pilot handoff, spectator & WebMCP (0.8.0 - 0.9.37)
+## Pilot handoff, spectator & WebMCP (0.8.0 - 0.9.39)
 
 Captain tab: **You** / **Agent**. Same single-player save; hand the stick back and forth. In-page WebMCP (`js/webmcp.js`) and stdio MCP seat in `mcp/` — see `docs/mcp-agent-seat.md`.
 
@@ -82,12 +82,12 @@ Captain tab: **You** / **Agent**. Same single-player save; hand the stick back a
 
 Chart circle = **hull jump range**, not the fuel tank (fuel is the status strip).
 
-## Modular architecture (0.9.37)
+## Modular architecture (0.9.39)
 
-`game.js` is kept strictly under a **<= 300 line soft cap** as a pure orchestrator. Domain logic lives in clean standalone modules:
-- Core: `js/core/galaxy-state.js`, `js/core/actions.js`, `js/core/market-actions.js`, `js/core/chart-gen.js`, `js/core/combat.js`
+All JavaScript modules adhere to strict soft caps (orchestrator `game.js` <= 300 lines; `galaxy-state.js` <= 250 lines; all UI modules <= 300 lines). Domain logic is cleanly separated:
+- Core: `js/core/galaxy-state.js` (~205L), `js/core/actions.js` (~283L), `js/core/market-actions.js` (~112L), `js/core/chart-gen.js`, `js/core/combat.js`
 - Agent & Bridge: `js/agent-api.js`, `js/bridge-client.js`, `js/webmcp.js`
-- UI: `js/ui/chart-view.js`, `js/ui/chart-interactions.js`, `js/ui/encounter-dialog.js`, `js/ui/god-panel.js`, `js/ui/theme-pilot.js`, `js/ui/dom-wire.js`, `js/ui/render-chart.js`, `js/ui/render-tabs.js`
+- UI: `js/ui/render-tabs.js` (~214L), `js/ui/render-yard.js` (~203L), `js/ui/render-target.js` (~108L), `js/ui/chart-view.js`, `js/ui/chart-interactions.js`, `js/ui/encounter-dialog.js`, `js/ui/god-panel.js`, `js/ui/theme-pilot.js`, `js/ui/dom-wire.js`, `js/ui/render-chart.js`
 
 ## Thin encounters (0.6)
 
@@ -103,6 +103,8 @@ Named roster expanded to a ST-scale Ember galaxy (64 systems); New still reshuff
 
 ```bash
 npm test
+# On Fedora Atomic / Silverblue host:
+toolbox run -c skiff npm test
 ```
 
 See `docs/testing-atdd.md`.

@@ -1,5 +1,6 @@
 /**
  * Skiff Run — Galaxy state helpers (distance, reach, fuel, prices, save/load).
+ * Soft cap: <= 250 lines.
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory();
@@ -9,26 +10,12 @@
 
   function setup(ctx) {
     const {
-      VERSION,
-      SAVE_KEY,
-      GOD_KEY,
-      WORLD,
-      SYSTEM_DEFS,
-      SHIPS,
-      GOODS,
-      SF,
-      SM,
-      WP,
-      SK,
-      YE,
-      GOD,
-      buildChart,
-      getSystems,
-      setSystems,
+      VERSION, SAVE_KEY, GOD_KEY, WORLD, SYSTEM_DEFS, SHIPS, GOODS,
+      SF, SM, WP, SK, YE, GOD, buildChart, getSystems, setSystems,
     } = ctx;
 
-    function sys(id) { return getSystems().find(function (s) { return s.id === id; }); }
-    function ship(id) { return SHIPS.find(function (s) { return s.id === id; }); }
+    const sys = (id) => getSystems().find((s) => s.id === id);
+    const ship = (id) => SHIPS.find((s) => s.id === id);
 
     function readGodFlag() {
       try { return localStorage.getItem(GOD_KEY) === "1"; } catch { return false; }
@@ -48,8 +35,7 @@
       return readGodFlag() || !!(st && st.prefs && st.prefs.godMode);
     }
 
-    function hullStock(s) { return YE.hullStock(s); }
-
+    const hullStock = (s) => YE.hullStock(s);
     function yardOffered(st) {
       const mode = (st && (st.godYard || godEnabled(st))) ? "full" : hullStock(sys(st ? st.system : "ember"));
       return YE.yardOffered(mode, SHIPS);
@@ -75,15 +61,14 @@
 
     function applyChart(chart) {
       if (!chart || !chart.pos) return;
-      const updated = SYSTEM_DEFS.map(function (s) {
-        const p = chart.pos[s.id] || { x: 50, y: 50 };
-        return Object.assign({}, s, { x: p.x, y: p.y });
-      });
-      setSystems(updated);
+      setSystems(SYSTEM_DEFS.map((s) => Object.assign({}, s, {
+        x: (chart.pos[s.id] || { x: 50 }).x,
+        y: (chart.pos[s.id] || { y: 50 }).y,
+      })));
     }
 
-    function hash32(str) { return SM.hash32(str); }
-    function priceFor(system, good) { return SM.priceFor(system, good); }
+    const hash32 = (str) => SM.hash32(str);
+    const priceFor = (system, good) => SM.priceFor(system, good);
 
     function activityLabel(n) {
       const ACTIVITY = ["Absent", "Minimal", "Few", "Some", "Moderate", "Many", "Abundant", "Swarms"];
@@ -96,48 +81,31 @@
       return "var(--ok, #7A9E7E)";
     }
 
-    function bestLaneEdge(herePrices, therePrices) {
-      return SM.bestLaneEdge(herePrices, therePrices, GOODS);
-    }
+    const bestLaneEdge = (here, there) => SM.bestLaneEdge(here, there, GOODS);
 
     function cargoMarginAt(st, toId) {
-      const there = {};
       const toSys = sys(toId);
-      GOODS.forEach(function (g) { there[g.id] = priceFor(toSys, g); });
-      let curVal = 0;
-      let thereVal = 0;
-      GOODS.forEach(function (g) {
+      let curVal = 0, thereVal = 0;
+      GOODS.forEach((g) => {
         const n = st.cargo[g.id] || 0;
         if (!n) return;
         curVal += n * (st.prices[g.id] || 0);
-        thereVal += n * there[g.id];
+        thereVal += n * priceFor(toSys, g);
       });
       return thereVal - curVal;
     }
 
-    function dist(a, b) { return SF.dist(a, b); }
-    function fuelCost(fromId, toId) {
-      return SF.fuelCost(sys(fromId), sys(toId));
-    }
-    function inRange(fromId, toId, hullRange) {
-      return SF.inRange(sys(fromId), sys(toId), hullRange);
-    }
-    function fuelReachDistance(fuel, hullRange) {
-      return SF.fuelReachDistance(fuel, hullRange);
-    }
-    function canJumpTo(fromId, toId, hullRange, fuel) {
-      return SF.canJumpTo({ from: sys(fromId), to: sys(toId), hullRange: hullRange, fuel: fuel });
-    }
-    function reachableFrom(fromId, hullRange) {
-      return getSystems().filter(function (s) {
-        return s.id !== fromId && inRange(fromId, s.id, hullRange);
-      });
-    }
+    const dist = (a, b) => SF.dist(a, b);
+    const fuelCost = (f, t) => SF.fuelCost(sys(f), sys(t));
+    const inRange = (f, t, r) => SF.inRange(sys(f), sys(t), r);
+    const fuelReachDistance = (f, r) => SF.fuelReachDistance(f, r);
+    const canJumpTo = (f, t, r, fuel) => SF.canJumpTo({ from: sys(f), to: sys(t), hullRange: r, fuel });
+    const reachableFrom = (f, r) => getSystems().filter((s) => s.id !== f && inRange(f, s.id, r));
 
     function fresh() {
       const chart = buildChart();
       applyChart(chart);
-      const startShip = ship("skiff-7") || SHIPS.find(function (s) { return s.id === "skiff-7"; }) || SHIPS[0];
+      const startShip = ship("skiff-7") || SHIPS[0];
       return {
         v: VERSION,
         system: "ember",
@@ -145,13 +113,13 @@
         fuel: startShip.fuelMax,
         hull: startShip.hullMax,
         ammo: startShip.ammoMax,
-        cargo: Object.fromEntries(GOODS.map(function (g) { return [g.id, 0]; })),
+        cargo: Object.fromEntries(GOODS.map((g) => [g.id, 0])),
         prices: {},
         shipId: "skiff-7",
         crew: 0,
         roster: [],
         epoch: 1,
-        chart: chart,
+        chart,
         visited: { ember: true },
         pilot: "human",
         prefs: { autoFuel: true, godMode: false },
@@ -168,19 +136,17 @@
     function rollMarket(st) {
       const s = sys(st.system);
       st.prices = {};
-      GOODS.forEach(function (g) { st.prices[g.id] = priceFor(s, g); });
+      GOODS.forEach((g) => { st.prices[g.id] = priceFor(s, g); });
     }
 
     function peekPrices(systemId) {
       const s = sys(systemId);
       const out = {};
-      GOODS.forEach(function (g) { out[g.id] = priceFor(s, g); });
+      GOODS.forEach((g) => { out[g.id] = priceFor(s, g); });
       return out;
     }
 
-    function bestDealHint(herePrices, therePrices) {
-      return SM.bestDealHint(herePrices, therePrices, GOODS);
-    }
+    const bestDealHint = (here, there) => SM.bestDealHint(here, there, GOODS);
 
     function load() {
       try {
@@ -189,24 +155,18 @@
         const st = JSON.parse(raw);
         if (!st || !st.v) return null;
         st.v = VERSION;
-        if (!st.shipId) st.shipId = "skiff-7";
+        st.shipId = st.shipId || "skiff-7";
         const h = ship(st.shipId) || SHIPS[0];
-        if (st.hull == null) st.hull = h.hullMax || 20;
-        if (st.ammo == null) st.ammo = h.ammoMax || 0;
-        if (st.crew == null) st.crew = 0;
-        if (!st.epoch) st.epoch = 1;
-        if (!st.visited) {
-          st.visited = {};
-          if (st.system) st.visited[st.system] = true;
-          else st.visited.ember = true;
-        }
-        if (st.dockWorkAt === undefined) st.dockWorkAt = null;
-        if (st.pressBoughtAt === undefined) st.pressBoughtAt = null;
-        if (st.lastPress === undefined) st.lastPress = null;
-        if (st.godYard === undefined) st.godYard = false;
-        st.prefs = st.prefs || { autoFuel: true, godMode: false };
-        if (st.prefs.autoFuel == null) st.prefs.autoFuel = true;
-        if (st.prefs.godMode == null) st.prefs.godMode = false;
+        st.hull = st.hull ?? (h.hullMax || 20);
+        st.ammo = st.ammo ?? (h.ammoMax || 0);
+        st.crew = st.crew ?? 0;
+        st.epoch = st.epoch || 1;
+        st.visited = st.visited || { [st.system || "ember"]: true };
+        st.dockWorkAt = st.dockWorkAt ?? null;
+        st.pressBoughtAt = st.pressBoughtAt ?? null;
+        st.lastPress = st.lastPress ?? null;
+        st.godYard = st.godYard ?? false;
+        st.prefs = Object.assign({ autoFuel: true, godMode: false }, st.prefs);
         if (readGodFlag()) st.prefs.godMode = true;
         st.waypoints = WP.normalize(st.waypoints);
         st.skills = SK.normalize(st.skills);
@@ -233,35 +193,13 @@
     }
 
     return {
-      sys: sys,
-      ship: ship,
-      readGodFlag: readGodFlag,
-      writeGodFlag: writeGodFlag,
-      godEnabled: godEnabled,
-      hullStock: hullStock,
-      yardOffered: yardOffered,
-      dumpToFit: dumpToFit,
-      applyChart: applyChart,
-      hash32: hash32,
-      priceFor: priceFor,
-      activityLabel: activityLabel,
-      riskFill: riskFill,
-      bestLaneEdge: bestLaneEdge,
-      cargoMarginAt: cargoMarginAt,
-      dist: dist,
-      fuelCost: fuelCost,
-      inRange: inRange,
-      fuelReachDistance: fuelReachDistance,
-      canJumpTo: canJumpTo,
-      reachableFrom: reachableFrom,
-      fresh: fresh,
-      rollMarket: rollMarket,
-      peekPrices: peekPrices,
-      bestDealHint: bestDealHint,
-      load: load,
-      save: save,
+      sys, ship, readGodFlag, writeGodFlag, godEnabled,
+      hullStock, yardOffered, dumpToFit, applyChart, hash32,
+      priceFor, activityLabel, riskFill, bestLaneEdge, cargoMarginAt,
+      dist, fuelCost, inRange, fuelReachDistance, canJumpTo, reachableFrom,
+      fresh, rollMarket, peekPrices, bestDealHint, load, save,
     };
   }
 
-  return { setup: setup };
+  return { setup };
 });

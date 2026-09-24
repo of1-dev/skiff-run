@@ -15,7 +15,7 @@
       currentPilot, formatTickerLine,
       GOODS, SM, SYSTEMS, qtyFor, setQty, doBuy, doSell,
       SP, doBuyPress, followPressTip,
-      CR, SK, syncGodUi, sizeMap, drawMap, RETIRE_NET, save,
+      syncGodUi, sizeMap, drawMap, RETIRE_NET, save,
       renderShipPanel, renderSkillsBox, renderQuests, renderTarget,
     } = ctx;
     function st() { return typeof ctx.getState === "function" ? ctx.getState() : ctx.state; }
@@ -97,7 +97,6 @@
       const pressBox = el("press-box");
       if (!pressBox) return;
       pressBox.innerHTML = "";
-      if (!s || !s.press) return;
       const bought = state.pressBoughtAt === state.system;
       const btn = document.createElement("button");
       btn.type = "button"; btn.className = "btn ghost";

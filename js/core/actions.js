@@ -256,13 +256,18 @@
             ? ("Bounty: Pirate Lord at " + destObj.name)
             : ("Delivery: Medical Supplies to " + destObj.name);
           st.quests.push({ id: Date.now().toString(), dest: dest, title: title, reward: reward });
-          edition.lines.push("*** NEW QUEST: " + title + " (Reward: ₩" + reward + ") ***");
+          const questText = "*** NEW QUEST: " + title + " (Reward: ₩" + reward + ") ***";
+          edition.lines.push(questText);
+          if (Array.isArray(edition.tips)) {
+            edition.tips.push({ text: questText, action: { type: "chart", systemId: dest } });
+          }
         }
       }
 
       ctx.log("Dock Press ₩" + buy.paid + " — " + edition.masthead);
       ctx.render();
       if (bridgeOn()) ctx.bridgeAct({ op: "save", state: st });
+      else ctx.save(st);
     }
 
     return {
