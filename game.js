@@ -164,17 +164,26 @@
   let tabsRenderer = null;
   function getTabsRenderer() {
     if (!tabsRenderer && globalThis.SkiffTabsRenderer) {
-      tabsRenderer = globalThis.SkiffTabsRenderer.setup({
+      const sharedCtx = {
         el, sys, getState: () => state, ui, hull, cargoUsed, netWorth, VERSION,
         currentPilot, formatTickerLine: (window.SkiffAgentActionLog && window.SkiffAgentActionLog.formatTickerLine),
         GOODS, SM, SYSTEMS, qtyFor, setQty, doBuy, doSell, reachableFrom, SP, doBuyPress, followPressTip,
         canJumpTo, inRange, fuelCost, dist, bestDealHint, bestLaneEdge, peekPrices,
         coursePlan, isVisited, SIZE_NAME, TECH_NAME, activityLabel,
-        makeHullArt: (h) => HULL_SVG && HULL_SVG[h.id], hullStock, yardOffered, YE, doBuyShip,
+        makeHullArt: (id, cls) => { const svg = HULL_SVG && HULL_SVG[id]; if (!svg) return document.createElement("span"); const n = svg.cloneNode(true); n.className = cls; return n; },
+        hullStock, yardOffered, YE, doBuyShip,
         DOCK_WORK_PAY, doDockWork, CREW_HIRE, doHireCrew, doFireCrew,
         CR, SK, syncGodUi: () => syncGodUi(), sizeMap, drawMap, RETIRE_NET, save,
         canSeeTrade, cargoMarginAt, renderWaypointChrome
-      });
+      };
+      const yardApi = globalThis.SkiffRenderYard ? globalThis.SkiffRenderYard.setup(sharedCtx) : {};
+      const targetApi = globalThis.SkiffRenderTarget ? globalThis.SkiffRenderTarget.setup(sharedCtx) : {};
+      tabsRenderer = globalThis.SkiffTabsRenderer.setup(Object.assign({}, sharedCtx, {
+        renderShipPanel: yardApi.renderShipPanel || function () {},
+        renderSkillsBox: yardApi.renderSkillsBox || function () {},
+        renderQuests: yardApi.renderQuests || function () {},
+        renderTarget: targetApi.renderTarget || function () {},
+      }));
     }
     return tabsRenderer;
   }

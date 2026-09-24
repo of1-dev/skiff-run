@@ -26,6 +26,8 @@ describe("ATDD: syntax smoke", () => {
     })(dir);
     assert.ok(files.some((f) => f.endsWith(path.join("js", "core", "actions.js"))));
     assert.ok(files.some((f) => f.endsWith(path.join("js", "ui", "god-panel.js"))));
+    assert.ok(files.some((f) => f.endsWith(path.join("js", "ui", "render-yard.js"))), "render-yard.js must exist");
+    assert.ok(files.some((f) => f.endsWith(path.join("js", "ui", "render-target.js"))), "render-target.js must exist");
     for (const file of files) {
       const r = spawnSync(process.execPath, ["--check", file], { encoding: "utf8" });
       assert.equal(r.status, 0, file + ": " + (r.stderr || r.stdout));
