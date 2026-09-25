@@ -261,7 +261,15 @@ const server = http.createServer(async (req, res) => {
             const isBounty = Math.random() < 0.5;
             const reward = isBounty ? 8000 : 5000;
             const title = isBounty ? `Bounty: Pirate Lord at ${dest}` : `Delivery: Medical Supplies to ${dest}`;
-            st.quests.push({ id: Date.now().toString(), dest, title, reward });
+            st.quests.push({
+              id: Date.now().toString(),
+              dest,
+              title,
+              reward,
+              maxJumps: 10,
+              jumpsLeft: 10,
+              createdEpoch: Date.now()
+            });
             questMsg = `Bought the Press. Found a new lead: ${title} (₩${reward})`;
           }
         }
@@ -320,16 +328,46 @@ const server = http.createServer(async (req, res) => {
       
       // Resolve quests
       st.quests = st.quests || [];
-      const completed = st.quests.filter(q => q.dest === st.system);
-      st.quests = st.quests.filter(q => q.dest !== st.system);
-      
-      if (completed.length > 0) {
-        const totalReward = completed.reduce((sum, q) => sum + q.reward, 0);
-        st.credits = (st.credits || 0) + totalReward;
-        jumpLog += ` Completed ${completed.length} quest(s) for ₩${totalReward}!`;
+      const completed = [];
+      const active = [];
+      let totalReward = 0;
+      let totalPenalty = 0;
+      for (const q of st.quests) {
+        if (q.dest === st.system) {
+          const left = q.jumpsLeft != null ? q.jumpsLeft : 10;
+          const isFast = left >= 7;
+          const bonus = isFast ? Math.floor((q.reward || 0) * 0.35) : 0;
+          const payout = (q.reward || 0) + bonus;
+          totalReward += payout;
+          completed.push({ q, isFast, payout });
+        } else {
+          const nextLeft = (q.jumpsLeft != null ? q.jumpsLeft : 10) - 1;
+          if (nextLeft <= 0) {
+            totalPenalty += 1000;
+          } else {
+            active.push(Object.assign({}, q, { jumpsLeft: nextLeft }));
+          }
+        }
       }
+      st.quests = active;
+      if (totalReward > 0) st.credits = (st.credits || 0) + totalReward;
+      if (totalPenalty > 0) st.credits = Math.max(0, (st.credits || 0) - totalPenalty);
+      if (completed.length > 0) jumpLog += ` Completed ${completed.length} quest(s) for ₩${totalReward}!`;
+      if (totalPenalty > 0) jumpLog += ` Contract expired: fined ₩${totalPenalty}!`;
       
       result = { ok: true, system: st.system, log: jumpLog };
+    } else if (op === "abandon_quest") {
+      const qId = body && (body.id || (body.args && body.args.id));
+      st.quests = st.quests || [];
+      const idx = st.quests.findIndex(q => q.id === qId);
+      if (idx >= 0) {
+        const q = st.quests[idx];
+        st.quests.splice(idx, 1);
+        st.credits = Math.max(0, (st.credits || 0) - 500);
+        result = { ok: true, log: `Abandoned ${q.title} (−₩500 fee)` };
+      } else {
+        result = { ok: false, log: "Quest not found" };
+      }
     } else if (op === "sell_all" || op === "sell_expensive") {
       const units = Object.values(st.cargo || {}).reduce((a, b) => a + Number(b || 0), 0);
       if (units > 0) {
@@ -456,14 +494,7 @@ const server = http.createServer(async (req, res) => {
     return res.end("Method Not Allowed");
   }
 
-  if (url.pathname === "/") {
-    if (!url.searchParams.has("bridge")) {
-      res.writeHead(302, { Location: "/?bridge=1" });
-      return res.end();
-    }
-  }
-
-  const filePath = safeJoin(ROOT, url.pathname === "/" ? "/index.html" : url.pathname);
+  const filePath = safeJoin(ROOT, (url.pathname === "/" || url.pathname === "") ? "/index.html" : url.pathname);
   if (!filePath) {
     res.writeHead(403);
     return res.end("Forbidden");

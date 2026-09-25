@@ -18,24 +18,16 @@
 
     function applyRefuelInternal(prefix) {
       const st = state();
-      const r = ctx.SF.applyRefuel({
-        fuel: st.fuel,
-        fuelMax: ctx.hull().fuelMax,
-        credits: st.credits,
-      });
+      const r = ctx.SF.applyRefuel({ fuel: st.fuel, fuelMax: ctx.hull().fuelMax, credits: st.credits });
       if (!r.ok) {
         if (!prefix && r.reason === "credits") ctx.log("Can't afford fuel.");
         return false;
       }
-      st.fuel = r.fuel;
-      st.credits = r.credits;
-      if (r.partial) {
-        ctx.log((prefix || "Partial refuel") + " +" + r.bought + " for ₩" + (r.bought * ctx.FUEL_PRICE) + ".");
-      } else if (prefix) {
-        ctx.log(prefix + " full for ₩" + (r.bought * ctx.FUEL_PRICE) + ".");
-      } else {
-        ctx.log("Refueled for ₩" + (r.bought * ctx.FUEL_PRICE) + ".");
-      }
+      st.fuel = r.fuel; st.credits = r.credits;
+      const cost = r.bought * ctx.FUEL_PRICE;
+      const msg = r.partial ? ((prefix || "Partial refuel") + " +" + r.bought + " for ₩" + cost + ".")
+        : prefix ? (prefix + " full for ₩" + cost + ".") : ("Refueled for ₩" + cost + ".");
+      ctx.log(msg);
       return true;
     }
 
@@ -68,13 +60,30 @@
       st.pressBoughtAt = null;
 
       st.quests = st.quests || [];
-      const completed = st.quests.filter(function (q) { return q.dest === st.system; });
-      st.quests = st.quests.filter(function (q) { return q.dest !== st.system; });
-
-      if (completed.length > 0) {
-        const totalReward = completed.reduce(function (sum, q) { return sum + q.reward; }, 0);
-        st.credits = (st.credits || 0) + totalReward;
-        ctx.log("Completed " + completed.length + " quest(s) for ₩" + totalReward + "!");
+      const qk = ctx.QK || globalThis.SkiffQuests;
+      if (qk) {
+        const qRes = qk.resolveJumpQuests(st.quests, st.system);
+        st.quests = qRes.active;
+        qRes.completed.forEach(function (c) {
+          const msg = (c.isFast ? "Fast delivery! " : "Completed ") + c.quest.title + (c.isFast ? " (+₩" + c.bonus + " bonus)!" : "") + " Total ₩" + c.payout + "!";
+          ctx.log(msg);
+          if (globalThis.SkiffCaptainLog) st.captainLog = globalThis.SkiffCaptainLog.append(st.captainLog, { type: "quest", summary: msg });
+        });
+        if (qRes.totalPayout > 0) st.credits = (st.credits || 0) + qRes.totalPayout;
+        qRes.expired.forEach(function (exp) {
+          const msg = "EXPIRED: " + exp.quest.title + " lapsed! Fined ₩" + exp.penalty + ".";
+          ctx.log(msg);
+          if (globalThis.SkiffCaptainLog) st.captainLog = globalThis.SkiffCaptainLog.append(st.captainLog, { type: "quest", summary: msg });
+        });
+        if (qRes.totalPenalty > 0) st.credits = Math.max(0, (st.credits || 0) - qRes.totalPenalty);
+      } else {
+        const comp = st.quests.filter(function (q) { return q.dest === st.system; });
+        st.quests = st.quests.filter(function (q) { return q.dest !== st.system; });
+        if (comp.length > 0) {
+          const sum = comp.reduce(function (s, q) { return s + q.reward; }, 0);
+          st.credits = (st.credits || 0) + sum;
+          ctx.log("Completed " + comp.length + " quest(s) for ₩" + sum + "!");
+        }
       }
 
       ctx.rollMarket(st);
@@ -110,36 +119,30 @@
 
     function doRepair() {
       if (agentBlocked()) return ctx.log("Agent has the stick.");
-      const st = state();
-      const h = ctx.hull();
+      const st = state(), h = ctx.hull();
       if (!h.hullMax) return ctx.log("Hull has no integrity rating.");
       const need = h.hullMax - (st.hull || 0);
       if (need <= 0) return ctx.log("Hull is at 100%.");
-      const costPer = 20;
-      const canAfford = Math.floor(st.credits / costPer);
+      const canAfford = Math.floor(st.credits / 20);
       if (canAfford <= 0) return ctx.log("Not enough credits for repairs.");
       const repair = Math.min(need, canAfford);
-      st.credits -= repair * costPer;
-      st.hull = (st.hull || 0) + repair;
-      ctx.log("Repaired " + repair + " hull points (-" + (repair * costPer) + " ₩).");
+      st.credits -= repair * 20; st.hull = (st.hull || 0) + repair;
+      ctx.log("Repaired " + repair + " hull points (-" + (repair * 20) + " ₩).");
       ctx.render();
       if (bridgeOn()) ctx.bridgeAct({ op: "save", state: st });
     }
 
     function doRearm() {
       if (agentBlocked()) return ctx.log("Agent has the stick.");
-      const st = state();
-      const h = ctx.hull();
+      const st = state(), h = ctx.hull();
       if (!h.ammoMax) return ctx.log("Ship has no weapon mounts.");
       const need = h.ammoMax - (st.ammo || 0);
       if (need <= 0) return ctx.log("Ammo bays full.");
-      const costPer = 50;
-      const canAfford = Math.floor(st.credits / costPer);
+      const canAfford = Math.floor(st.credits / 50);
       if (canAfford <= 0) return ctx.log("Not enough credits for ammo.");
       const loaded = Math.min(need, canAfford);
-      st.credits -= loaded * costPer;
-      st.ammo = (st.ammo || 0) + loaded;
-      ctx.log("Loaded " + loaded + " ordnance (-" + (loaded * costPer) + " ₩).");
+      st.credits -= loaded * 50; st.ammo = (st.ammo || 0) + loaded;
+      ctx.log("Loaded " + loaded + " ordnance (-" + (loaded * 50) + " ₩).");
       ctx.render();
       if (bridgeOn()) ctx.bridgeAct({ op: "save", state: st });
     }
@@ -194,9 +197,7 @@
 
     function doHireCrew() {
       if (agentBlocked()) return ctx.log("Agent has the stick.");
-      const st = state();
-      const h = ctx.hull();
-      const offer = ctx.CR.makeOffer();
+      const st = state(), h = ctx.hull(), offer = ctx.CR.makeOffer();
       const gate = ctx.CR.canHire(st.roster || [], h.crewMax, st.credits, offer);
       if (!gate.ok) return ctx.log(gate.reason === "no_bunks" ? "No bunks left." : "Can't afford crew.");
       st.credits -= gate.cost;
@@ -209,12 +210,9 @@
 
     function doFireCrew() {
       if (agentBlocked()) return ctx.log("Agent has the stick.");
-      const st = state();
-      const fired = ctx.CR.afterDismiss(st.roster || [], null);
+      const st = state(), fired = ctx.CR.afterDismiss(st.roster || [], null);
       if (!fired.ok) return ctx.log("No crew to dismiss.");
-      st.roster = fired.roster;
-      st.crew = ctx.CR.syncHeadcount(st.roster);
-      st.credits += fired.refund;
+      st.roster = fired.roster; st.crew = ctx.CR.syncHeadcount(st.roster); st.credits += fired.refund;
       ctx.log("Dismissed a hand. +₩" + fired.refund + ".");
       ctx.render();
       if (bridgeOn()) ctx.bridgeAct({ op: "save", state: st });
@@ -223,43 +221,30 @@
     function doBuyPress() {
       if (agentBlocked()) return ctx.log("Agent has the stick.");
       const st = state();
-      const buy = ctx.SP.buyPress({
-        credits: st.credits,
-        pressBoughtAt: st.pressBoughtAt,
-        systemId: st.system,
-      });
-      if (!buy.ok) {
-        return ctx.log(buy.reason === "already"
-          ? "Already bought today's Press at this dock."
-          : "Need ₩" + ctx.SP.PRESS_PRICE + " for the Dock Press.");
-      }
-      st.credits = buy.credits;
-      st.pressBoughtAt = buy.pressBoughtAt;
-      const edition = ctx.SP.rollEdition({
-        hereId: st.system,
-        systems: ctx.systems(),
-        goods: ctx.GOODS,
-        priceFor: ctx.priceFor,
-      });
+      const buy = ctx.SP.buyPress({ credits: st.credits, pressBoughtAt: st.pressBoughtAt, systemId: st.system });
+      if (!buy.ok) return ctx.log(buy.reason === "already" ? "Already bought today's Press at this dock." : "Need ₩" + ctx.SP.PRESS_PRICE + " for the Dock Press.");
+      st.credits = buy.credits; st.pressBoughtAt = buy.pressBoughtAt;
+      const edition = ctx.SP.rollEdition({ hereId: st.system, systems: ctx.systems(), goods: ctx.GOODS, priceFor: ctx.priceFor });
       st.pressEdition = edition;
       st.lastPress = edition;
 
       st.quests = st.quests || [];
-      if (Math.random() < 0.6) {
-        const sysKeys = ctx.systems().filter(function (s) { return s.id !== st.system; });
-        if (sysKeys.length > 0) {
-          const destObj = sysKeys[Math.floor(Math.random() * sysKeys.length)];
-          const dest = destObj.id;
-          const isBounty = Math.random() < 0.5;
-          const reward = isBounty ? 8000 : 5000;
-          const title = isBounty
-            ? ("Bounty: Pirate Lord at " + destObj.name)
-            : ("Delivery: Medical Supplies to " + destObj.name);
-          st.quests.push({ id: Date.now().toString(), dest: dest, title: title, reward: reward });
-          const questText = "*** NEW QUEST: " + title + " (Reward: ₩" + reward + ") ***";
-          edition.lines.push(questText);
-          if (Array.isArray(edition.tips)) {
-            edition.tips.push({ text: questText, action: { type: "chart", systemId: dest } });
+      const qk = ctx.QK || globalThis.SkiffQuests;
+      if (Math.random() < 0.6 && qk) {
+        const newQ = qk.createQuest(ctx.systems(), st.system);
+        if (newQ) {
+          st.quests.push(newQ);
+          const qText = "*** NEW QUEST: " + newQ.title + " (Reward: ₩" + newQ.reward + ") ***";
+          edition.lines.push(qText);
+          if (Array.isArray(edition.tips)) edition.tips.push({ text: qText, action: { type: "chart", systemId: newQ.dest } });
+          if (typeof window !== "undefined" && typeof window.confirm === "function" && ctx.currentPilot() === "human") {
+            const dName = (ctx.sys(newQ.dest) || {}).name || newQ.dest;
+            if (window.confirm("New contract:\n" + newQ.title + "\nDestination: " + dName + " (Reward: ₩" + newQ.reward + ")\n\nProceed and plot course now?")) {
+              const v = ui();
+              if (v) { v.courseDest = newQ.dest; v.targetId = newQ.dest; }
+              if (typeof ctx.showTab === "function") ctx.showTab("chart");
+              ctx.log("Course plotted to " + dName + " for " + newQ.title);
+            }
           }
         }
       }
@@ -267,6 +252,23 @@
       ctx.log("Dock Press ₩" + buy.paid + " — " + edition.masthead);
       ctx.render();
       if (bridgeOn()) ctx.bridgeAct({ op: "save", state: st });
+      else ctx.save(st);
+    }
+
+    function doAbandonQuest(questId) {
+      if (agentBlocked()) return ctx.log("Agent flying. Stick locked.");
+      const st = state();
+      const qk = ctx.QK || globalThis.SkiffQuests;
+      if (!qk) return;
+      const res = qk.abandonQuest(st.quests, questId);
+      if (!res.ok) return ctx.log("Quest not found.");
+      st.quests = res.remaining;
+      st.credits = Math.max(0, (st.credits || 0) - res.penalty);
+      const msg = "Contract abandoned: " + res.quest.title + " (−₩" + res.penalty + " fee).";
+      ctx.log(msg);
+      if (globalThis.SkiffCaptainLog) st.captainLog = globalThis.SkiffCaptainLog.append(st.captainLog, { type: "quest", summary: msg });
+      ctx.render();
+      if (bridgeOn()) ctx.bridgeAct({ op: "abandon_quest", id: questId });
       else ctx.save(st);
     }
 
@@ -280,6 +282,7 @@
       doHireCrew: doHireCrew,
       doFireCrew: doFireCrew,
       doBuyPress: doBuyPress,
+      doAbandonQuest: doAbandonQuest,
     };
   }
 

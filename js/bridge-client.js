@@ -11,6 +11,7 @@
 
   function setup(ctx) {
     const {
+      getState,
       setState,
       applyChart,
       rollMarket,
@@ -45,10 +46,12 @@
         rollMarket(state);
       }
 
+      const prevState = typeof getState === "function" ? getState() : null;
+      const systemChanged = prevState && prevState.system !== state.system;
       setState(state);
       applyPilot(state.pilot || "human", false);
       syncPrefsUi();
-      if (typeof setUiTargetNull === "function") setUiTargetNull();
+      if (systemChanged && typeof setUiTargetNull === "function") setUiTargetNull();
       render();
       if (typeof renderAgentActionLog === "function") renderAgentActionLog();
 

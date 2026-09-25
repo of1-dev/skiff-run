@@ -32,8 +32,8 @@
   const GOD = globalThis.SkiffDebugGod;
   const TF = globalThis.SkiffTradeFog;
 
-  let SYSTEMS = SYSTEM_DEFS.map((s) => Object.assign({ x: 50, y: 50 }, s));
-  let bridgeOn = new URLSearchParams(window.location.search).get("bridge") === "1";
+  let bridgeOn = new URLSearchParams(window.location.search).get("bridge") === "1" ||
+    (typeof window !== "undefined" && (window.location.port === "8787" || (window.location.pathname && window.location.pathname.startsWith("/skiff"))));
 
   const el = (id) => document.getElementById(id);
   const log = (msg) => { if (globalThis.SkiffCaptainLog) globalThis.SkiffCaptainLog.log(msg); };
@@ -146,13 +146,13 @@
   const { maybeEncounter, openEncounter, resolveEncounter } = encApi;
 
   const actionsApi = globalThis.SkiffActions.setup({
-    getState: () => state, getUi: () => ui, getBridgeOn: () => bridgeOn, currentPilot,
+    getState: () => state, getUi: () => ui, getBridgeOn: () => bridgeOn, currentPilot, showTab,
     sys, ship, hull, cargoUsed, hullStock, yardOffered, dumpToFit,
     log, render: () => render(), save, bridgeAct, tickSkill, markVisited, rollMarket,
     inRange, fuelCost, courseDest, coursePlan, maybeEncounter, priceFor,
-    systems: () => SYSTEMS, GOODS, FUEL_PRICE, YE, CR, SP, SM, SF
+    systems: () => SYSTEMS, GOODS, FUEL_PRICE, YE, CR, SP, SM, SF, QK: globalThis.SkiffQuests
   });
-  const { doTravel, doRefuel, doRepair, doRearm, doBuyShip, doDockWork, doHireCrew, doFireCrew, doBuyPress } = actionsApi;
+  const { doTravel, doRefuel, doRepair, doRearm, doBuyShip, doDockWork, doHireCrew, doFireCrew, doBuyPress, doAbandonQuest } = actionsApi;
 
   const marketActions = globalThis.SkiffMarketActions.setup({
     getState: () => state, getBridgeOn: () => bridgeOn, currentPilot,
@@ -165,13 +165,13 @@
   function getTabsRenderer() {
     if (!tabsRenderer && globalThis.SkiffTabsRenderer) {
       const sharedCtx = {
-        el, sys, getState: () => state, ui, hull, cargoUsed, netWorth, VERSION,
+        el, sys, getState: () => state, getUi: () => ui, ui, hull, cargoUsed, netWorth, VERSION,
         currentPilot, formatTickerLine: (window.SkiffAgentActionLog && window.SkiffAgentActionLog.formatTickerLine),
         GOODS, SM, SYSTEMS, qtyFor, setQty, doBuy, doSell, reachableFrom, SP, doBuyPress, followPressTip,
         canJumpTo, inRange, fuelCost, dist, bestDealHint, bestLaneEdge, peekPrices,
         coursePlan, isVisited, SIZE_NAME, TECH_NAME, activityLabel,
-        makeHullArt: (id, cls) => { const svg = HULL_SVG && HULL_SVG[id]; if (!svg) return document.createElement("span"); const n = svg.cloneNode(true); n.className = cls; return n; },
-        hullStock, yardOffered, YE, doBuyShip,
+        makeHullArt: (id, cls) => (globalThis.SkiffHullArt && typeof globalThis.SkiffHullArt.makeHullArt === "function" ? globalThis.SkiffHullArt.makeHullArt(id, cls) : document.createElement("span")),
+        hullStock, yardOffered, YE, doBuyShip, doAbandonQuest, showTab, render: () => render(), log,
         DOCK_WORK_PAY, doDockWork, CREW_HIRE, doHireCrew, doFireCrew,
         CR, SK, syncGodUi: () => syncGodUi(), sizeMap, drawMap, RETIRE_NET, save,
         canSeeTrade, cargoMarginAt, renderWaypointChrome

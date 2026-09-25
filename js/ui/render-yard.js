@@ -24,11 +24,73 @@
         hint.textContent = "No active quests. Check the local Dock Press for news, rumors, and bounties.";
         return;
       }
-      hint.innerHTML = "<strong>Active Quests:</strong><br/>" + state.quests.map(function (q) {
+      hint.innerHTML = "";
+      state.quests.forEach(function (q) {
         const destObj = sys(q.dest);
         const destName = destObj ? destObj.name : q.dest;
-        return "\u25ba " + q.title + " \u2192 " + destName + " (Reward: \u20a9" + q.reward + ")";
-      }).join("<br/>");
+        const jumpsLeft = q.jumpsLeft != null ? q.jumpsLeft : 10;
+        const isUrgent = jumpsLeft <= 3;
+
+        const card = document.createElement("div");
+        card.className = "card-block";
+        card.style.cssText = "margin-bottom:8px;padding:8px;border:1px solid " + (isUrgent ? "var(--threat,#C45C4A)" : "var(--line,#44403C)") + ";background:var(--raised,#292524);border-radius:var(--radius);";
+
+        const header = document.createElement("div");
+        header.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
+        const title = document.createElement("strong");
+        title.textContent = q.title;
+        title.style.color = "var(--type,#E7E0D6)";
+        const reward = document.createElement("span");
+        reward.textContent = "₩" + (q.reward || 0).toLocaleString();
+        reward.style.cssText = "color:var(--signal,#D97757);font-weight:bold;";
+        header.appendChild(title);
+        header.appendChild(reward);
+        card.appendChild(header);
+
+        const sub = document.createElement("div");
+        sub.className = "hint";
+        sub.style.cssText = "margin:4px 0 8px;font-size:12px;" + (isUrgent ? "color:var(--danger,#C45C4A);" : "");
+        const urgText = isUrgent
+          ? "CRITICAL: " + jumpsLeft + " jump" + (jumpsLeft === 1 ? "" : "s") + " before breach fine (−₩1,000)!"
+          : jumpsLeft + " jump" + (jumpsLeft === 1 ? "" : "s") + " remaining";
+        const spdText = jumpsLeft >= 7 ? " · Speed bonus active (+35% ₩" + Math.floor((q.reward || 0) * 0.35) + ")" : "";
+        sub.textContent = "Target: " + destName + " · " + urgText + spdText;
+        card.appendChild(sub);
+
+        const actions = document.createElement("div");
+        actions.style.cssText = "display:flex;gap:6px;";
+
+        const plotBtn = document.createElement("button");
+        plotBtn.type = "button";
+        plotBtn.className = "btn ghost";
+        plotBtn.style.cssText = "padding:4px 10px;font-size:12px;";
+        plotBtn.textContent = "Plot Course: " + destName;
+        plotBtn.onclick = function (e) {
+          e.preventDefault();
+          const view = typeof ctx.getUi === "function" ? ctx.getUi() : ctx.ui;
+          if (view) { view.courseDest = q.dest; view.targetId = q.dest; }
+          if (typeof ctx.showTab === "function") ctx.showTab("chart");
+          if (typeof ctx.log === "function") ctx.log("Course plotted to " + destName + " for " + q.title);
+          if (typeof ctx.render === "function") ctx.render();
+        };
+        actions.appendChild(plotBtn);
+
+        const abandonBtn = document.createElement("button");
+        abandonBtn.type = "button";
+        abandonBtn.className = "btn outline";
+        abandonBtn.style.cssText = "padding:4px 10px;font-size:12px;color:var(--threat,#C45C4A);border-color:var(--threat,#C45C4A);";
+        abandonBtn.textContent = "Abandon (−₩500)";
+        abandonBtn.onclick = function (e) {
+          e.preventDefault();
+          if (typeof ctx.doAbandonQuest === "function") {
+            ctx.doAbandonQuest(q.id);
+          }
+        };
+        actions.appendChild(abandonBtn);
+
+        card.appendChild(actions);
+        hint.appendChild(card);
+      });
     }
 
     function renderSkillsBox() {
