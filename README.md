@@ -1,4 +1,4 @@
-# SKIFF RUN 0.9.39
+# SKIFF RUN 0.9.40
 
 Browser trade-run through the Ember chart. Original systems, goods, and ships.
 
@@ -72,7 +72,7 @@ Yard shows original class silhouettes (`assets/hulls/`). Common classes for all 
 
 Systems have tech / gov / size / police / pirate activity. Chart node color = pirate risk; teal reward ring = expected trade edge from here. Target card shows dossier + margin stub.
 
-## Pilot handoff, spectator & WebMCP (0.8.0 - 0.9.39)
+## Pilot handoff, spectator & WebMCP (0.8.0 - 0.9.40)
 
 Captain tab: **You** / **Agent**. Same single-player save; hand the stick back and forth. In-page WebMCP (`js/webmcp.js`) and stdio MCP seat in `mcp/` — see `docs/mcp-agent-seat.md`.
 
@@ -82,7 +82,7 @@ Captain tab: **You** / **Agent**. Same single-player save; hand the stick back a
 
 Chart circle = **hull jump range**, not the fuel tank (fuel is the status strip).
 
-## Modular architecture (0.9.39)
+## Modular architecture & Quest Lifecycle (0.9.40)
 
 All JavaScript modules adhere to strict soft caps (orchestrator `game.js` <= 300 lines; `galaxy-state.js` <= 250 lines; all UI modules <= 300 lines). Domain logic is cleanly separated:
 - Core: `js/core/galaxy-state.js` (~205L), `js/core/actions.js` (~283L), `js/core/market-actions.js` (~112L), `js/core/chart-gen.js`, `js/core/combat.js`
