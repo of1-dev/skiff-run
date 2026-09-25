@@ -32,6 +32,7 @@
   const GOD = globalThis.SkiffDebugGod;
   const TF = globalThis.SkiffTradeFog;
 
+  let SYSTEMS = SYSTEM_DEFS.map((s) => Object.assign({ x: 50, y: 50 }, s));
   let bridgeOn = new URLSearchParams(window.location.search).get("bridge") === "1" ||
     (typeof window !== "undefined" && (window.location.port === "8787" || (window.location.pathname && window.location.pathname.startsWith("/skiff"))));
 
