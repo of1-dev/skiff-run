@@ -505,7 +505,12 @@ const server = http.createServer(async (req, res) => {
       return res.end("Not Found");
     }
     const ext = path.extname(filePath).toLowerCase();
-    res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream" });
+    res.writeHead(200, {
+      "Content-Type": MIME[ext] || "application/octet-stream",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
+    });
     if (req.method === "HEAD") return res.end();
     fs.createReadStream(filePath).pipe(res);
   });
