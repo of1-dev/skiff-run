@@ -76,9 +76,17 @@
       }
     }
 
+    function apiPath(endpoint) {
+      if (typeof location !== "undefined" && location.pathname) {
+        if (location.pathname.startsWith("/skiffrun")) return "/skiffrun" + endpoint;
+        if (location.pathname.startsWith("/skiff")) return "/skiff" + endpoint;
+      }
+      return endpoint;
+    }
+
     async function bridgeAct(body) {
       try {
-        const r = await fetch("/api/act", {
+        const r = await fetch(apiPath("/api/act"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body || {}),
@@ -97,7 +105,7 @@
 
     async function bridgePoll() {
       try {
-        const r = await fetch("/api/state", { cache: "no-store" });
+        const r = await fetch(apiPath("/api/state"), { cache: "no-store" });
         const data = await r.json();
         applyBridgePayload(data);
       } catch (e) {
