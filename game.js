@@ -37,7 +37,16 @@
     (typeof window !== "undefined" && (window.location.port === "8787" || (window.location.pathname && window.location.pathname.startsWith("/skiff"))));
 
   const el = (id) => document.getElementById(id);
-  const log = (msg) => { if (globalThis.SkiffCaptainLog) globalThis.SkiffCaptainLog.log(msg); };
+  const log = (msg) => {
+    if (typeof state !== "undefined" && state) {
+      state.log = msg;
+      if (globalThis.SkiffCaptainLog && state.captainLog) {
+        state.captainLog = globalThis.SkiffCaptainLog.append(state.captainLog, { summary: msg, type: "log" });
+      }
+    }
+    const logEl = el("log");
+    if (logEl) logEl.textContent = msg;
+  };
 
   function buildChart(seed) {
     return globalThis.SkiffChartGen.buildChart({
