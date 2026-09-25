@@ -245,7 +245,8 @@
       (state.roster || []).forEach(function (card) {
         const row = document.createElement("div");
         row.className = "crew-card";
-        row.textContent = card.label + " \u2014 " + card.quirk +
+        const label = card.label || card.name || card.role || "Crew";
+        row.textContent = label + " \u2014 " + (card.quirk || "steady") +
           " (P" + card.pilot + " F" + card.fighter + " T" + card.trader + " E" + card.engineer + ")";
         list.appendChild(row);
       });
