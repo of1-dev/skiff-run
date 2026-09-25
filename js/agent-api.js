@@ -10,36 +10,10 @@
 
   function createAPI(ctx) {
     const {
-      VERSION,
-      getState,
-      sys,
-      hull,
-      cargoUsed,
-      netWorth,
-      currentPilot,
-      applyPilot,
-      logAgentAct,
-      withLocalEval,
-      doBuy,
-      doSell,
-      doSellAll,
-      doFillCheap,
-      doRepair,
-      doRearm,
-      doSellExpensive,
-      doRefuel,
-      doTravel,
-      doDockWork,
-      doBuyPress,
-      doBuyShip,
-      resolveEncounter,
-      getEncKind,
-      getEncDest,
-      RETIRE_NET,
-      el,
-      getSystems,
-      inRange,
-      fuelCost,
+      VERSION, getState, sys, hull, cargoUsed, netWorth, currentPilot, applyPilot,
+      logAgentAct, withLocalEval, doBuy, doSell, doSellAll, doFillCheap, doRepair,
+      doRearm, doSellExpensive, doRefuel, doTravel, doDockWork, doBuyPress, doBuyShip,
+      resolveEncounter, getEncKind, getEncDest, RETIRE_NET, el, getSystems, inRange, fuelCost
     } = ctx;
 
     return {
@@ -80,6 +54,8 @@
           return {
             id: s.id,
             name: s.name,
+            x: s.x,
+            y: s.y,
             distance: Math.round(dist * 10) / 10,
             inRange: inJmp,
             fuelCost: cost,
