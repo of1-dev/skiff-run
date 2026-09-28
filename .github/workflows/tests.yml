@@ -1,0 +1,60 @@
+name: tests
+
+# Gate: the one-version law plus the full test suite.
+#
+# Until now this repo had ZERO CI, so these tests only ran when a human or an
+# agent remembered to run them by hand — which is how skiff-version-001 shipped
+# a "full 29/29 pass" claim that nobody could reproduce on demand.
+#
+# Two suites, run separately so a parity break and a mechanics break are
+# distinguishable in the log:
+#   mcp/test/*.test.js      — 29 tests, includes the one-version parity law
+#   test/acceptance/*.test.js — 200 tests across 32 files, incl. WebMCP
+#
+# Node only. No door, no container, no network. Works in Actions.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  version-parity:
+    name: one-version law
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: game.js / engine.mjs / server.mjs must be in parity
+        run: node --test mcp/test/version-parity.test.js
+
+  suite:
+    name: mcp tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: node --test mcp/test/*.test.js
+        # NOTE: `node --test mcp/test/` fails with MODULE_NOT_FOUND — the
+        # trailing slash makes node resolve the directory as a module. The glob
+        # form is the one that works.
+        run: node --test mcp/test/*.test.js
+
+  acceptance:
+    name: acceptance suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: node --test test/acceptance/*.test.js
+        run: node --test test/acceptance/*.test.js
