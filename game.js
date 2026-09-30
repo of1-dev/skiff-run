@@ -4,7 +4,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "0.9.41";
+  const VERSION = "0.9.42";
   const WORLD = "skiff-run-v1";
   const SAVE_KEY = "skiff-run-save";
   const GOD_KEY = "skiff-run-god";
@@ -33,8 +33,12 @@
   const TF = globalThis.SkiffTradeFog;
 
   let SYSTEMS = SYSTEM_DEFS.map((s) => Object.assign({ x: 50, y: 50 }, s));
-  let bridgeOn = new URLSearchParams(window.location.search).get("bridge") === "1" ||
-    (typeof window !== "undefined" && (window.location.port === "8787" || (window.location.pathname && window.location.pathname.startsWith("/skiff"))));
+  let bridgeOn = !!(globalThis.SkiffBridgeMode && globalThis.SkiffBridgeMode.isBridgeMode({
+    search: window.location.search,
+    hostname: window.location.hostname,
+    port: window.location.port,
+    pathname: window.location.pathname,
+  }));
 
   const el = (id) => document.getElementById(id);
   const log = (msg) => {
