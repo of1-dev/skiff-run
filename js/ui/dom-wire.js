@@ -101,6 +101,10 @@
       b.onclick = function () { ctx.applyTheme(b.dataset.themePick, true); };
     });
 
+    document.querySelectorAll("[data-text-size-pick]").forEach(function (b) {
+      b.onclick = function () { if (ctx.applyTextSize) ctx.applyTextSize(b.dataset.textSizePick, true); };
+    });
+
     document.querySelectorAll("[data-pilot-pick]").forEach(function (b) {
       b.onclick = function () { ctx.applyPilot(b.dataset.pilotPick, true); };
     });

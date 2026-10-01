@@ -143,6 +143,8 @@
       const s = sys(state.system);
       const h = hull();
       el("sys-name").textContent = s.name;
+      const shipEl = el("status-ship");
+      if (shipEl) shipEl.textContent = h.name;
       el("credits").textContent = "\u20a9" + state.credits.toLocaleString();
       el("fuel").textContent = state.fuel + " / " + h.fuelMax;
       el("cargo").textContent = cargoUsed(state) + " / " + h.cargo;

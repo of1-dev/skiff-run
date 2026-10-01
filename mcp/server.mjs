@@ -15,7 +15,7 @@ import { z } from "zod";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SAVE_PATH = path.join(__dirname, "session", "save.json");
 const BRIDGE_URL = process.env.SKIFF_BRIDGE_URL || "http://127.0.0.1:8787";
-const VERSION = "0.9.41";
+const VERSION = "0.9.42";
 
 async function forwardOp(body) {
   return new Promise((resolve) => {

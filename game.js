@@ -4,7 +4,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "0.9.41";
+  const VERSION = "0.9.42";
   const WORLD = "skiff-run-v1";
   const SAVE_KEY = "skiff-run-save";
   const GOD_KEY = "skiff-run-god";
@@ -123,7 +123,7 @@
     getBridgeOn: () => bridgeOn,
     bridgeAct,
   });
-  const { themeColors, applyTheme, loadTheme, currentPilot, reclaimStick, applyPilot } = themePilot;
+  const { themeColors, applyTheme, loadTheme, applyTextSize, loadTextSize, currentPilot, reclaimStick, applyPilot } = themePilot;
 
   const chartView = globalThis.SkiffChartView.setup({
     el, sys, WP, CF, SECTOR_RADIUS,
@@ -234,7 +234,7 @@
   globalThis.SkiffDomWire.setup({
     el, getUi: () => ui, getState: () => state, getBridgeOn: () => bridgeOn, systems: () => SYSTEMS,
     HULL_SVG, WP, sys, netWorth, RETIRE_NET, log, save, render, renderTarget, sizeMap, drawMap, pickSystemAt,
-    showTab, setChartMode, applyTheme, applyPilot, reclaimStick, coursePlan, runChartSearch,
+    showTab, setChartMode, applyTheme, applyTextSize, applyPilot, reclaimStick, coursePlan, runChartSearch,
     doRefuel, doRepair, doRearm, doSellAll, doFillCheap, doSellExpensive, doTravel, resetGame,
     syncPrefsUi, bridgeAct
   });
@@ -277,6 +277,7 @@
   }
 
   loadTheme();
+  loadTextSize();
   applyPilot(state.pilot || "human", false);
   syncGodUi();
   showTab("dock");

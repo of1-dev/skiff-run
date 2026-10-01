@@ -112,11 +112,47 @@
       ctx.save(st);
     }
 
+    const TEXT_SIZES = ["normal", "large", "xl"];
+    const TEXT_SIZE_KEY = "skiff-run-text-size";
+
+    function applyTextSize(name, persist) {
+      if (typeof document === "undefined" || !document.documentElement) return;
+      const s = TEXT_SIZES.includes(name) ? name : "normal";
+      document.documentElement.setAttribute("data-text-size", s);
+      document.querySelectorAll("[data-text-size-pick]").forEach(function (b) {
+        b.classList.toggle("active", b.dataset.textSizePick === s);
+      });
+      const hint = ctx.el("text-size-hint");
+      if (hint) {
+        hint.textContent = s === "large"
+          ? "Large — increased readability scale."
+          : s === "xl"
+            ? "XL — high visibility scale across all panels."
+            : "Normal — standard Bast HUD scale.";
+      }
+      if (persist !== false) {
+        try { localStorage.setItem(TEXT_SIZE_KEY, s); } catch (e) { console.warn("[skiff] text-size save failed:", e.message); }
+      }
+      const ui = ctx.getUi();
+      if (ui && ui.tab === "chart") {
+        ctx.sizeMap();
+        ctx.drawMap();
+      }
+    }
+
+    function loadTextSize() {
+      let s = "normal";
+      try { s = localStorage.getItem(TEXT_SIZE_KEY) || "normal"; } catch (e) { console.warn("[skiff] text-size read failed:", e.message); }
+      applyTextSize(s, false);
+    }
+
     return {
       cssVar: cssVar,
       themeColors: themeColors,
       applyTheme: applyTheme,
       loadTheme: loadTheme,
+      applyTextSize: applyTextSize,
+      loadTextSize: loadTextSize,
       currentPilot: currentPilot,
       reclaimStick: reclaimStick,
       applyPilot: applyPilot,

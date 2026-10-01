@@ -173,11 +173,16 @@ html, body {
 .brand span, #ver { font-size: 12px; color: var(--mute); }
 .status-strip {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
   background: var(--raised);
   border: 1px solid var(--line);
   padding: 8px 6px;
+}
+@media (min-width: 640px) {
+  .status-strip {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
 }
 .status-strip label {
   display: block;
