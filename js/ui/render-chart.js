@@ -37,12 +37,16 @@
       return nice * mag;
     }
 
+    const worldSize = (typeof WORLD === "number" && !isNaN(WORLD) && WORLD > 0)
+      ? WORLD
+      : ((typeof globalThis !== "undefined" && globalThis.SkiffChartGen && globalThis.SkiffChartGen.WORLD) || 160);
+
     function chartCamera(mode, here, w, h) {
       const PAD = 0.12;
       let minX, minY, maxX, maxY;
 
       if (mode === "full") {
-        minX = -2; minY = -2; maxX = WORLD + 2; maxY = WORLD + 2;
+        minX = -2; minY = -2; maxX = worldSize + 2; maxY = worldSize + 2;
       } else {
         const pts = [{ x: here.x, y: here.y }];
         if (mode === "local") {
@@ -120,7 +124,7 @@
       const wrap = canvas && canvas.parentElement;
       if (!canvas || !wrap) return;
       const rect = wrap.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min((typeof window !== "undefined" && window.devicePixelRatio) || 1, 2);
       const w = Math.max(200, Math.floor(rect.width));
       const h = Math.max(200, Math.floor(rect.height));
       canvas.width = Math.floor(w * dpr);
@@ -137,7 +141,7 @@
       if (!canvas) return;
       if (!canvas.width) sizeMap();
       const c2d = canvas.getContext("2d");
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min((typeof window !== "undefined" && window.devicePixelRatio) || 1, 2);
       const w = canvas.width / dpr;
       const h = canvas.height / dpr;
       c2d.save();

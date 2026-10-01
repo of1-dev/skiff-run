@@ -5,7 +5,7 @@
   "use strict";
 
   const VERSION = "0.9.41";
-  const WORLD = "skiff-run-v1";
+  const WORLD = 160;
   const SAVE_KEY = "skiff-run-save";
   const GOD_KEY = "skiff-run-god";
   const RETIRE_NET = 35000;
