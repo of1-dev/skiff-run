@@ -74,9 +74,9 @@
       };
     });
 
-    if (el("mode-local")) el("mode-local").onclick = function () { ctx.setChartMode("local"); };
-    if (el("mode-sector")) el("mode-sector").onclick = function () { ctx.setChartMode("sector"); };
-    if (el("mode-full")) el("mode-full").onclick = function () { ctx.setChartMode("full"); };
+    if (el("mode-local")) el("mode-local").onclick = function () { ctx.setChartMode("local"); if (ctx.render) ctx.render(); };
+    if (el("mode-sector")) el("mode-sector").onclick = function () { ctx.setChartMode("sector"); if (ctx.render) ctx.render(); };
+    if (el("mode-full")) el("mode-full").onclick = function () { ctx.setChartMode("full"); if (ctx.render) ctx.render(); };
 
     const findForm = el("chart-find-form");
     if (findForm) {
