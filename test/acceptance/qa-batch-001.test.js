@@ -25,9 +25,21 @@ const GodPanel = require("../../js/ui/god-panel.js");
 const ThemePilot = require("../../js/ui/theme-pilot.js");
 const EncounterDialog = require("../../js/ui/encounter-dialog.js");
 const Combat = require("../../js/core/combat.js");
+const SM = require("../../js/market.js");
+const SP = require("../../js/dock-press.js");
 
 globalThis.SkiffCombat = Combat;
 globalThis.SkiffGoods = GOODS;
+
+globalThis.document = {
+  createElement: (tag) => createMockElement(tag),
+  querySelectorAll: () => [],
+  querySelector: () => null,
+  documentElement: {
+    setAttribute: () => {},
+    getAttribute: () => null,
+  },
+};
 
 function createMockElement(id = "", initialText = "") {
   const attrs = {};
@@ -70,7 +82,7 @@ function createMockElement(id = "", initialText = "") {
 
 describe("ATDD: FIX 1 — Ship always visible in status strip", () => {
   it("index.html status strip contains ship indicator element next to credits/fuel/etc.", () => {
-    const statusMatch = HTML.match(/<div[^>]+class="status-strip"[^>]*>([\s\S]*?)<\/div>/);
+    const statusMatch = HTML.match(/<div[^>]+class="status-strip"[^>]*>([\s\S]*?)<\/div>\s*<div id="top-agent-ticker"/);
     assert.ok(statusMatch, "status-strip must exist in index.html");
     const stripHtml = statusMatch[1];
 
@@ -105,6 +117,7 @@ describe("ATDD: FIX 1 — Ship always visible in status strip", () => {
       hull: 40,
       ammo: 0,
       cargo: {},
+      prices: Object.fromEntries(GOODS.map((g) => [g.id, 100])),
       roster: [],
       crew: 0,
       prefs: { autoFuel: true },
@@ -114,19 +127,35 @@ describe("ATDD: FIX 1 — Ship always visible in status strip", () => {
     const tabsApi = RenderTabs.setup({
       getState: () => state,
       getUi: () => ({ tab: "dock" }),
+      ui: { tab: "dock" },
       sys: (id) => SYSTEMS.find((s) => s.id === id) || SYSTEMS[0],
       hull: () => SHIPS.find((s) => s.id === state.shipId) || SHIPS[0],
       cargoUsed: () => 0,
       netWorth: () => state.credits,
       VERSION: "0.9.42",
       currentPilot: () => "human",
-      el: (id) => elements[id] || null,
+      el: (id) => elements[id] || (elements[id] = createMockElement(id)),
       SYSTEMS,
       SHIPS,
       GOODS,
+      SM,
+      SP,
+      qtyFor: () => 0,
+      setQty: () => {},
+      doBuy: () => {},
+      doSell: () => {},
+      doBuyPress: () => {},
+      followPressTip: () => {},
       CR,
       SK: {},
       WP: {},
+      renderQuests: () => {},
+      renderShipPanel: () => {},
+      renderSkillsBox: () => {},
+      renderTarget: () => {},
+      drawMap: () => {},
+      sizeMap: () => {},
+      save: () => {},
     });
 
     // 1. Initial render shows Skiff-7
@@ -176,6 +205,7 @@ describe("ATDD: FIX 1 — Ship always visible in status strip", () => {
       hull: 40,
       ammo: 0,
       cargo: {},
+      prices: Object.fromEntries(GOODS.map((g) => [g.id, 100])),
       roster: [],
       crew: 0,
       prefs: { autoFuel: true, godMode: true },
@@ -187,19 +217,35 @@ describe("ATDD: FIX 1 — Ship always visible in status strip", () => {
     const tabsApi = RenderTabs.setup({
       getState: () => state,
       getUi: () => ({ tab: currentTab }),
+      ui: { tab: currentTab },
       sys: (id) => SYSTEMS.find((s) => s.id === id) || SYSTEMS[0],
       hull: () => SHIPS.find((s) => s.id === state.shipId) || SHIPS[0],
       cargoUsed: () => 0,
       netWorth: () => state.credits,
       VERSION: "0.9.42",
       currentPilot: () => "human",
-      el: (id) => elements[id] || null,
+      el: (id) => elements[id] || (elements[id] = createMockElement(id)),
       SYSTEMS,
       SHIPS,
       GOODS,
+      SM,
+      SP,
+      qtyFor: () => 0,
+      setQty: () => {},
+      doBuy: () => {},
+      doSell: () => {},
+      doBuyPress: () => {},
+      followPressTip: () => {},
       CR,
       SK: {},
       WP: {},
+      renderQuests: () => {},
+      renderShipPanel: () => {},
+      renderSkillsBox: () => {},
+      renderTarget: () => {},
+      drawMap: () => {},
+      sizeMap: () => {},
+      save: () => {},
     });
 
     const godApi = GodPanel.setup({
