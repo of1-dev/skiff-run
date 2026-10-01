@@ -429,6 +429,9 @@ body.enc-open #btn-exit-holo {
 }
 .enc-actions { display: flex; gap: 8px; margin-top: 12px; }
 .enc-actions .btn { flex: 1; }
+#enc-result[hidden], #enc-choice-view[hidden] { display: none !important; }
+.enc-result-outcome { font-weight: 600; font-size: 1.05rem; margin: 4px 0; }
+.enc-result-details { margin: 4px 0 8px; }
 
 /* Unfolded / wide: two-pane chart feel */
 @media (min-width: 700px) {

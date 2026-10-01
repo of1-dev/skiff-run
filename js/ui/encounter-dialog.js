@@ -14,12 +14,69 @@
     let encDest = null;
     let isLocalEval = false;
 
-    function resolveEncounter(choice) {
+    function formatOutcome(outcome) {
+      if (!outcome) return "Resolved";
+      switch (outcome) {
+        case "victory": return "Victory";
+        case "defeat": return "Defeat";
+        case "fled": return "Fled";
+        case "cargo_lost": return "Cargo Lost";
+        case "escaped": return "Escaped";
+        case "shakedown": return "Shakedown";
+        case "fine_paid": return "Fine Paid";
+        case "bluffed": return "Bluff Succeeded";
+        case "bluff_failed": return "Bluff Failed";
+        case "sold_cargo": return "Cargo Sold";
+        case "bought_cargo": return "Cargo Purchased";
+        case "waved_off": return "Waved Off";
+        case "no_trade": return "No Trade";
+        default: return outcome.charAt(0).toUpperCase() + outcome.slice(1);
+      }
+    }
+
+    function formatDetails(summary) {
+      if (!summary) return "";
+      const parts = [];
+      if (summary.creditsChange) {
+        parts.push((summary.creditsChange > 0 ? "+₩" : "-₩") + Math.abs(summary.creditsChange));
+      }
+      if (summary.fuelChange) {
+        parts.push((summary.fuelChange > 0 ? "+" : "") + summary.fuelChange + " fuel");
+      }
+      if (summary.hullDamage > 0 || summary.hullChange < 0) {
+        const dmg = summary.hullDamage || Math.abs(summary.hullChange);
+        parts.push("-" + dmg + " hull");
+      } else if (summary.hullChange > 0) {
+        parts.push("+" + summary.hullChange + " hull");
+      }
+      if (summary.ammoChange) {
+        parts.push(summary.ammoChange + " ammo");
+      }
+      if (summary.cargoChange) {
+        parts.push((summary.cargoChange > 0 ? "+" : "") + summary.cargoChange + " cargo");
+      }
+      if (summary.crewChange) {
+        parts.push((summary.crewChange > 0 ? "+" : "") + summary.crewChange + " crew");
+      }
+      return parts.length ? parts.join(" · ") : "No status changes";
+    }
+
+    function dismissResult() {
+      const resultView = ctx.el("enc-result");
+      if (resultView) resultView.hidden = true;
+      const choiceView = ctx.el("enc-choice-view");
+      if (choiceView) choiceView.hidden = false;
+      if (dlg && dlg.open) dlg.close();
       if (typeof document !== "undefined" && document.body) {
         document.body.classList.remove("enc-open");
       }
-      if (dlg && dlg.open) dlg.close();
+      encKind = null;
+      encDest = null;
+    }
+
+    function resolveEncounter(choice) {
       const st = ctx.getState();
+      const isAgent = st.pilot === "agent" || isLocalEval;
       const result = globalThis.SkiffCombat.resolveEncounter({
         state: st,
         encKind: encKind,
@@ -31,10 +88,32 @@
         tickSkill: ctx.tickSkill,
       });
       ctx.log(result.logMsg);
-      encKind = null;
-      encDest = null;
       ctx.render();
       if (ctx.getBridgeOn()) ctx.bridgeAct({ op: "save", state: st });
+
+      const resultView = ctx.el("enc-result");
+      if (isAgent || !resultView) {
+        if (typeof document !== "undefined" && document.body) {
+          document.body.classList.remove("enc-open");
+        }
+        if (dlg && dlg.open) dlg.close();
+        encKind = null;
+        encDest = null;
+        return;
+      }
+
+      const choiceView = ctx.el("enc-choice-view");
+      if (choiceView) choiceView.hidden = true;
+      resultView.hidden = false;
+
+      const summary = (result && result.summary) || {};
+      const outcomeEl = ctx.el("enc-result-outcome");
+      if (outcomeEl) outcomeEl.textContent = formatOutcome(summary.outcome);
+      const detailsEl = ctx.el("enc-result-details");
+      if (detailsEl) detailsEl.textContent = formatDetails(summary);
+
+      const btnDismiss = ctx.el("enc-dismiss") || ctx.el("enc-continue");
+      if (btnDismiss) btnDismiss.onclick = dismissResult;
     }
 
     function openEncounter(kind, dest) {
@@ -42,6 +121,11 @@
       encKind = kind;
       encDest = dest || ctx.sys(st.system);
       const armed = ctx.hull().weapons && st.crew > 0 && (st.ammo || 0) > 0;
+
+      const choiceView = ctx.el("enc-choice-view");
+      const resultView = ctx.el("enc-result");
+      if (choiceView) choiceView.hidden = false;
+      if (resultView) resultView.hidden = true;
 
       if (st.pilot === "agent" || isLocalEval) {
         let choice = "b";
@@ -103,8 +187,13 @@
 
     const btnA = ctx.el("enc-a");
     const btnB = ctx.el("enc-b");
+    const btnDismiss = ctx.el("enc-dismiss") || ctx.el("enc-continue");
     if (btnA) btnA.onclick = function () { resolveEncounter("a"); };
     if (btnB) btnB.onclick = function () { resolveEncounter("b"); };
+    if (btnDismiss) btnDismiss.onclick = dismissResult;
+
+    const initialResultView = ctx.el("enc-result");
+    if (initialResultView) initialResultView.hidden = true;
 
     return {
       maybeEncounter: maybeEncounter,

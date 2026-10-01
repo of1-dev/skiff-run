@@ -215,11 +215,21 @@
   </div>
 
   <dialog id="encounter">
-    <h3 id="enc-title">Encounter</h3>
-    <p id="enc-body"></p>
-    <div class="enc-actions">
-      <button type="button" id="enc-a" class="btn">A</button>
-      <button type="button" id="enc-b" class="btn ghost">B</button>
+    <div id="enc-choice-view">
+      <h3 id="enc-title">Encounter</h3>
+      <p id="enc-body"></p>
+      <div class="enc-actions">
+        <button type="button" id="enc-a" class="btn">A</button>
+        <button type="button" id="enc-b" class="btn ghost">B</button>
+      </div>
+    </div>
+    <div id="enc-result" class="enc-result" hidden>
+      <h3 id="enc-result-title">Encounter Result</h3>
+      <p id="enc-result-outcome" class="enc-result-outcome"></p>
+      <p id="enc-result-details" class="enc-result-details hint"></p>
+      <div class="enc-actions">
+        <button type="button" id="enc-dismiss" class="btn">Continue</button>
+      </div>
     </div>
   </dialog>
   <script src="js/data/ships.js?v=0.9.42"></script>
