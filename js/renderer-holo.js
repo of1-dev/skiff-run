@@ -192,8 +192,28 @@
     return map;
   }
 
+  function onKeyDown(e) {
+    if (e && (e.key === "Escape" || e.key === "Esc")) {
+      const exitBtn = typeof document !== "undefined" && document.getElementById && document.getElementById("btn-exit-holo");
+      if (exitBtn && typeof exitBtn.click === "function") {
+        exitBtn.click();
+      } else if (exitBtn && typeof exitBtn.onclick === "function") {
+        exitBtn.onclick();
+      }
+      stop();
+    }
+  }
+
   function start(state, svgs, systems, callbacks) {
     if (!canvas) init();
+    const c = canvas || (typeof document !== "undefined" && document.getElementById && document.getElementById("holo-canvas"));
+    if (c && c.style) {
+      c.style.display = "block";
+      c.style.pointerEvents = "auto";
+    }
+    if (typeof window !== "undefined" && window.addEventListener) {
+      window.addEventListener("keydown", onKeyDown);
+    }
     currentState = state;
     if (systems) currentSystems = systems;
     if (callbacks) {
@@ -220,6 +240,22 @@
     if (animFrame) {
       window.cancelAnimationFrame(animFrame);
       animFrame = null;
+    }
+    const c = canvas || (typeof document !== "undefined" && document.getElementById && document.getElementById("holo-canvas"));
+    if (c && c.style) {
+      c.style.display = "none";
+      c.style.pointerEvents = "none";
+    }
+    const searchWrap = typeof document !== "undefined" && document.getElementById && document.getElementById("holo-search-wrap");
+    if (searchWrap && searchWrap.style) {
+      searchWrap.style.display = "none";
+    }
+    const exitBtn = typeof document !== "undefined" && document.getElementById && document.getElementById("btn-exit-holo");
+    if (exitBtn && exitBtn.style) {
+      exitBtn.style.display = "none";
+    }
+    if (typeof window !== "undefined" && window.removeEventListener) {
+      window.removeEventListener("keydown", onKeyDown);
     }
   }
 

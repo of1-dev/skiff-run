@@ -55,13 +55,23 @@
         if (holoOn && globalThis.SkiffHoloRenderer) {
           const exit = document.getElementById("btn-exit-holo");
           if (exit) exit.click();
+          else globalThis.SkiffHoloRenderer.stop();
         }
         ctx.showTab(b.dataset.tab);
       };
     });
 
     document.querySelectorAll("[data-goto]").forEach(function (b) {
-      b.onclick = function () { ctx.showTab(b.dataset.goto); };
+      b.onclick = function () {
+        const holoOn = document.getElementById("holo-canvas") &&
+          document.getElementById("holo-canvas").style.display === "block";
+        if (holoOn && globalThis.SkiffHoloRenderer) {
+          const exit = document.getElementById("btn-exit-holo");
+          if (exit) exit.click();
+          else globalThis.SkiffHoloRenderer.stop();
+        }
+        ctx.showTab(b.dataset.goto);
+      };
     });
 
     if (el("mode-local")) el("mode-local").onclick = function () { ctx.setChartMode("local"); };
@@ -111,9 +121,15 @@
           btn.classList.toggle("active", btn === b);
         });
         if (b.dataset.rendererPick === "holo") {
-          document.getElementById("holo-canvas").style.display = "block";
-          document.getElementById("holo-search-wrap").style.display = "block";
-          document.getElementById("btn-exit-holo").style.display = "block";
+          const hc = document.getElementById("holo-canvas");
+          if (hc) {
+            hc.style.display = "block";
+            hc.style.pointerEvents = "auto";
+          }
+          const hs = document.getElementById("holo-search-wrap");
+          if (hs) hs.style.display = "block";
+          const he = document.getElementById("btn-exit-holo");
+          if (he) he.style.display = "block";
           if (globalThis.SkiffHoloRenderer) {
             const st = ctx.getState();
             globalThis.SkiffHoloRenderer.start(st, ctx.HULL_SVG, ctx.systems(), {
@@ -139,9 +155,15 @@
             });
           }
         } else {
-          document.getElementById("holo-canvas").style.display = "none";
-          document.getElementById("holo-search-wrap").style.display = "none";
-          document.getElementById("btn-exit-holo").style.display = "none";
+          const hc = document.getElementById("holo-canvas");
+          if (hc) {
+            hc.style.display = "none";
+            hc.style.pointerEvents = "none";
+          }
+          const hs = document.getElementById("holo-search-wrap");
+          if (hs) hs.style.display = "none";
+          const he = document.getElementById("btn-exit-holo");
+          if (he) he.style.display = "none";
           if (globalThis.SkiffHoloRenderer) globalThis.SkiffHoloRenderer.stop();
         }
       };
@@ -161,8 +183,21 @@
       exitHolo.onclick = function () {
         const classicBtn = document.querySelector('[data-renderer-pick="classic"]');
         if (classicBtn) classicBtn.click();
+        else if (globalThis.SkiffHoloRenderer) globalThis.SkiffHoloRenderer.stop();
       };
     }
+
+    window.addEventListener("keydown", function (e) {
+      if (e && (e.key === "Escape" || e.key === "Esc")) {
+        const hc = document.getElementById("holo-canvas");
+        const holoOn = hc && hc.style.display === "block";
+        if (holoOn) {
+          const exit = document.getElementById("btn-exit-holo");
+          if (exit) exit.click();
+          else if (globalThis.SkiffHoloRenderer) globalThis.SkiffHoloRenderer.stop();
+        }
+      }
+    });
 
     const takeStick = el("btn-take-stick");
     if (takeStick) takeStick.onclick = function () { ctx.applyPilot("human", true); };
