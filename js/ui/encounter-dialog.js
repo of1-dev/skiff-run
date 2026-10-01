@@ -41,7 +41,8 @@
       const st = ctx.getState();
       encKind = kind;
       encDest = dest || ctx.sys(st.system);
-      const armed = ctx.hull().weapons && st.crew > 0 && (st.ammo || 0) > 0;
+      const h = ctx.hull();
+      const armed = !!(h && h.weapons && (st.ammo || 0) > 0);
 
       if (st.pilot === "agent" || isLocalEval) {
         let choice = "b";

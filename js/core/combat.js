@@ -12,7 +12,7 @@
     
     function log(msg) { logMsg += (logMsg ? " " : "") + msg; }
 
-    const armed = hull.weapons && state.crew > 0 && (state.ammo || 0) > 0;
+    const armed = !!(hull && hull.weapons && (state.ammo || 0) > 0);
     
     if (encKind === "warden") {
       if (choice === "a") {
@@ -57,10 +57,10 @@
       const pir = (dest && dest.pirate) || 3;
       const ammoUsed = Math.min(state.ammo || 0, Math.floor(rand() * 3) + 1);
       state.ammo = Math.max(0, (state.ammo || 0) - ammoUsed);
-      const odds = 0.55 + state.crew * 0.06 - pir * 0.03 + (ammoUsed * 0.05);
+      const odds = 0.55 + (state.crew || 0) * 0.06 - pir * 0.03 + (ammoUsed * 0.05);
       
       if (rand() < odds) {
-        const prize = 350 + state.crew * 150 + pir * 40;
+        const prize = 350 + (state.crew || 0) * 150 + pir * 40;
         state.credits += prize;
         if (tickSkill) tickSkill("fighter", false);
         log(`Corsairs broke off. Salvage ₩${prize} (-${ammoUsed} ammo).`);

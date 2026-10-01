@@ -551,7 +551,7 @@ export class SkiffGame {
       this.pendingEncounter = null;
       return;
     }
-    const armed = h.weapons && this.state.crew > 0;
+    const armed = !!(h.weapons && (this.state.ammo || 0) > 0);
     const options =
       kind === "warden" ? [{ id: "a", label: "Pay fine" }, { id: "b", label: "Bluff" }]
       : kind === "trader" ? [{ id: "a", label: "Hail" }, { id: "b", label: "Wave off" }]
