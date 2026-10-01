@@ -20,6 +20,20 @@
     if (el("btn-fill-cheap")) el("btn-fill-cheap").onclick = ctx.doFillCheap;
     if (el("btn-sell-expensive")) el("btn-sell-expensive").onclick = ctx.doSellExpensive;
 
+    function travelRoute(targetId) {
+      const st = ctx.getState();
+      const goal = targetId || ui.targetId;
+      if (!goal || goal === st.system) return;
+      while (st.system !== goal) {
+        const prev = st.system;
+        ctx.doTravel(goal);
+        if (st.system === prev) break;
+        if (typeof document !== "undefined" && document.body && document.body.classList && document.body.classList.contains("enc-open")) break;
+        const encDlg = typeof el === "function" ? el("encounter") : null;
+        if (encDlg && encDlg.open) break;
+      }
+    }
+
     if (el("btn-warp")) {
       el("btn-warp").onclick = function () {
         ctx.reclaimStick();
@@ -28,7 +42,7 @@
           ctx.log("Pick a dock on the chart, then Jump.");
           return;
         }
-        ctx.doTravel(ui.targetId);
+        travelRoute(ui.targetId);
       };
     }
 
@@ -144,7 +158,7 @@
           if (globalThis.SkiffHoloRenderer) {
             const st = ctx.getState();
             globalThis.SkiffHoloRenderer.start(st, ctx.HULL_SVG, ctx.systems(), {
-              onTravel: ctx.doTravel,
+              onTravel: travelRoute,
               onRefuel: ctx.doRefuel,
               onRepair: ctx.doRepair,
               onRearm: ctx.doRearm,
