@@ -11,7 +11,7 @@
   function setup(ctx) {
     const {
       VERSION, SAVE_KEY, GOD_KEY, WORLD, SYSTEM_DEFS, SHIPS, GOODS,
-      SF, SM, WP, SK, YE, GOD, buildChart, getSystems, setSystems,
+      SF, SM, WP, SK, YE, GOD, buildChart, getSystems, setSystems, TF,
     } = ctx;
 
     const sys = (id) => getSystems().find((s) => s.id === id);
@@ -139,7 +139,22 @@
       GOODS.forEach((g) => { st.prices[g.id] = priceFor(s, g); });
     }
 
-    function peekPrices(systemId) {
+    /**
+     * True when the captain may see market prices for `id` from `st`:
+     * in-sector (existing sector-fog predicate) AND visited (or where we are).
+     */
+    function canSeePrices(st, id) {
+      const hereId = st && st.system;
+      if (id === hereId) return true;
+      const target = sys(id);
+      if (!target || !hereId) return false;
+      if (!TF.canSeeTradeIntel({ dist: dist(sys(hereId), target), sectorRadius: TF.SECTOR_RADIUS })) return false;
+      return !!(st.visited && st.visited[id]);
+    }
+
+    function peekPrices(st, systemId) {
+      // Fogged or unvisited systems leak nothing: an empty map, never prices.
+      if (!canSeePrices(st, systemId)) return {};
       const s = sys(systemId);
       const out = {};
       GOODS.forEach((g) => { out[g.id] = priceFor(s, g); });
@@ -197,7 +212,7 @@
       hullStock, yardOffered, dumpToFit, applyChart, hash32,
       priceFor, activityLabel, riskFill, bestLaneEdge, cargoMarginAt,
       dist, fuelCost, inRange, fuelReachDistance, canJumpTo, reachableFrom,
-      fresh, rollMarket, peekPrices, bestDealHint, load, save,
+      fresh, rollMarket, peekPrices, canSeePrices, bestDealHint, load, save,
     };
   }
 

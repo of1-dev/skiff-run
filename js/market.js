@@ -198,6 +198,8 @@
   }
 
   function bestLaneEdge(herePrices, therePrices, goods) {
+    // A fogged / unvisited system has no price map. Leak no lane math.
+    if (!therePrices || !Object.keys(therePrices).length) return null;
     let best = null;
     goods.forEach((g) => {
       const edge = therePrices[g.id] - herePrices[g.id];
@@ -207,6 +209,7 @@
   }
 
   function bestDealHint(herePrices, therePrices, goods) {
+    if (!therePrices || !Object.keys(therePrices).length) return "trade fogged (out of sector)";
     const best = bestLaneEdge(herePrices, therePrices, goods);
     if (!best || best.edge < 4) return "flat lane";
     return best.name + " +" + best.edge + "₩";

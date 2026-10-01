@@ -220,7 +220,7 @@
         }
         // Reward ring
         if (s.id !== here.id && reach && canSeeTrade(s.id)) {
-          const edge = bestLaneEdge(state.prices, peekPrices(s.id));
+          const edge = bestLaneEdge(state.prices, peekPrices(state, s.id));
           if (edge && edge.edge >= 4) {
             c2d.beginPath();
             c2d.arc(px, py, r + 3, 0, Math.PI * 2);

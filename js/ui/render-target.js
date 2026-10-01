@@ -59,10 +59,11 @@
       const cost = fuelCost(state.system, id);
       const fuelOk = state.fuel >= cost;
       const reach = hullOk && fuelOk;
-      const tradeOk = canSeeTradeFn ? canSeeTradeFn(id) : true;
-      const peek = tradeOk ? peekPrices(id) : null;
-      const hint = tradeOk ? bestDealHint(state.prices, peek) : "trade fogged (out of sector)";
       const visited = isVisited(id);
+      // Reuse the existing visibility predicates: sector fog AND visited set.
+      const tradeOk = !!(canSeeTradeFn ? canSeeTradeFn(id) : true) && visited;
+      const peek = tradeOk ? peekPrices(state, id) : null;
+      const hint = tradeOk ? bestDealHint(state.prices, peek) : "prices unknown \u2014 not visited, or out of sector";
       title.textContent = t.name + (visited ? "" : " \u00b7 unvisited");
       meta.textContent = reach
         ? (cost + " fuel \u00b7 " + hint + (t.yard ? " \u00b7 yard" : "") + (t.retire ? " \u00b7 retire dock" : ""))
@@ -75,12 +76,12 @@
           SIZE_NAME[t.size | 0] + " \u00b7 " + TECH_NAME[t.tech | 0] + " \u00b7 " + (t.gov || "\u2014") +
           "\nPolice " + activityLabel(t.police) + " \u00b7 Pirates " + activityLabel(t.pirate) +
           (visited ? "" : "\n(Resources still fogged \u2014 first dock reveals more later.)") +
-          (tradeOk ? "" : "\nTrade prices unknown outside your sector \u2014 buy Dock Press or fly closer.");
+            (tradeOk ? "" : "\nTrade prices unknown until you dock here and it is in sector \u2014 buy Dock Press or fly closer.");
       }
       if (marginEl) {
         if (!tradeOk) {
           marginEl.hidden = false;
-          marginEl.textContent = "Trade fog \u2014 out of sector. No price peeks.";
+          marginEl.textContent = "Trade fog \u2014 unvisited or out of sector. No price peeks.";
           marginEl.className = "margin-line";
         } else {
           const hold = cargoMarginAtFn ? cargoMarginAtFn(id) : { units: 0, total: 0 };
@@ -102,7 +103,7 @@
       }
       peekEl.textContent = tradeOk
         ? GOODS.map(function (g) { return g.name.split(" ").pop() + " \u20a9" + peek[g.id]; }).join(" \u00b7 ")
-        : "Prices fogged \u2014 leave sector to scout, or read the Press.";
+        : "Prices fogged \u2014 unvisited, or outside your sector.";
       const plan = !reach ? coursePlan(id) : null;
       const hop = plan && plan.ok && plan.next ? sys(plan.next) : null;
       const hopOk = !!(hop && canJumpTo(state.system, hop.id));
