@@ -70,6 +70,19 @@
           "A free hauler pings you near " + encDest.name + ". Hail for a quick deal, or wave them off.";
         ctx.el("enc-a").textContent = "Hail";
         ctx.el("enc-b").textContent = "Wave off";
+      } else if (kind === "pirate_lord") {
+        ctx.el("enc-title").textContent = "Pirate Lord";
+        if (armed) {
+          ctx.el("enc-body").textContent =
+            "The Pirate Lord's flagship intercepts you at " + encDest.name + "! Fight to claim the bounty or flee.";
+          ctx.el("enc-a").textContent = "Fight";
+          ctx.el("enc-b").textContent = "Flee (−fuel)";
+        } else {
+          ctx.el("enc-body").textContent =
+            "The Pirate Lord's flagship intercepts you at " + encDest.name + "! You have no weapons mounted! Dump cargo or flee.";
+          ctx.el("enc-a").textContent = "Dump cargo";
+          ctx.el("enc-b").textContent = "Flee (−fuel)";
+        }
       } else {
         ctx.el("enc-title").textContent = "Ash Corsairs";
         if (armed) {

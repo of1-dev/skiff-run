@@ -13,6 +13,14 @@
   const ABANDON_PENALTY = 500; // ₩500 cancellation fee
   const EXPIRE_PENALTY = 1000; // ₩1000 contract breach fine
 
+  function isBountyQuest(q) {
+    if (!q) return false;
+    if (q.type === "bounty" || q.isBounty) return true;
+    if (typeof q.id === "string" && q.id.toLowerCase().startsWith("bounty")) return true;
+    if (typeof q.title === "string" && /bounty|pirate\s*lord/i.test(q.title)) return true;
+    return false;
+  }
+
   function createQuest(systems, currentSystemId) {
     const valid = (systems || []).filter(function (s) { return s.id !== currentSystemId; });
     if (!valid.length) return null;
@@ -30,6 +38,7 @@
       maxJumps: DEFAULT_MAX_JUMPS,
       jumpsLeft: DEFAULT_MAX_JUMPS,
       createdEpoch: Date.now(),
+      type: isBounty ? "bounty" : "delivery",
     };
   }
 
@@ -43,17 +52,21 @@
 
     list.forEach(function (q) {
       if (q.dest === currentSystemId) {
-        const left = q.jumpsLeft != null ? q.jumpsLeft : DEFAULT_MAX_JUMPS;
-        const isFast = left >= FAST_JUMP_THRESHOLD;
-        const bonus = isFast ? Math.floor((q.reward || 0) * FAST_BONUS_PCT) : 0;
-        const payout = (q.reward || 0) + bonus;
-        completed.push({
-          quest: q,
-          isFast: isFast,
-          bonus: bonus,
-          payout: payout,
-        });
-        totalPayout += payout;
+        if (isBountyQuest(q)) {
+          active.push(Object.assign({}, q));
+        } else {
+          const left = q.jumpsLeft != null ? q.jumpsLeft : DEFAULT_MAX_JUMPS;
+          const isFast = left >= FAST_JUMP_THRESHOLD;
+          const bonus = isFast ? Math.floor((q.reward || 0) * FAST_BONUS_PCT) : 0;
+          const payout = (q.reward || 0) + bonus;
+          completed.push({
+            quest: q,
+            isFast: isFast,
+            bonus: bonus,
+            payout: payout,
+          });
+          totalPayout += payout;
+        }
       } else {
         const nextLeft = (q.jumpsLeft != null ? q.jumpsLeft : DEFAULT_MAX_JUMPS) - 1;
         if (nextLeft <= 0) {
@@ -100,5 +113,6 @@
     createQuest: createQuest,
     resolveJumpQuests: resolveJumpQuests,
     abandonQuest: abandonQuest,
+    isBountyQuest: isBountyQuest,
   };
 });
