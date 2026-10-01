@@ -12,6 +12,15 @@
     
     function log(msg) { logMsg += (logMsg ? " " : "") + msg; }
 
+    const initialCredits = state.credits || 0;
+    const initialFuel = state.fuel || 0;
+    const initialHull = state.hull || 0;
+    const initialAmmo = state.ammo || 0;
+    const initialCrew = state.crew || 0;
+    const initialCargoCount = Object.values(state.cargo || {}).reduce((a, b) => a + (b || 0), 0);
+    let outcome = "none";
+    let hullDamage = 0;
+
     const armed = hull.weapons && state.crew > 0 && (state.ammo || 0) > 0;
     
     if (encKind === "warden") {
@@ -19,17 +28,21 @@
         const fine = Math.min(state.credits, 400);
         state.credits -= fine;
         log("Paid Wardens ₩" + fine + ".");
+        outcome = "fine_paid";
       } else if (rand() < 0.55) {
         if (tickSkill) tickSkill("fighter", true);
         log("Bluff held. Wardens wave you on.");
+        outcome = "bluffed";
       } else {
         const fine = Math.min(state.credits, 700);
         state.credits -= fine;
         log("Bluff failed. Fine ₩" + fine + ".");
+        outcome = "bluff_failed";
       }
     } else if (encKind === "trader") {
       if (choice === "b") {
         log("Waved the trader off.");
+        outcome = "waved_off";
       } else {
         const held = GOODS.map((g) => g.id).filter((id) => (state.cargo[id] || 0) > 0);
         if (held.length && rand() < 0.55) {
@@ -40,6 +53,7 @@
           state.credits += p;
           if (tickSkill) tickSkill("trader", true);
           log("Trader bought 1 " + GOODS.find((g) => g.id === id).name + " for ₩" + p + ".");
+          outcome = "sold_cargo";
         } else {
           const g = GOODS[Math.floor(rand() * GOODS.length)];
           const room = hull.cargo - cargoUsed;
@@ -48,8 +62,10 @@
             state.credits -= p;
             state.cargo[g.id] = (state.cargo[g.id] || 0) + 1;
             log("Bought 1 " + g.name + " off a trader for ₩" + p + ".");
+            outcome = "bought_cargo";
           } else {
             log("Trader had nothing you could take. Fair skies.");
+            outcome = "no_trade";
           }
         }
       }
@@ -64,8 +80,10 @@
         state.credits += prize;
         if (tickSkill) tickSkill("fighter", false);
         log(`Corsairs broke off. Salvage ₩${prize} (-${ammoUsed} ammo).`);
+        outcome = "victory";
       } else {
         const dmg = 15 + pir * 5;
+        hullDamage = dmg;
         state.hull = (state.hull || 0) - dmg;
         if (tickSkill) tickSkill("fighter", true);
         if (state.hull <= 0) {
@@ -77,8 +95,10 @@
           if (globalThis.SkiffCaptainLog && typeof globalThis.SkiffCaptainLog.append === "function") {
             state.captainLog = globalThis.SkiffCaptainLog.append(state.captainLog, { type: "loss", summary: msg });
           }
+          outcome = "defeat";
         } else {
           log(`Fight went bad. Hull took ${dmg} damage (-${ammoUsed} ammo).`);
+          outcome = "defeat";
         }
       }
     } else if (choice === "a") {
@@ -97,11 +117,13 @@
       if (dumped && globalThis.SkiffCaptainLog && typeof globalThis.SkiffCaptainLog.append === "function") {
         state.captainLog = globalThis.SkiffCaptainLog.append(state.captainLog, { type: "loss", summary: msg });
       }
+      outcome = dumped ? "cargo_lost" : "escaped";
     } else {
       const burn = Math.min(state.fuel, 1 + (rand() < 0.35 ? 1 : 0));
       if (state.fuel >= 1) {
         state.fuel -= burn;
         log("Fled. −" + burn + " fuel.");
+        outcome = "fled";
       } else {
         state.credits = Math.max(0, state.credits - 250);
         const msg = "No fuel to flee. They shake you down ₩250.";
@@ -109,9 +131,30 @@
         if (globalThis.SkiffCaptainLog && typeof globalThis.SkiffCaptainLog.append === "function") {
           state.captainLog = globalThis.SkiffCaptainLog.append(state.captainLog, { type: "loss", summary: msg });
         }
+        outcome = "shakedown";
       }
     }
-    return { state, logMsg };
+
+    const creditsChange = (state.credits || 0) - initialCredits;
+    const fuelChange = (state.fuel || 0) - initialFuel;
+    const hullChange = (state.hull || 0) - initialHull;
+    const ammoChange = (state.ammo || 0) - initialAmmo;
+    const crewChange = (state.crew || 0) - initialCrew;
+    const finalCargoCount = Object.values(state.cargo || {}).reduce((a, b) => a + (b || 0), 0);
+    const cargoChange = finalCargoCount - initialCargoCount;
+
+    const summary = {
+      outcome,
+      creditsChange,
+      fuelChange,
+      hullChange,
+      hullDamage,
+      ammoChange,
+      crewChange,
+      cargoChange,
+    };
+
+    return { summary, logMsg, state };
   }
 
   return { resolveEncounter };
