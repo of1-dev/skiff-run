@@ -236,7 +236,7 @@
     HULL_SVG, WP, sys, netWorth, RETIRE_NET, log, save, render, renderTarget, sizeMap, drawMap, pickSystemAt,
     showTab, setChartMode, applyTheme, applyPilot, reclaimStick, coursePlan, runChartSearch,
     doRefuel, doRepair, doRearm, doSellAll, doFillCheap, doSellExpensive, doTravel, resetGame,
-    syncPrefsUi, bridgeAct
+    syncPrefsUi, bridgeAct, doBuy, doSell
   });
 
   function logAgentAct(op, res) {
