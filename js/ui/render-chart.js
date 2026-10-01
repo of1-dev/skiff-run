@@ -277,21 +277,44 @@
     function pickSystemAt(clientX, clientY) {
       const state = st();
       const canvas = el("map");
-      const rect = canvas.getBoundingClientRect();
-      const sx = clientX - rect.left;
-      const sy = clientY - rect.top;
-      const w = rect.width;
-      const h = rect.height;
+      if (!canvas) return null;
+      const rect = (canvas.getBoundingClientRect && canvas.getBoundingClientRect()) || {
+        left: 0,
+        top: 0,
+        width: canvas.width || 720,
+        height: canvas.height || 720,
+      };
+
+      const dpr = Math.min((typeof window !== "undefined" && window.devicePixelRatio) || 1, 2);
+      const drawW = canvas.width ? (canvas.width / dpr) : (rect.width || 720);
+      const drawH = canvas.height ? (canvas.height / dpr) : (rect.height || 720);
+
+      const cssX = clientX - (rect.left || 0);
+      const cssY = clientY - (rect.top || 0);
+
       const here = sys(state.system);
-      const cam = chartCamera(ui.chartMode, here, w, h);
-      const world = cam.toWorld(sx, sy);
+      const cam = chartCamera(ui.chartMode, here, drawW, drawH);
+
       let best = null;
-      const hitPx = ui.chartMode === "full" ? 8 : 14;
-      let bestD = hitPx / cam.scale;
+      let bestDist = Infinity;
+
       SYSTEMS.forEach((s) => {
         if (!chartVisible(s, state.system, ui.chartMode)) return;
-        const d = Math.hypot(s.x - world.x, s.y - world.y);
-        if (d < bestD) { bestD = d; best = s; }
+        const p = cam.toScreen(s.x, s.y);
+        const screenX = (rect.width > 0 && drawW > 0) ? (p.x * rect.width) / drawW : p.x;
+        const screenY = (rect.height > 0 && drawH > 0) ? (p.y * rect.height) / drawH : p.y;
+        const distPx = Math.hypot(cssX - screenX, cssY - screenY);
+
+        const isHere = s.id === state.system;
+        const isSelected = ui.targetId === s.id;
+        const visualR = isHere ? 7 : (isSelected ? 6 : (ui.chartMode === "full" ? 3.5 : 4.5));
+        const visualRScreen = (rect.width > 0 && drawW > 0) ? (visualR * rect.width) / drawW : visualR;
+        const hitRadius = Math.max(visualRScreen + 18, ui.chartMode === "full" ? 22 : 26);
+
+        if (distPx <= hitRadius && distPx < bestDist) {
+          bestDist = distPx;
+          best = s;
+        }
       });
       return best;
     }

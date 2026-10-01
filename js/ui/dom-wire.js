@@ -87,7 +87,16 @@
     }
 
     if (el("map")) {
-      el("map").addEventListener("pointerdown", function (e) {
+      const mapEl = el("map");
+      let lastPointerDown = { x: -9999, y: -9999, time: 0 };
+      function onMapClick(e) {
+        const now = Date.now();
+        if (e.type === "click" && now - lastPointerDown.time < 350 && Math.hypot(e.clientX - lastPointerDown.x, e.clientY - lastPointerDown.y) < 25) {
+          return;
+        }
+        if (e.type === "pointerdown") {
+          lastPointerDown = { x: e.clientX, y: e.clientY, time: now };
+        }
         const s = ctx.pickSystemAt(e.clientX, e.clientY);
         if (!s) return;
         const st = ctx.getState();
@@ -98,7 +107,9 @@
         }
         ctx.drawMap();
         ctx.renderTarget();
-      });
+      }
+      mapEl.addEventListener("pointerdown", onMapClick);
+      mapEl.addEventListener("click", onMapClick);
     }
 
     window.addEventListener("resize", function () {
