@@ -91,7 +91,7 @@
       if (still && still !== dest) {
         view.courseDest = still;
         const plan = ctx.coursePlan(still);
-        view.targetId = (plan && plan.next) ? plan.next : still;
+        view.targetId = still;
         const left = plan && plan.jumps ? plan.jumps : "?";
         ctx.log("Arrived " + ctx.sys(dest).name + " (−" + cost + " fuel). Course still " + (ctx.sys(still) || {}).name + " — " + left + " jumps.");
       } else {

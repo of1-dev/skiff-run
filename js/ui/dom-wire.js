@@ -116,7 +116,9 @@
         const st = ctx.getState();
         if (s.id === st.system) {
           ui.targetId = null;
+          ui.courseDest = null;
         } else {
+          if (ui.courseDest && ui.courseDest !== s.id) ui.courseDest = null;
           ui.targetId = s.id;
         }
         ctx.drawMap();

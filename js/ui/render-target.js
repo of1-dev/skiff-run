@@ -108,8 +108,9 @@
       const hop = plan && plan.ok && plan.next ? sys(plan.next) : null;
       const hopOk = !!(hop && canJumpTo(state.system, hop.id));
       warp.disabled = !(reach || hopOk);
-      if (reach) warp.textContent = "Jump \u2212" + cost + " fuel";
-      else if (hopOk) warp.textContent = "Hop via " + hop.name + " \u00b7 " + plan.jumps + " jumps";
+      const isResume = !!(ui && ui.courseDest && ui.courseDest === id && state.system !== id);
+      if (reach) warp.textContent = (isResume ? "Resume hop \u2212" : "Jump \u2212") + cost + " fuel";
+      else if (hopOk) warp.textContent = (isResume ? "Resume hop via " : "Hop via ") + hop.name + " \u00b7 " + plan.jumps + " jumps";
       else warp.textContent = !hullOk ? "Out of range" : "Need fuel";
     }
 
