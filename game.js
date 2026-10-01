@@ -72,10 +72,11 @@
     bestLaneEdge, cargoMarginAt: rawCargoMarginAt, dist, fuelCost, inRange: rawInRange,
     fuelReachDistance: rawFuelReachDistance, canJumpTo: rawCanJumpTo,
     reachableFrom: rawReachableFrom, fresh, rollMarket, peekPrices,
-    bestDealHint, load, save: rawSave,
+    bestDealHint, load, save: rawSave, getSystemList: rawGetSystemList,
   } = galaxyState;
 
   function hull() { return ship(state.shipId) || SHIPS[0]; }
+  function getSystemList() { return rawGetSystemList ? rawGetSystemList(state) : []; }
   function godEnabled() { return rawGodEnabled(state); }
   function yardOffered() { return rawYardOffered(state); }
   function dumpToFit(max) { return rawDumpToFit(state, max); }
@@ -184,7 +185,7 @@
         hullStock, yardOffered, YE, doBuyShip, doAbandonQuest, showTab, render: () => render(), log,
         DOCK_WORK_PAY, doDockWork, CREW_HIRE, doHireCrew, doFireCrew,
         CR, SK, syncGodUi: () => syncGodUi(), sizeMap, drawMap, RETIRE_NET, save,
-        canSeeTrade, cargoMarginAt, renderWaypointChrome
+        canSeeTrade, cargoMarginAt, renderWaypointChrome, getSystemList
       };
       const yardApi = globalThis.SkiffRenderYard ? globalThis.SkiffRenderYard.setup(sharedCtx) : {};
       const targetApi = globalThis.SkiffRenderTarget ? globalThis.SkiffRenderTarget.setup(sharedCtx) : {};

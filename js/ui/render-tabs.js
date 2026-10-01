@@ -51,6 +51,19 @@
       box.scrollTop = box.scrollHeight;
     }
 
+    function renderSystemList() {
+      const box = el("system-list");
+      if (!box) return;
+      const list = typeof ctx.getSystemList === "function" ? ctx.getSystemList() : [];
+      if (!list.length) return;
+      const visitedCount = list.filter(function (s) { return s.visited; }).length;
+      box.innerHTML = '<div style="width:100%;margin-bottom:0.25rem;">' + visitedCount + ' / ' + list.length + ' visited</div>' +
+        list.map(function (s) {
+          return '<span style="' + (s.visited ? "color:var(--ok,#7A9E7E);" : "opacity:0.45;") + '">' +
+            (s.visited ? "● " : "○ ") + esc(s.name) + '</span>';
+        }).join("");
+    }
+
     function renderMarket(state, h) {
       const market = el("market");
       market.innerHTML = "";
@@ -184,6 +197,7 @@
       renderShipPanel();
       if (typeof renderWaypointChromeFn === "function") renderWaypointChromeFn();
       renderSkillsBox();
+      renderSystemList();
       renderAgentActionLog();
       renderCaptainLog();
       if (typeof syncGodUi === "function") syncGodUi();
@@ -209,7 +223,7 @@
       save(state);
     }
 
-    return { render, renderTarget, renderQuests, renderSkillsBox, renderShipPanel, renderAgentActionLog, renderCaptainLog };
+    return { render, renderTarget, renderQuests, renderSkillsBox, renderShipPanel, renderAgentActionLog, renderCaptainLog, renderSystemList };
   }
 
   return { setup };

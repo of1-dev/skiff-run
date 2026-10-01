@@ -207,12 +207,21 @@
       }
     }
 
+    function getSystemList(st) {
+      const list = (typeof getSystems === "function" ? getSystems() : null) || SYSTEM_DEFS || [];
+      const visited = (st && st.visited) || {};
+      return list.map((s) => Object.assign({}, s, {
+        visited: !!visited[s.id],
+      }));
+    }
+
     return {
       sys, ship, readGodFlag, writeGodFlag, godEnabled,
       hullStock, yardOffered, dumpToFit, applyChart, hash32,
       priceFor, activityLabel, riskFill, bestLaneEdge, cargoMarginAt,
       dist, fuelCost, inRange, fuelReachDistance, canJumpTo, reachableFrom,
       fresh, rollMarket, peekPrices, canSeePrices, bestDealHint, load, save,
+      getSystemList,
     };
   }
 
