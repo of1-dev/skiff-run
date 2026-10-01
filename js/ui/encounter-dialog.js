@@ -43,9 +43,8 @@
       if (summary.fuelChange) {
         parts.push((summary.fuelChange > 0 ? "+" : "") + summary.fuelChange + " fuel");
       }
-      if (summary.hullDamage > 0 || summary.hullChange < 0) {
-        const dmg = summary.hullDamage || Math.abs(summary.hullChange);
-        parts.push("-" + dmg + " hull");
+      if (summary.hullChange < 0) {
+        parts.push("-" + Math.abs(summary.hullChange) + " hull");
       } else if (summary.hullChange > 0) {
         parts.push("+" + summary.hullChange + " hull");
       }

@@ -132,7 +132,7 @@ describe("ATDD: FIX 1 — Ship always visible in status strip", () => {
       hull: () => SHIPS.find((s) => s.id === state.shipId) || SHIPS[0],
       cargoUsed: () => 0,
       netWorth: () => state.credits,
-      VERSION: "0.9.42",
+      VERSION: "0.9.41",
       currentPilot: () => "human",
       el: (id) => elements[id] || (elements[id] = createMockElement(id)),
       SYSTEMS,
@@ -222,7 +222,7 @@ describe("ATDD: FIX 1 — Ship always visible in status strip", () => {
       hull: () => SHIPS.find((s) => s.id === state.shipId) || SHIPS[0],
       cargoUsed: () => 0,
       netWorth: () => state.credits,
-      VERSION: "0.9.42",
+      VERSION: "0.9.41",
       currentPilot: () => "human",
       el: (id) => elements[id] || (elements[id] = createMockElement(id)),
       SYSTEMS,
@@ -366,11 +366,6 @@ describe("ATDD: FIX 2 — Text-size / readability setting", () => {
 });
 
 describe("ATDD: FIX 3 — Encounter results summary", () => {
-  it("git branch fix/encounter-result-ui is checked and absent (fresh implementation confirmed)", () => {
-    // Verified during ticket inspection: git show-ref fix/encounter-result-ui does not exist
-    assert.ok(true);
-  });
-
   it("index.html contains encounter result elements", () => {
     assert.ok(
       HTML.includes('id="enc-result"') || HTML.includes('class="enc-result"'),

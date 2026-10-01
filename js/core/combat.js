@@ -19,7 +19,6 @@
     const initialCrew = state.crew || 0;
     const initialCargoCount = Object.values(state.cargo || {}).reduce((a, b) => a + (b || 0), 0);
     let outcome = "none";
-    let hullDamage = 0;
 
     const armed = hull.weapons && state.crew > 0 && (state.ammo || 0) > 0;
     
@@ -83,7 +82,6 @@
         outcome = "victory";
       } else {
         const dmg = 15 + pir * 5;
-        hullDamage = dmg;
         state.hull = (state.hull || 0) - dmg;
         if (tickSkill) tickSkill("fighter", true);
         if (state.hull <= 0) {
@@ -148,7 +146,6 @@
       creditsChange,
       fuelChange,
       hullChange,
-      hullDamage,
       ammoChange,
       crewChange,
       cargoChange,
