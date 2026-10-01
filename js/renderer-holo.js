@@ -24,6 +24,7 @@
   let onRepair = null;
   let onRearm = null;
   let onPin = null;
+  let onExit = null;
 
   const ACTIVITY_NAMES = ["Absent", "Minimal", "Few", "Some", "Moderate", "Many", "Abundant", "Swarms"];
   function activityLabel(n) {
@@ -192,15 +193,21 @@
     return map;
   }
 
+  function exitHolo() {
+    const exitBtn = typeof document !== "undefined" && document.getElementById && document.getElementById("btn-exit-holo");
+    if (exitBtn && typeof exitBtn.click === "function") {
+      exitBtn.click();
+    } else if (exitBtn && typeof exitBtn.onclick === "function") {
+      exitBtn.onclick();
+    } else if (typeof onExit === "function") {
+      onExit();
+    }
+    stop();
+  }
+
   function onKeyDown(e) {
     if (e && (e.key === "Escape" || e.key === "Esc")) {
-      const exitBtn = typeof document !== "undefined" && document.getElementById && document.getElementById("btn-exit-holo");
-      if (exitBtn && typeof exitBtn.click === "function") {
-        exitBtn.click();
-      } else if (exitBtn && typeof exitBtn.onclick === "function") {
-        exitBtn.onclick();
-      }
-      stop();
+      exitHolo();
     }
   }
 
@@ -222,6 +229,7 @@
       onRepair = callbacks.onRepair || null;
       onRearm = callbacks.onRearm || null;
       onPin = callbacks.onPin || null;
+      onExit = callbacks.onExit || null;
     }
     cacheShipImages(svgs);
     
@@ -303,7 +311,7 @@
     let found = null;
     for (const [id, pos] of Object.entries(posMap)) {
       const p = cam.toScreen(pos.x, pos.y);
-      if (Math.hypot(mousePos.x - p.x, mousePos.y - p.y) <= 16) {
+      if (Math.hypot(mousePos.x - p.x, mousePos.y - p.y) <= 18) {
         found = id;
         break;
       }
@@ -335,10 +343,14 @@
     for (const [id, pos] of Object.entries(posMap)) {
       const p = cam.toScreen(pos.x, pos.y);
       if (Math.hypot(mx - p.x, my - p.y) <= 18) {
-        selectedSystemId = (selectedSystemId === id && id !== currentState.system) ? null : id;
+        selectedSystemId = id;
+        if (onPin) onPin(id);
         return;
       }
     }
+
+    // Tap elsewhere (empty sky) exits holo view
+    exitHolo();
   }
 
   function draw() {
@@ -849,6 +861,11 @@
       ctx.font = "italic 13px monospace";
       ctx.fillText("Currently docked here.", cardX + 16, cardY + 144);
     }
+
+    interactiveZones.push({
+      x: cardX, y: cardY, w: cardW, h: cardH,
+      action: () => {}
+    });
   }
 
   function selectSystem(systemId) {

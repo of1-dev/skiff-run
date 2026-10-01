@@ -152,6 +152,11 @@
                 ctx.save(st);
                 ctx.render();
               },
+              onExit: function () {
+                const classicBtn = document.querySelector('[data-renderer-pick="classic"]');
+                if (classicBtn) classicBtn.click();
+                else globalThis.SkiffHoloRenderer.stop();
+              },
             });
           }
         } else {
