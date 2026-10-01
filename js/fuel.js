@@ -2,8 +2,9 @@
  * Skiff Run — fuel / jump / refuel (pure, ATDD).
  */
 (function (root, factory) {
-  if (typeof module === "object" && module.exports) module.exports = factory();
-  else root.SkiffFuel = factory();
+  const mod = factory();
+  if (typeof module === "object" && module.exports) module.exports = mod;
+  if (root) root.SkiffFuel = mod;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
@@ -11,9 +12,15 @@
   const FUEL_PRICE = 45;
 
   function dist(a, b) {
-    const dx = a.x - b.x;
-    const dy = a.y - b.y;
+    if (!a || !b) return Infinity;
+    const dx = (a.x || 0) - (b.x || 0);
+    const dy = (a.y || 0) - (b.y || 0);
     return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  function roundDist(d) {
+    if (d == null || Number.isNaN(d) || !Number.isFinite(d)) return 0;
+    return Math.round(d);
   }
 
   function fuelCost(from, to) {
@@ -66,6 +73,7 @@
     FUEL_DIST,
     FUEL_PRICE,
     dist,
+    roundDist,
     fuelCost,
     inRange,
     fuelReachDistance,

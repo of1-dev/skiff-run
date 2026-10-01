@@ -13,7 +13,18 @@
       GOODS, dist, fuelCost, inRange, canJumpTo,
       peekPrices, bestDealHint, bestLaneEdge, activityLabel,
       isVisited, coursePlan, SIZE_NAME, TECH_NAME,
+      roundDist: ctxRoundDist,
     } = ctx;
+    const SF = (typeof globalThis !== "undefined" && globalThis.SkiffFuel) || (function () {
+      try { return require("../fuel.js"); } catch (_) { return null; }
+    })();
+    const roundDist = ctxRoundDist || (SF && SF.roundDist) || Math.round;
+    const distFn = dist || (SF && SF.dist) || function (a, b) {
+      if (!a || !b) return Infinity;
+      const dx = (a.x || 0) - (b.x || 0);
+      const dy = (a.y || 0) - (b.y || 0);
+      return Math.sqrt(dx * dx + dy * dy);
+    };
     function st() { return typeof ctx.getState === "function" ? ctx.getState() : ctx.state; }
 
     function renderTarget(opts) {
@@ -56,7 +67,7 @@
       meta.textContent = reach
         ? (cost + " fuel \u00b7 " + hint + (t.yard ? " \u00b7 yard" : "") + (t.retire ? " \u00b7 retire dock" : ""))
         : (!hullOk
-          ? ("Out of range (" + Math.ceil(dist(sys(state.system), t)) + " units \u00b7 hull " + hull().range + ")")
+          ? ("Out of range (" + roundDist(distFn(sys(state.system), t)) + " units \u00b7 hull " + hull().range + ")")
           : ("Need " + cost + " fuel (have " + state.fuel + ")"));
       if (dossier) {
         dossier.hidden = false;
