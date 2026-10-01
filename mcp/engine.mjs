@@ -96,7 +96,7 @@ export const SHIPS = [
   { id: "hold-barge", name: "Hold Barge", cargo: 40, fuelMax: 18, range: 32, weapons: false, crewMax: 3, price: 9000 },
   { id: "ember-cutter", name: "Ember Cutter", cargo: 16, fuelMax: 16, range: 38, weapons: true, crewMax: 2, price: 12000 },
   { id: "wasp-prime", name: "Wasp Prime", cargo: 18, fuelMax: 20, range: 44, weapons: true, crewMax: 3, price: 28000 },
-  { id: "unbowed", name: "Unbowed", cargo: 12, fuelMax: 16, range: 36, weapons: true, crewMax: 3, price: 0, gated: true },
+  { id: "unbowed", name: "Unbowed", cargo: 12, fuelMax: 16, range: 36, weapons: true, crewMax: 3, hullMax: 80, ammoMax: 50, price: 0, gated: true },
 ];
 
 /** Peak Unbowed crew — match Fold js/debug-god.js PEAK_UNBOWED_CREW. */
@@ -725,6 +725,8 @@ export class SkiffGame {
     }
     this.state.shipId = next.id;
     this.state.fuel = next.fuelMax;
+    if (next.hullMax != null) this.state.hull = next.hullMax;
+    if (next.ammoMax != null) this.state.ammo = next.ammoMax;
     this.state.roster = PEAK_UNBOWED_CREW.map((c) => ({ ...c }));
     this.state.crew = this.state.roster.length;
     const jnote = jettison ? ` Jettisoned ${jettison} cargo to fit hold.` : "";

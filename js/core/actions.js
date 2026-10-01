@@ -175,6 +175,8 @@
       st.roster = ctx.CR.normalizeRoster(st.roster || [], next.crewMax);
       st.crew = ctx.CR.syncHeadcount(st.roster);
       if (st.fuel > next.fuelMax) st.fuel = next.fuelMax;
+      const nextMaxHull = next.hullMax != null ? next.hullMax : next.maxHull;
+      if (nextMaxHull != null && st.hull > nextMaxHull) st.hull = nextMaxHull;
       let pay = "Paid ₩" + due.toLocaleString();
       if (surplus > 0) pay = "Scrap payout ₩" + surplus.toLocaleString();
       else if (due === 0) pay = "No cash due";

@@ -146,7 +146,9 @@
       el("credits").textContent = "\u20a9" + state.credits.toLocaleString();
       el("fuel").textContent = state.fuel + " / " + h.fuelMax;
       el("cargo").textContent = cargoUsed(state) + " / " + h.cargo;
-      el("hull-val").textContent = (state.hull || 0) + " / " + (h.hullMax || 0);
+      const maxH = (h.hullMax != null ? h.hullMax : h.maxHull) || 0;
+      const curH = Math.min(state.hull != null ? state.hull : maxH, maxH);
+      el("hull-val").textContent = curH + " / " + maxH;
       el("ammo-val").textContent = (state.ammo || 0) + " / " + (h.ammoMax || 0);
       el("net").textContent = "\u20a9" + netWorth(state).toLocaleString();
       el("log").textContent = state.log;
