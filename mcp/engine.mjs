@@ -4,6 +4,7 @@ export const RULESET = "skiff-0.9.41";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const AgentActionLog = require("../js/agent-action-log.js");
+const TradeFog = require("../js/trade-fog.js");
 const RETIRE_NET = 35000;
 const FUEL_PRICE = 45;
 const CREW_HIRE = 800;
@@ -305,7 +306,19 @@ export class SkiffGame {
     GOODS.forEach((g) => { this.state.prices[g.id] = this.priceFor(s, g); });
   }
 
+  /** In-sector AND visited, else no prices. Reuses the sector radius + visited set. */
+  canSeePrices(id) {
+    const here = this.state.system;
+    if (id === here) return true;
+    const t = this.sys(id);
+    if (!t) return false;
+    if (this.dist(this.sys(here), t) > TradeFog.SECTOR_RADIUS + 0.01) return false;
+    return !!(this.state.visited && this.state.visited[id]);
+  }
+
   peekPrices(systemId) {
+    // Fogged or unvisited systems leak nothing: an empty map, never prices.
+    if (!this.canSeePrices(systemId)) return {};
     const s = this.sys(systemId);
     const out = {};
     GOODS.forEach((g) => { out[g.id] = this.priceFor(s, g); });
@@ -408,7 +421,7 @@ export class SkiffGame {
 
   chart(mode = "local") {
     const here = this.state.system;
-    const SECTOR_RADIUS = 48;
+    const SECTOR_RADIUS = TradeFog.SECTOR_RADIUS;
     const nodes = this.systems
       .filter((s) => {
         if (s.id === here) return true;
@@ -420,10 +433,13 @@ export class SkiffGame {
         const reach = s.id === here || this.inRange(here, s.id);
         const peek = this.peekPrices(s.id);
         let bestEdge = null;
-        GOODS.forEach((g) => {
-          const edge = peek[g.id] - this.state.prices[g.id];
-          if (bestEdge == null || edge > bestEdge.edge) bestEdge = { good: g.id, edge };
-        });
+        // No visible price map means no lane edge to advertise.
+        if (Object.keys(peek).length) {
+          GOODS.forEach((g) => {
+            const edge = peek[g.id] - this.state.prices[g.id];
+            if (bestEdge == null || edge > bestEdge.edge) bestEdge = { good: g.id, edge };
+          });
+        }
         return {
           id: s.id,
           name: s.name,
