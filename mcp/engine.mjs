@@ -4,6 +4,7 @@ export const RULESET = "skiff-0.9.41";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const AgentActionLog = require("../js/agent-action-log.js");
+const Armament = require("../js/core/armament.js");
 const RETIRE_NET = 35000;
 const FUEL_PRICE = 45;
 const CREW_HIRE = 800;
@@ -551,7 +552,7 @@ export class SkiffGame {
       this.pendingEncounter = null;
       return;
     }
-    const armed = !!(h.weapons && (this.state.ammo || 0) > 0);
+    const armed = Armament.isArmed(this.state, h);
     const options =
       kind === "warden" ? [{ id: "a", label: "Pay fine" }, { id: "b", label: "Bluff" }]
       : kind === "trader" ? [{ id: "a", label: "Hail" }, { id: "b", label: "Wave off" }]

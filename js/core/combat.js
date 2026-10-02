@@ -1,10 +1,10 @@
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory();
+    module.exports = factory(require('./armament.js'));
   } else {
-    root.SkiffCombat = factory();
+    root.SkiffCombat = factory(root.SkiffArmament);
   }
-}(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+}(typeof globalThis !== 'undefined' ? globalThis : this, function (Armament) {
 
   const FAST_JUMP_THRESHOLD = 7;
   const FAST_BONUS_PCT = 0.35;
@@ -26,7 +26,7 @@
     
     function log(msg) { logMsg += (logMsg ? " " : "") + msg; }
 
-    const armed = !!(hull && hull.weapons && (state.ammo || 0) > 0);
+    const armed = Armament.isArmed(state, hull);
     
     if (encKind === "warden") {
       if (choice === "a") {
