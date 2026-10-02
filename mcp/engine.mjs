@@ -306,8 +306,22 @@ export class SkiffGame {
     GOODS.forEach((g) => { this.state.prices[g.id] = this.priceFor(s, g); });
   }
 
+  /**
+   * Market prices for a system, gated like Fold canSeePrices:
+   * current dock, or in-sector AND visited. Else {}.
+   */
   peekPrices(systemId) {
+    const hereId = this.state && this.state.system;
+    if (systemId !== hereId) {
+      const target = this.sys(systemId);
+      const here = hereId && this.sys(hereId);
+      if (!target || !here) return {};
+      const SECTOR_RADIUS = 48;
+      if (this.dist(here, target) > SECTOR_RADIUS + 0.01) return {};
+      if (!(this.state.visited && this.state.visited[systemId])) return {};
+    }
     const s = this.sys(systemId);
+    if (!s) return {};
     const out = {};
     GOODS.forEach((g) => { out[g.id] = this.priceFor(s, g); });
     return out;
