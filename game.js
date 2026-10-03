@@ -4,7 +4,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "0.9.41";
+  const VERSION = "0.10.0";
   const WORLD = 160;
   const SAVE_KEY = "skiff-run-save";
   const GOD_KEY = "skiff-run-god";
