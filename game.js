@@ -160,7 +160,7 @@
     getState: () => state, getUi: () => ui, getBridgeOn: () => bridgeOn, currentPilot, showTab,
     sys, ship, hull, cargoUsed, hullStock, yardOffered, dumpToFit,
     log, render: () => render(), save, bridgeAct, tickSkill, markVisited, rollMarket,
-    inRange, fuelCost, courseDest, coursePlan, maybeEncounter, priceFor,
+    inRange, fuelCost, courseDest, coursePlan, maybeEncounter, openEncounter, priceFor,
     systems: () => SYSTEMS, GOODS, FUEL_PRICE, YE, CR, SP, SM, SF, QK: globalThis.SkiffQuests
   });
   const { doTravel, doRefuel, doRepair, doRearm, doBuyShip, doDockWork, doHireCrew, doFireCrew, doBuyPress, doAbandonQuest } = actionsApi;
@@ -237,7 +237,7 @@
     HULL_SVG, WP, sys, netWorth, RETIRE_NET, log, save, render, renderTarget, sizeMap, drawMap, pickSystemAt,
     showTab, setChartMode, applyTheme, applyTextSize, applyPilot, reclaimStick, coursePlan, runChartSearch,
     doRefuel, doRepair, doRearm, doSellAll, doFillCheap, doSellExpensive, doTravel, resetGame,
-    syncPrefsUi, bridgeAct
+    syncPrefsUi, bridgeAct, doBuy, doSell
   });
 
   function logAgentAct(op, res) {

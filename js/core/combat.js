@@ -1,10 +1,24 @@
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory();
+    module.exports = factory(require('./armament.js'));
   } else {
-    root.SkiffCombat = factory();
+    root.SkiffCombat = factory(root.SkiffArmament);
   }
-}(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+}(typeof globalThis !== 'undefined' ? globalThis : this, function (Armament) {
+
+  const FAST_JUMP_THRESHOLD = 7;
+  const FAST_BONUS_PCT = 0.35;
+
+  function isBountyQuest(q) {
+    if (!q) return false;
+    if (globalThis.SkiffQuests && typeof globalThis.SkiffQuests.isBountyQuest === "function") {
+      return globalThis.SkiffQuests.isBountyQuest(q);
+    }
+    if (q.type === "bounty" || q.isBounty) return true;
+    if (typeof q.id === "string" && q.id.toLowerCase().startsWith("bounty")) return true;
+    if (typeof q.title === "string" && /bounty|pirate\s*lord/i.test(q.title)) return true;
+    return false;
+  }
 
   function resolveEncounter(params) {
     const { state, encKind, dest, choice, GOODS, hull, cargoUsed, tickSkill, rand = Math.random } = params;
@@ -20,7 +34,7 @@
     const initialCargoCount = Object.values(state.cargo || {}).reduce((a, b) => a + (b || 0), 0);
     let outcome = "none";
 
-    const armed = hull.weapons && state.crew > 0 && (state.ammo || 0) > 0;
+    const armed = Armament.isArmed(state, hull);
     
     if (encKind === "warden") {
       if (choice === "a") {
@@ -72,14 +86,46 @@
       const pir = (dest && dest.pirate) || 3;
       const ammoUsed = Math.min(state.ammo || 0, Math.floor(rand() * 3) + 1);
       state.ammo = Math.max(0, (state.ammo || 0) - ammoUsed);
-      const odds = 0.55 + state.crew * 0.06 - pir * 0.03 + (ammoUsed * 0.05);
+      const odds = 0.55 + (state.crew || 0) * 0.06 - pir * 0.03 + (ammoUsed * 0.05);
       
       if (rand() < odds) {
-        const prize = 350 + state.crew * 150 + pir * 40;
+        const prize = 350 + (state.crew || 0) * 150 + pir * 40;
         state.credits += prize;
         if (tickSkill) tickSkill("fighter", false);
-        log(`Corsairs broke off. Salvage ₩${prize} (-${ammoUsed} ammo).`);
-        outcome = "victory";
+const isPirateLord = encKind === "pirate_lord" || /pirate[_-]?lord/i.test(encKind || "");
+        if (isPirateLord) {
+          log(`Pirate Lord flagship destroyed! Salvage ₩${prize} (-${ammoUsed} ammo).`);
+          outcome = "victory";
+          const destId = (dest && dest.id) || dest || state.system;
+          let bIdx = (state.quests || []).findIndex(function (q) {
+            return (q.dest === destId || q.dest === state.system) && isBountyQuest(q);
+          });
+          if (bIdx === -1) {
+            bIdx = (state.quests || []).findIndex(isBountyQuest);
+          }
+          if (bIdx !== -1) {
+            const bQuest = state.quests[bIdx];
+            const qk = globalThis.SkiffQuests;
+            const threshold = (qk && qk.FAST_JUMP_THRESHOLD) || FAST_JUMP_THRESHOLD;
+            const bonusPct = (qk && qk.FAST_BONUS_PCT) || FAST_BONUS_PCT;
+            const left = bQuest.jumpsLeft != null ? bQuest.jumpsLeft : 10;
+            const isFast = left >= threshold;
+            const bonus = isFast ? Math.floor((bQuest.reward || 0) * bonusPct) : 0;
+            const payout = (bQuest.reward || 0) + bonus;
+            state.credits += payout;
+            const bountyMsg = (isFast ? "Fast bounty! " : "Completed ") +
+              bQuest.title + (isFast ? " (+₩" + bonus + " bonus)!" : "") +
+              " Total ₩" + payout + "!";
+            log(bountyMsg);
+            if (globalThis.SkiffCaptainLog && typeof globalThis.SkiffCaptainLog.append === "function") {
+              state.captainLog = globalThis.SkiffCaptainLog.append(state.captainLog, { type: "quest", summary: bountyMsg });
+            }
+            state.quests.splice(bIdx, 1);
+          }
+        } else {
+          log(`Corsairs broke off. Salvage ₩${prize} (-${ammoUsed} ammo).`);
+          outcome = "victory";
+        }
       } else {
         const dmg = 15 + pir * 5;
         state.hull = (state.hull || 0) - dmg;
@@ -110,7 +156,10 @@
         state.cargo[id] -= 1;
         dumped += 1;
       }
-      const msg = dumped ? ("Corsairs took " + dumped + " cargo.") : "Hold empty — they laugh and leave.";
+      const isPirateLord = encKind === "pirate_lord" || /pirate[_-]?lord/i.test(encKind || "");
+      const msg = dumped
+        ? ((isPirateLord ? "Pirate Lord took " : "Corsairs took ") + dumped + " cargo.")
+        : (isPirateLord ? "Hold empty — the Pirate Lord laughs and leaves." : "Hold empty — they laugh and leave.");
       log(msg);
       if (dumped && globalThis.SkiffCaptainLog && typeof globalThis.SkiffCaptainLog.append === "function") {
         state.captainLog = globalThis.SkiffCaptainLog.append(state.captainLog, { type: "loss", summary: msg });

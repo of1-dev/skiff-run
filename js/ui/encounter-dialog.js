@@ -3,9 +3,9 @@
  * Agent stick and WebMCP local eval auto-resolve. Humans get the dialog.
  */
 (function (root, factory) {
-  if (typeof module === "object" && module.exports) module.exports = factory();
-  else root.SkiffEncounterDialog = factory();
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  if (typeof module === "object" && module.exports) module.exports = factory(require("../core/armament.js"));
+  else root.SkiffEncounterDialog = factory(root.SkiffArmament);
+})(typeof globalThis !== "undefined" ? globalThis : this, function (Armament) {
   "use strict";
 
   function setup(ctx) {
@@ -119,7 +119,7 @@
       const st = ctx.getState();
       encKind = kind;
       encDest = dest || ctx.sys(st.system);
-      const armed = ctx.hull().weapons && st.crew > 0 && (st.ammo || 0) > 0;
+      const armed = Armament.isArmed(st, ctx.hull());
 
       const choiceView = ctx.el("enc-choice-view");
       const resultView = ctx.el("enc-result");
@@ -152,6 +152,22 @@
           "A free hauler pings you near " + encDest.name + ". Hail for a quick deal, or wave them off.";
         ctx.el("enc-a").textContent = "Hail";
         ctx.el("enc-b").textContent = "Wave off";
+      } else if (kind === "pirate_lord") {
+        ctx.el("enc-title").textContent = "Pirate Lord";
+        if (armed) {
+          ctx.el("enc-body").textContent =
+            "The Pirate Lord's flagship intercepts you at " + encDest.name + "! Fight to claim the bounty or flee.";
+          ctx.el("enc-a").textContent = "Fight";
+          ctx.el("enc-b").textContent = "Flee (−fuel)";
+        } else {
+          const why = Armament.reason(st, ctx.hull());
+          ctx.el("enc-body").textContent =
+            "The Pirate Lord's flagship intercepts you at " + encDest.name + "! " +
+            (why === "no_ammo" ? "Your ammo bays are empty!" : "You have no weapons mounted!") +
+            " Dump cargo or flee.";
+          ctx.el("enc-a").textContent = "Dump cargo";
+          ctx.el("enc-b").textContent = "Flee (−fuel)";
+        }
       } else {
         ctx.el("enc-title").textContent = "Ash Corsairs";
         if (armed) {

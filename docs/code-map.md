@@ -18,7 +18,7 @@ If you are **playing** Skiff as the captain-AI, stop. Use MCP tools plus [GUIDE.
 `index.html` loads scripts in this order (all cache-busted `?v=` must match `game.js` `VERSION` and `<span id="ver">`):
 
 1. Data: `js/data/ships.js`, `systems.js`, `goods.js`, `hull-art.js`
-2. Rules modules (pure, ATDD): yard, chart-gen, combat, fuel, market, encounter, dock-press, debug-god, waypoints, chart-find, route, skills, crew, trade-fog, agent-action-log, captain-log
+2. Rules modules (pure, ATDD): yard, chart-gen, **armament**, combat, fuel, market, encounter, dock-press, debug-god, waypoints, chart-find, route, skills, crew, trade-fog, agent-action-log, captain-log
 3. UI: `js/ui/render-chart.js`, `js/ui/render-tabs.js`
 4. Holo overlay: `js/renderer-holo.js`
 5. Gameplay actions & UI dialogs: `js/core/actions.js`, `js/ui/encounter-dialog.js`, `js/ui/god-panel.js`, `js/ui/chart-interactions.js`
@@ -36,6 +36,7 @@ If you are **playing** Skiff as the captain-AI, stop. Use MCP tools plus [GUIDE.
 | `index.html` | Shell, tabs, holo canvas, script tags |
 | `style.css` | Themes + layout |
 | `game.js` | Coordinator / orchestrator (<= 300 lines): store, boot, render loop |
+| `js/core/armament.js` | The one armed rule: `weapons && ammo > 0`. Crew-free. Every Fight gate defers here |
 | `js/core/galaxy-state.js` | Save/load, chart seeding/healing, fuel/range/prices math |
 | `js/core/actions.js` | Core mutations: travel, refuel, repair, rearm, yard trade, dock work |
 | `js/core/market-actions.js` | Market trading: buy, sell, sell all, fill cheap, sell expensive |

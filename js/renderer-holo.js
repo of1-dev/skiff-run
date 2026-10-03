@@ -41,6 +41,8 @@
   let onRearm = null;
   let onPin = null;
   let onExit = null;
+  let onBuy = null;
+  let onSell = null;
 
   const ACTIVITY_NAMES = ["Absent", "Minimal", "Few", "Some", "Moderate", "Many", "Abundant", "Swarms"];
   function activityLabel(n) {
@@ -151,18 +153,53 @@
     });
   }
 
+  function getShips() {
+    let ships = (globalThis.SkiffShips && Array.isArray(globalThis.SkiffShips)) ? globalThis.SkiffShips : null;
+    if (!ships && typeof require === "function") {
+      try { ships = require("./data/ships.js"); } catch {}
+    }
+    return ships || [];
+  }
+
+  function getGoods() {
+    let goods = (globalThis.SkiffGoods && Array.isArray(globalThis.SkiffGoods)) ? globalThis.SkiffGoods : null;
+    if (!goods && typeof require === "function") {
+      try { goods = require("./data/goods.js"); } catch {}
+    }
+    if (goods && Array.isArray(goods) && goods.length) return goods;
+    if (currentState && currentState.prices) {
+      return Object.keys(currentState.prices).map(id => ({ id, name: id.charAt(0).toUpperCase() + id.slice(1), base: 40 }));
+    }
+    return [
+      { id: "ore", name: "Basalt Ore", base: 40 },
+      { id: "grain", name: "Dry Grain", base: 28 },
+      { id: "optics", name: "Lens Optics", base: 95 },
+      { id: "meds", name: "Field Meds", base: 110 },
+      { id: "spice", name: "Rack Spice", base: 70 },
+      { id: "scrap", name: "Hull Scrap", base: 22 },
+    ];
+  }
+
+  function getMarket() {
+    let market = globalThis.SkiffMarket;
+    if (!market && typeof require === "function") {
+      try { market = require("./market.js"); } catch {}
+    }
+    return market;
+  }
+
   function getShipRange() {
     if (!currentState || !currentState.shipId) return 28;
-    const ships = (globalThis.SkiffShips && Array.isArray(globalThis.SkiffShips)) ? globalThis.SkiffShips : [];
+    const ships = getShips();
     const s = ships.find(x => x.id === currentState.shipId);
     return s ? s.range : 28;
   }
 
   function getHullMaxes() {
-    if (!currentState || !currentState.shipId) return { fuelMax: 14, hullMax: 40, ammoMax: 0 };
-    const ships = (globalThis.SkiffShips && Array.isArray(globalThis.SkiffShips)) ? globalThis.SkiffShips : [];
+    if (!currentState || !currentState.shipId) return { fuelMax: 14, hullMax: 40, ammoMax: 0, cargo: 20 };
+    const ships = getShips();
     const s = ships.find(x => x.id === currentState.shipId);
-    return s || { fuelMax: 14, hullMax: 40, ammoMax: 0 };
+    return s || { fuelMax: 14, hullMax: 40, ammoMax: 0, cargo: 20 };
   }
 
   function init() {
@@ -246,6 +283,8 @@
       onRearm = callbacks.onRearm || null;
       onPin = callbacks.onPin || null;
       onExit = callbacks.onExit || null;
+      onBuy = callbacks.onBuy || null;
+      onSell = callbacks.onSell || null;
     }
     cacheShipImages(svgs);
     
@@ -262,7 +301,11 @@
 
   function stop() {
     if (animFrame) {
-      window.cancelAnimationFrame(animFrame);
+      if (typeof window !== "undefined" && typeof window.cancelAnimationFrame === "function") {
+        window.cancelAnimationFrame(animFrame);
+      } else if (typeof globalThis !== "undefined" && typeof globalThis.cancelAnimationFrame === "function") {
+        globalThis.cancelAnimationFrame(animFrame);
+      }
       animFrame = null;
     }
     const c = canvas || (typeof document !== "undefined" && document.getElementById && document.getElementById("holo-canvas"));
@@ -289,7 +332,11 @@
   }
 
   function renderLoop() {
-    animFrame = window.requestAnimationFrame(renderLoop);
+    if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+      animFrame = window.requestAnimationFrame(renderLoop);
+    } else if (typeof globalThis !== "undefined" && typeof globalThis.requestAnimationFrame === "function") {
+      animFrame = globalThis.requestAnimationFrame(renderLoop);
+    }
     draw();
   }
 
@@ -656,6 +703,9 @@
     // HUD: Bottom Control Bar (Quick Refuel, Repair, Rearm)
     drawHudActions();
 
+    // HUD: Compact Trade Panel for Docked System Market
+    drawTradePanel();
+
     // HUD: Selected System Detail Card & Direct Jump Button
     if (selectedSystemId && posMap[selectedSystemId]) {
       drawSystemIntelCard(posMap[selectedSystemId], targetSys, scale);
@@ -884,6 +934,212 @@
     });
   }
 
+  function buy(goodId, qty) {
+    const q = qty != null ? qty : 1;
+    if (typeof onBuy === "function") {
+      return onBuy(goodId, q);
+    }
+    const SM = getMarket();
+    if (!SM || !currentState) return;
+    const maxCargo = (getHullMaxes() && getHullMaxes().cargo) || 20;
+    const curSys = (currentSystems && currentSystems.find(s => s.id === currentState.system)) || null;
+    let prices = currentState.prices;
+    if (!prices || prices[goodId] == null) {
+      prices = Object.assign({}, prices);
+      const g = getGoods().find(x => x.id === goodId);
+      if (g) {
+        prices[goodId] = (curSys && SM && typeof SM.priceFor === "function") ? SM.priceFor(curSys, g) : g.base;
+      }
+    }
+    const r = SM.applyBuy({
+      cargo: currentState.cargo || {},
+      credits: currentState.credits || 0,
+      prices: prices,
+      goods: getGoods(),
+      holdMax: maxCargo,
+      id: goodId,
+      qty: q,
+    });
+    if (r && r.ok) {
+      currentState.credits = r.credits;
+      if (currentState.cargo && typeof currentState.cargo === "object") {
+        Object.assign(currentState.cargo, r.cargo);
+      } else {
+        currentState.cargo = r.cargo;
+      }
+    }
+    return r;
+  }
+
+  function sell(goodId, qty) {
+    const q = qty != null ? qty : 1;
+    if (typeof onSell === "function") {
+      return onSell(goodId, q);
+    }
+    const SM = getMarket();
+    if (!SM || !currentState) return;
+    const curSys = (currentSystems && currentSystems.find(s => s.id === currentState.system)) || null;
+    let prices = currentState.prices;
+    if (!prices || prices[goodId] == null) {
+      prices = Object.assign({}, prices);
+      const g = getGoods().find(x => x.id === goodId);
+      if (g) {
+        prices[goodId] = (curSys && SM && typeof SM.priceFor === "function") ? SM.priceFor(curSys, g) : g.base;
+      }
+    }
+    const r = SM.applySell({
+      cargo: currentState.cargo || {},
+      credits: currentState.credits || 0,
+      prices: prices,
+      goods: getGoods(),
+      id: goodId,
+      qty: q,
+    });
+    if (r && r.ok) {
+      currentState.credits = r.credits;
+      if (currentState.cargo && typeof currentState.cargo === "object") {
+        Object.assign(currentState.cargo, r.cargo);
+      } else {
+        currentState.cargo = r.cargo;
+      }
+    }
+    return r;
+  }
+
+  function trade(action, goodId, qty) {
+    if (action === "buy") return buy(goodId, qty);
+    if (action === "sell") return sell(goodId, qty);
+  }
+
+  function drawTradePanel() {
+    if (!ctx || !currentState) return;
+    const goods = getGoods();
+    if (!goods || !goods.length) return;
+    const SM = getMarket();
+    const maxes = getHullMaxes();
+    const maxCargo = (maxes && maxes.cargo) || 20;
+    const cargo = currentState.cargo || {};
+    const used = SM && typeof SM.cargoUsed === "function" ? SM.cargoUsed(cargo) : Object.values(cargo).reduce((a, b) => a + b, 0);
+    const credits = currentState.credits || 0;
+
+    const panelW = 280;
+    const panelH = 34 + goods.length * 26 + 8;
+    let panelX = canvas ? canvas.width - panelW - 24 : 496;
+    let panelY = 72;
+
+    if (canvas && canvas.width < 720) {
+      panelX = 24;
+      panelY = (currentState.quests && currentState.quests.length ? 144 : 126);
+    }
+
+    ctx.fillStyle = "rgba(12, 10, 9, 0.92)";
+    ctx.strokeStyle = hud().signal;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(panelX, panelY, panelW, panelH, 6) : ctx.rect(panelX, panelY, panelW, panelH);
+    ctx.fill();
+    ctx.stroke();
+
+    const curSys = (currentSystems && currentSystems.find(s => s.id === currentState.system)) || null;
+    const sysName = curSys ? curSys.name : String(currentState.system || "LOCAL").toUpperCase();
+
+    ctx.fillStyle = hud().signal;
+    ctx.font = "bold 13px monospace";
+    ctx.fillText(`MARKET · ${sysName.toUpperCase()}`, panelX + 12, panelY + 22);
+
+    const holdFull = used >= maxCargo;
+    ctx.fillStyle = holdFull ? hud().warn : hud().mute;
+    ctx.font = "11px monospace";
+    ctx.textAlign = "right";
+    ctx.fillText(`HOLD: ${used}/${maxCargo}`, panelX + panelW - 12, panelY + 22);
+    ctx.textAlign = "start";
+
+    ctx.strokeStyle = "rgba(68, 64, 60, 0.45)";
+    ctx.beginPath();
+    ctx.moveTo(panelX + 10, panelY + 30);
+    ctx.lineTo(panelX + panelW - 10, panelY + 30);
+    ctx.stroke();
+
+    for (let i = 0; i < goods.length; i++) {
+      const g = goods[i];
+      const rowY = panelY + 34 + i * 26;
+      const p = (currentState.prices && currentState.prices[g.id] != null)
+        ? currentState.prices[g.id]
+        : (curSys && SM && typeof SM.priceFor === "function" ? SM.priceFor(curSys, g) : g.base);
+      const have = cargo[g.id] || 0;
+
+      let cueTone = "fair";
+      if (SM && typeof SM.galaxyAveragePrice === "function" && typeof SM.marketCue === "function" && currentSystems && currentSystems.length) {
+        const avg = SM.galaxyAveragePrice(currentSystems, g);
+        const cue = SM.marketCue(p, avg, have);
+        if (cue && cue.tone) cueTone = cue.tone;
+      }
+
+      ctx.fillStyle = hud().text;
+      ctx.font = "bold 12px monospace";
+      const shortName = g.name.length > 10 ? g.name.replace(/^(Basalt|Dry|Lens|Field|Rack|Hull)\s+/, "") : g.name;
+      ctx.fillText(shortName, panelX + 12, rowY + 17);
+
+      ctx.fillStyle = cueTone === "buy" ? hud().ok : (cueTone === "avoid" ? hud().warn : hud().text);
+      ctx.font = "12px monospace";
+      ctx.fillText(`₩${p}`, panelX + 88, rowY + 17);
+
+      ctx.fillStyle = hud().mute;
+      ctx.font = "11px monospace";
+      ctx.fillText(`(${have})`, panelX + 138, rowY + 17);
+
+      const btnW = 38;
+      const btnH = 20;
+      const btnY = rowY + 3;
+      const buyX = panelX + panelW - 90;
+      const sellX = panelX + panelW - 48;
+
+      const canBuy = credits >= p && used < maxCargo;
+      const canSell = have > 0;
+
+      ctx.fillStyle = canBuy ? "rgba(41, 37, 36, 0.95)" : "rgba(28, 25, 23, 0.4)";
+      ctx.strokeStyle = canBuy ? hud().signal : "rgba(68, 64, 60, 0.4)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(buyX, btnY, btnW, btnH, 3) : ctx.rect(buyX, btnY, btnW, btnH);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = canBuy ? hud().tabActive || hud().text : hud().mute;
+      ctx.font = "bold 10px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("BUY", buyX + btnW / 2, btnY + 14);
+
+      if (canBuy) {
+        interactiveZones.push({
+          x: buyX, y: btnY, w: btnW, h: btnH,
+          action: () => { buy(g.id, 1); }
+        });
+      }
+
+      ctx.fillStyle = canSell ? "rgba(41, 37, 36, 0.95)" : "rgba(28, 25, 23, 0.4)";
+      ctx.strokeStyle = canSell ? hud().signal : "rgba(68, 64, 60, 0.4)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(sellX, btnY, btnW, btnH, 3) : ctx.rect(sellX, btnY, btnW, btnH);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = canSell ? hud().tabActive || hud().text : hud().mute;
+      ctx.font = "bold 10px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("SELL", sellX + btnW / 2, btnY + 14);
+      ctx.textAlign = "start";
+
+      if (canSell) {
+        interactiveZones.push({
+          x: sellX, y: btnY, w: btnW, h: btnH,
+          action: () => { sell(g.id, 1); }
+        });
+      }
+    }
+  }
+
   function selectSystem(systemId) {
     const posMap = getPosMap();
     if (posMap[systemId]) {
@@ -891,5 +1147,20 @@
     }
   }
 
-  return { start, stop, update, selectSystem, engageJumpButton, project, linksFromHere, canJumpFromHere, riskFill };
+  return {
+    start,
+    stop,
+    update,
+    selectSystem,
+    engageJumpButton,
+    project,
+    linksFromHere,
+    canJumpFromHere,
+    riskFill,
+    buy,
+    sell,
+    tradeBuy: buy,
+    tradeSell: sell,
+    trade,
+  };
 });

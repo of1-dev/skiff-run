@@ -99,7 +99,7 @@ Yards trade in your old hull (trade-*down* can cash out). Crew hire/fire lives o
 
 Jumps can raise:
 
-- **Ash Corsairs** — dump cargo or flee (burns fuel). Armed + crewed can **Fight** for salvage — or eat repair bills.
+- **Ash Corsairs** — dump cargo or flee (burns fuel). **Fight** needs weapons mounted **and** ammo in the bays — crew does not gate it. An armed hull at 0 crew fights; an unarmed hull or empty ammo bays must dump or run.
 - **Ledger Wardens** — pay the fine or attempt a bluff (bluffs fail, sometimes loudly).
 - **Lane traders** — hail for a quick deal, or wave them off.
 

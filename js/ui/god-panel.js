@@ -130,6 +130,21 @@
       ctx.render();
     });
 
+    wireGod("god-bounty", function () {
+      if (bridgeOn()) {
+        ctx.bridgeAct({ op: "god_bounty" });
+        return;
+      }
+      const st = state();
+      const q = ctx.QK.createBountyQuest(ctx.systems(), st.system);
+      if (!q) return ctx.log("God: no other system to post the bounty on.");
+      st.quests = (st.quests || []).concat([q]);
+      ctx.setState(st);
+      ctx.log("God: Pirate Lord bounty posted — " + q.title + " (₩" + q.reward.toLocaleString() + ").");
+      ctx.save(st);
+      ctx.render();
+    });
+
     return { syncGodUi: syncGodUi, setGodMode: setGodMode };
   }
 

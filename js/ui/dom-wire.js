@@ -168,6 +168,8 @@
               onRefuel: ctx.doRefuel,
               onRepair: ctx.doRepair,
               onRearm: ctx.doRearm,
+              onBuy: ctx.doBuy,
+              onSell: ctx.doSell,
               onPin: function (id) {
                 if (!id || id === st.system) return ctx.log("That's your current dock.");
                 ui.targetId = id;
