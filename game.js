@@ -273,8 +273,13 @@
     getSystems: () => SYSTEMS, inRange, fuelCost
   });
   globalThis.SkiffAPI = api;
-  if (globalThis.SkiffWebMCP && typeof globalThis.SkiffWebMCP.init === "function") {
-    globalThis.SkiffWebMCP.init(api);
+  if (globalThis.SkiffWebMCP && typeof globalThis.SkiffWebMCP.init === "function") globalThis.SkiffWebMCP.init(api);
+  if (globalThis.SkiffAiDebug && typeof globalThis.SkiffAiDebug.init === "function") {
+    globalThis.SkiffAiDebug.init({
+      VERSION, getState: () => state, setState: (st) => { state = st; },
+      getSystems: () => SYSTEMS, sys, ship, hull, save, render, log, el,
+      openEncounter, markVisited, rollMarket, ui, bridgeOn: () => bridgeOn, bridgeAct
+    });
   }
 
   loadTheme();

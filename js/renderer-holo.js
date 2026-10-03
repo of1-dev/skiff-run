@@ -1041,7 +1041,7 @@
     ctx.stroke();
 
     const curSys = (currentSystems && currentSystems.find(s => s.id === currentState.system)) || null;
-    const sysName = curSys ? curSys.name : String(currentState.system || "LOCAL").toUpperCase();
+    const sysName = String((curSys && (curSys.name || curSys.id)) || currentState.system || "LOCAL");
 
     ctx.fillStyle = hud().signal;
     ctx.font = "bold 13px monospace";

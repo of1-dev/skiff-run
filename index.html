@@ -43,6 +43,55 @@
       </div>
     </header>
 
+    <details id="ai-debug-panel" class="ai-debug-panel card-block" hidden open>
+      <summary class="ai-debug-summary">AI DEBUG MODE</summary>
+      <div class="ai-debug-content">
+        <div class="ai-debug-row">
+          <label>Encounter:</label>
+          <div class="ai-debug-actions">
+            <button type="button" id="debug-force-corsair" class="btn ember">Corsair ambush</button>
+            <button type="button" id="debug-force-warden" class="btn ghost">Ledger warden</button>
+            <button type="button" id="debug-force-trader" class="btn ghost">Lane trader</button>
+          </div>
+        </div>
+        <div class="ai-debug-row">
+          <label for="debug-force-outcome">Outcome:</label>
+          <select id="debug-force-outcome" class="ai-debug-select">
+            <option value="random">Random</option>
+            <option value="win">Win</option>
+            <option value="lose">Lose</option>
+          </select>
+        </div>
+        <div class="ai-debug-row">
+          <label for="debug-teleport-input">Teleport:</label>
+          <div class="ai-debug-group">
+            <input type="text" id="debug-teleport-input" placeholder="System name or ID…" />
+            <button type="button" id="debug-teleport-btn" class="btn ghost">Jump</button>
+          </div>
+        </div>
+        <div class="ai-debug-row">
+          <label>State:</label>
+          <div class="ai-debug-state-grid">
+            <div><label for="debug-state-credits">₩</label><input type="number" id="debug-state-credits" /></div>
+            <div><label for="debug-state-fuel">Fuel</label><input type="number" id="debug-state-fuel" /></div>
+            <div><label for="debug-state-hull">Hull</label><input type="number" id="debug-state-hull" /></div>
+            <div><label for="debug-state-ammo">Ammo</label><input type="number" id="debug-state-ammo" /></div>
+            <button type="button" id="debug-apply-state" class="btn">Apply</button>
+          </div>
+        </div>
+        <div class="ai-debug-row">
+          <label for="debug-seed-input">RNG Seed:</label>
+          <div class="ai-debug-group">
+            <input type="number" id="debug-seed-input" placeholder="Seed number…" />
+            <button type="button" id="debug-apply-seed" class="btn ghost">Apply</button>
+          </div>
+        </div>
+        <div class="ai-debug-row">
+          <button type="button" id="debug-copy-state" class="btn ghost">Copy state JSON</button>
+        </div>
+      </div>
+    </details>
+
     <main class="panels">
       <section id="tab-dock" class="panel active" data-tab="dock">
         <h2>Dock</h2>
@@ -218,20 +267,29 @@
   </div>
 
   <dialog id="encounter">
-    <div id="enc-choice-view">
-      <h3 id="enc-title">Encounter</h3>
-      <p id="enc-body"></p>
-      <div class="enc-actions">
-        <button type="button" id="enc-a" class="btn">A</button>
-        <button type="button" id="enc-b" class="btn ghost">B</button>
+    <!-- enc-prompt-view / enc-choice-view and encounter-result / enc-result
+         arrived from two slices. They are nested rather than duplicated so every
+         id resolves exactly once and the choice buttons bind a single time. -->
+    <div id="enc-prompt-view">
+      <div id="enc-choice-view">
+        <h3 id="enc-title">Encounter</h3>
+        <p id="enc-body"></p>
+        <div class="enc-actions">
+          <button type="button" id="enc-a" class="btn">A</button>
+          <button type="button" id="enc-b" class="btn ghost">B</button>
+        </div>
       </div>
     </div>
-    <div id="enc-result" class="enc-result" hidden>
-      <h3 id="enc-result-title">Encounter Result</h3>
-      <p id="enc-result-outcome" class="enc-result-outcome"></p>
-      <p id="enc-result-details" class="enc-result-details hint"></p>
-      <div class="enc-actions">
-        <button type="button" id="enc-dismiss" class="btn">Continue</button>
+    <div id="encounter-result" class="encounter-result enc-result result-panel" hidden>
+      <div id="enc-result" class="enc-result">
+        <h3 id="enc-result-title">Encounter Result</h3>
+        <p id="enc-result-outcome" class="enc-result-outcome"></p>
+        <p id="enc-result-body"></p>
+        <p id="enc-result-details" class="enc-result-details hint"></p>
+        <div class="enc-actions">
+          <button type="button" id="enc-dismiss" class="btn">Continue</button>
+          <button type="button" id="enc-result-dismiss" class="btn">Continue</button>
+        </div>
       </div>
     </div>
   </dialog>
@@ -274,6 +332,8 @@
   <script src="js/ui/theme-pilot.js?v=0.9.41"></script>
   <script src="js/ui/chart-view.js?v=0.9.41"></script>
   <script src="js/ui/dom-wire.js?v=0.9.41"></script>
+  <script src="js/pure-logic.js?v=0.9.41"></script>
+  <script src="js/ai-debug.js?v=0.9.41"></script>
   <script src="game.js?v=0.9.41"></script>
   <script src="js/webmcp.js?v=0.9.41"></script>
 </body>

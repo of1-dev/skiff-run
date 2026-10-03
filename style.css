@@ -783,3 +783,94 @@ body.bridge-mode #ver::after {
 .map-wrap[data-selected] {
   --hop-ring: var(--selected-hop);
 }
+
+/* AI Debug Panel */
+.ai-debug-panel {
+  margin: 8px 12px;
+  padding: 8px 12px;
+  background: rgba(18, 22, 32, 0.95);
+  border: 1px solid #3b82f6;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 13px;
+}
+.ai-debug-summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: #38bdf8;
+  user-select: none;
+  outline: none;
+}
+.ai-debug-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.ai-debug-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ai-debug-row label {
+  min-width: 80px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+.ai-debug-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ai-debug-select {
+  background: #0a0d14;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  padding: 4px 8px;
+  border-radius: 3px;
+}
+.ai-debug-group {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.ai-debug-group input {
+  background: #0a0d14;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  padding: 4px 8px;
+  border-radius: 3px;
+  width: 140px;
+}
+.ai-debug-state-grid {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ai-debug-state-grid div {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ai-debug-state-grid div label {
+  min-width: auto;
+  font-size: 11px;
+}
+.ai-debug-state-grid input {
+  background: #0a0d14;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  padding: 4px 6px;
+  border-radius: 3px;
+  width: 70px;
+}
+.encounter-result {
+  text-align: center;
+}
+.encounter-result h3 {
+  color: #38bdf8;
+  margin-bottom: 8px;
+}
+

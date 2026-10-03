@@ -1,10 +1,11 @@
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) {
-    module.exports = factory(require('./armament.js'));
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory(require("./armament.js"));
+    if (root) root.SkiffCombat = module.exports;
   } else {
     root.SkiffCombat = factory(root.SkiffArmament);
   }
-}(typeof globalThis !== 'undefined' ? globalThis : this, function (Armament) {
+}(typeof globalThis !== "undefined" ? globalThis : this, function (Armament) {
 
   const FAST_JUMP_THRESHOLD = 7;
   const FAST_BONUS_PCT = 0.35;
@@ -21,8 +22,9 @@
   }
 
   function resolveEncounter(params) {
-    const { state, encKind, dest, choice, GOODS, hull, cargoUsed, tickSkill, rand = Math.random } = params;
+    const { state, encKind, dest, choice, GOODS, hull, cargoUsed, tickSkill, rand = Math.random, forceOutcome } = params;
     let logMsg = "";
+    let isWin = false;
     
     function log(msg) { logMsg += (logMsg ? " " : "") + msg; }
 
@@ -35,6 +37,8 @@
     let outcome = "none";
 
     const armed = Armament.isArmed(state, hull);
+    const forcedWin = forceOutcome === "win";
+    const forcedLose = forceOutcome === "lose";
     
     if (encKind === "warden") {
       if (choice === "a") {
@@ -42,23 +46,33 @@
         state.credits -= fine;
         log("Paid Wardens ₩" + fine + ".");
         outcome = "fine_paid";
-      } else if (rand() < 0.55) {
-        if (tickSkill) tickSkill("fighter", true);
-        log("Bluff held. Wardens wave you on.");
-        outcome = "bluffed";
+        isWin = true;
       } else {
-        const fine = Math.min(state.credits, 700);
-        state.credits -= fine;
-        log("Bluff failed. Fine ₩" + fine + ".");
-        outcome = "bluff_failed";
+        const roll = rand();
+        const bluffHeld = forcedWin ? true : (forcedLose ? false : roll < 0.55);
+        if (bluffHeld) {
+          if (tickSkill) tickSkill("fighter", true);
+          log("Bluff held. Wardens wave you on.");
+          outcome = "bluffed";
+          isWin = true;
+        } else {
+          const fine = Math.min(state.credits, 700);
+          state.credits -= fine;
+          log("Bluff failed. Fine ₩" + fine + ".");
+          outcome = "bluff_failed";
+          isWin = false;
+        }
       }
     } else if (encKind === "trader") {
       if (choice === "b") {
         log("Waved the trader off.");
         outcome = "waved_off";
+        isWin = true;
       } else {
         const held = GOODS.map((g) => g.id).filter((id) => (state.cargo[id] || 0) > 0);
-        if (held.length && rand() < 0.55) {
+        const roll = rand();
+        const canSell = held.length && (forcedWin ? true : (forcedLose ? false : roll < 0.55));
+        if (canSell) {
           const id = held[Math.floor(rand() * held.length)];
           const base = GOODS.find((g) => g.id === id).base;
           const p = Math.round((state.prices[id] || base) * 1.12);
@@ -67,6 +81,7 @@
           if (tickSkill) tickSkill("trader", true);
           log("Trader bought 1 " + GOODS.find((g) => g.id === id).name + " for ₩" + p + ".");
           outcome = "sold_cargo";
+          isWin = true;
         } else {
           const g = GOODS[Math.floor(rand() * GOODS.length)];
           const room = hull.cargo - cargoUsed;
@@ -76,9 +91,11 @@
             state.cargo[g.id] = (state.cargo[g.id] || 0) + 1;
             log("Bought 1 " + g.name + " off a trader for ₩" + p + ".");
             outcome = "bought_cargo";
+            isWin = true;
           } else {
             log("Trader had nothing you could take. Fair skies.");
             outcome = "no_trade";
+            isWin = forcedWin ? true : false;
           }
         }
       }
@@ -87,8 +104,11 @@
       const ammoUsed = Math.min(state.ammo || 0, Math.floor(rand() * 3) + 1);
       state.ammo = Math.max(0, (state.ammo || 0) - ammoUsed);
       const odds = 0.55 + (state.crew || 0) * 0.06 - pir * 0.03 + (ammoUsed * 0.05);
+      const roll = rand();
+      const fightWon = forcedWin ? true : (forcedLose ? false : roll < odds);
       
-      if (rand() < odds) {
+      if (fightWon) {
+        isWin = true;
         const prize = 350 + (state.crew || 0) * 150 + pir * 40;
         state.credits += prize;
         if (tickSkill) tickSkill("fighter", false);
@@ -127,6 +147,7 @@ const isPirateLord = encKind === "pirate_lord" || /pirate[_-]?lord/i.test(encKin
           outcome = "victory";
         }
       } else {
+        isWin = false;
         const dmg = 15 + pir * 5;
         state.hull = (state.hull || 0) - dmg;
         if (tickSkill) tickSkill("fighter", true);
@@ -147,34 +168,44 @@ const isPirateLord = encKind === "pirate_lord" || /pirate[_-]?lord/i.test(encKin
       }
     } else if (choice === "a") {
       let dumped = 0;
-      const ids = GOODS.map((g) => g.id);
-      const take = Math.min(3, 1 + Math.floor(((dest && dest.pirate) || 3) / 3));
-      while (dumped < take) {
-        const held = ids.filter((id) => state.cargo[id] > 0);
-        if (!held.length) break;
-        const id = held[Math.floor(rand() * held.length)];
-        state.cargo[id] -= 1;
-        dumped += 1;
-      }
       const isPirateLord = encKind === "pirate_lord" || /pirate[_-]?lord/i.test(encKind || "");
-      const msg = dumped
-        ? ((isPirateLord ? "Pirate Lord took " : "Corsairs took ") + dumped + " cargo.")
-        : (isPirateLord ? "Hold empty — the Pirate Lord laughs and leaves." : "Hold empty — they laugh and leave.");
-      log(msg);
-      if (dumped && globalThis.SkiffCaptainLog && typeof globalThis.SkiffCaptainLog.append === "function") {
-        state.captainLog = globalThis.SkiffCaptainLog.append(state.captainLog, { type: "loss", summary: msg });
+      if (forcedWin) {
+        log(isPirateLord ? "Hold empty — the Pirate Lord laughs and leaves." : "Hold empty — they laugh and leave.");
+        isWin = true;
+      } else {
+        const ids = GOODS.map((g) => g.id);
+        const take = Math.min(3, 1 + Math.floor(((dest && dest.pirate) || 3) / 3));
+        while (dumped < take) {
+          const held = ids.filter((id) => state.cargo[id] > 0);
+          if (!held.length) break;
+          const id = held[Math.floor(rand() * held.length)];
+          state.cargo[id] -= 1;
+          dumped += 1;
+        }
+        const msg = dumped
+          ? ((isPirateLord ? "Pirate Lord took " : "Corsairs took ") + dumped + " cargo.")
+          : (isPirateLord ? "Hold empty — the Pirate Lord laughs and leaves." : "Hold empty — they laugh and leave.");
+        log(msg);
+        isWin = dumped === 0;
+        if (dumped && globalThis.SkiffCaptainLog && typeof globalThis.SkiffCaptainLog.append === "function") {
+          state.captainLog = globalThis.SkiffCaptainLog.append(state.captainLog, { type: "loss", summary: msg });
+        }
       }
       outcome = dumped ? "cargo_lost" : "escaped";
     } else {
-      const burn = Math.min(state.fuel, 1 + (rand() < 0.35 ? 1 : 0));
+      const roll = rand();
+      const extraBurn = forcedWin ? 0 : (forcedLose ? 1 : (roll < 0.35 ? 1 : 0));
+      const burn = Math.min(state.fuel, 1 + extraBurn);
       if (state.fuel >= 1) {
         state.fuel -= burn;
         log("Fled. −" + burn + " fuel.");
         outcome = "fled";
+        isWin = true;
       } else {
         state.credits = Math.max(0, state.credits - 250);
         const msg = "No fuel to flee. They shake you down ₩250.";
         log(msg);
+        isWin = false;
         if (globalThis.SkiffCaptainLog && typeof globalThis.SkiffCaptainLog.append === "function") {
           state.captainLog = globalThis.SkiffCaptainLog.append(state.captainLog, { type: "loss", summary: msg });
         }
@@ -200,7 +231,7 @@ const isPirateLord = encKind === "pirate_lord" || /pirate[_-]?lord/i.test(encKin
       cargoChange,
     };
 
-    return { summary, logMsg, state };
+    return { summary, logMsg, state, isWin };
   }
 
   return { resolveEncounter };

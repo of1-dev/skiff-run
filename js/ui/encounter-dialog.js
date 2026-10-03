@@ -14,6 +14,34 @@
     let encDest = null;
     let isLocalEval = false;
 
+    // Some suites hand us plain objects as element mocks, so hide/show must not
+// assume real DOM attribute methods.
+function hide(el) {
+      if (!el) return;
+      if (typeof el.setAttribute === "function") el.setAttribute("hidden", "");
+      else el.hidden = true;
+    }
+
+    function show(el) {
+      if (!el) return;
+      if (typeof el.removeAttribute === "function") el.removeAttribute("hidden");
+      else el.hidden = false;
+    }
+
+    function getRng() {
+      if (globalThis.SkiffAiDebug && typeof globalThis.SkiffAiDebug.getRng === "function") {
+        return globalThis.SkiffAiDebug.getRng();
+      }
+      return Math.random;
+    }
+
+    function getForcedOutcome() {
+      if (globalThis.SkiffAiDebug && typeof globalThis.SkiffAiDebug.consumeForcedOutcome === "function") {
+        return globalThis.SkiffAiDebug.consumeForcedOutcome();
+      }
+      return null;
+    }
+
     function formatOutcome(outcome) {
       if (!outcome) return "Resolved";
       switch (outcome) {
@@ -76,6 +104,9 @@
     function resolveEncounter(choice) {
       const st = ctx.getState();
       const isAgent = st.pilot === "agent" || isLocalEval;
+      const rand = getRng();
+      const forceOutcome = getForcedOutcome();
+
       const result = globalThis.SkiffCombat.resolveEncounter({
         state: st,
         encKind: encKind,
@@ -85,13 +116,23 @@
         hull: ctx.hull(),
         cargoUsed: ctx.cargoUsed(st),
         tickSkill: ctx.tickSkill,
+        rand: rand,
+        forceOutcome: forceOutcome,
       });
+
       ctx.log(result.logMsg);
       ctx.render();
       if (ctx.getBridgeOn()) ctx.bridgeAct({ op: "save", state: st });
 
+      // Two result panels ship in the tree: the structured one from the
+      // encounter-result batch and the win/lose one from ai-debug-mode. A human
+      // pilot gets whichever the host markup actually provides.
       const resultView = ctx.el("enc-result");
-      if (isAgent || !resultView) {
+      const resPanel = ctx.el("encounter-result");
+      const promptView = ctx.el("enc-prompt-view");
+      const showResult = !isAgent && !!(resultView || (resPanel && promptView));
+
+      if (!showResult) {
         if (typeof document !== "undefined" && document.body) {
           document.body.classList.remove("enc-open");
         }
@@ -101,18 +142,36 @@
         return;
       }
 
-      const choiceView = ctx.el("enc-choice-view");
-      if (choiceView) choiceView.hidden = true;
-      resultView.hidden = false;
-
       const summary = (result && result.summary) || {};
-      const outcomeEl = ctx.el("enc-result-outcome");
-      if (outcomeEl) outcomeEl.textContent = formatOutcome(summary.outcome);
-      const detailsEl = ctx.el("enc-result-details");
-      if (detailsEl) detailsEl.textContent = formatDetails(summary);
 
-      const btnDismiss = ctx.el("enc-dismiss") || ctx.el("enc-continue");
-      if (btnDismiss) btnDismiss.onclick = dismissResult;
+      if (resultView) {
+        const choiceView = ctx.el("enc-choice-view");
+        if (choiceView) choiceView.hidden = true;
+        resultView.hidden = false;
+
+        const outcomeEl = ctx.el("enc-result-outcome");
+        if (outcomeEl) outcomeEl.textContent = formatOutcome(summary.outcome);
+        const detailsEl = ctx.el("enc-result-details");
+        if (detailsEl) detailsEl.textContent = formatDetails(summary);
+
+        const btnDismiss = ctx.el("enc-dismiss") || ctx.el("enc-continue");
+        if (btnDismiss) btnDismiss.onclick = dismissResult;
+      }
+
+      if (resPanel && promptView) {
+        hide(promptView);
+        show(resPanel);
+        const titleEl = ctx.el("enc-result-title");
+        if (titleEl) {
+          titleEl.textContent = result.isWin
+            ? "Victory"
+            : (encKind === "corsair" || encKind === "pirate_lord" ? "Defeat" : "Encounter Result");
+        }
+        const bodyEl = ctx.el("enc-result-body");
+        if (bodyEl) bodyEl.textContent = result.logMsg;
+        const dismissBtn = ctx.el("enc-result-dismiss");
+        if (dismissBtn) dismissBtn.onclick = dismissResult;
+      }
     }
 
     function openEncounter(kind, dest) {
@@ -125,6 +184,11 @@
       const resultView = ctx.el("enc-result");
       if (choiceView) choiceView.hidden = false;
       if (resultView) resultView.hidden = true;
+
+      const promptView = ctx.el("enc-prompt-view");
+      const resPanel = ctx.el("encounter-result");
+      show(promptView, false);
+      hide(resPanel);
 
       if (st.pilot === "agent" || isLocalEval) {
         let choice = "b";
@@ -183,7 +247,7 @@
         }
       }
       try {
-        dlg.showModal();
+        if (dlg && typeof dlg.showModal === "function") dlg.showModal();
       } catch {
         /* already open */
       }
@@ -196,7 +260,7 @@
       const st = ctx.getState();
       const dest = ctx.sys(toId) || ctx.sys(st.system);
       const SE = globalThis.SkiffEncounter;
-      const kind = SE.pickEncounter(SE.encounterOdds(dest, ctx.hull()), Math.random);
+      const kind = SE.pickEncounter(SE.encounterOdds(dest, ctx.hull()), getRng());
       if (kind !== "none") openEncounter(kind, dest);
     }
 
