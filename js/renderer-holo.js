@@ -11,6 +11,22 @@
   let shipImg = null;
   let currentShipId = null;
 
+  const SF = (typeof globalThis !== "undefined" && globalThis.SkiffFuel) || (function () {
+    try { return require("./fuel.js"); } catch (_) { return null; }
+  })();
+  function roundDist(d) {
+    if (SF && typeof SF.roundDist === "function") return SF.roundDist(d);
+    if (d == null || Number.isNaN(d) || !Number.isFinite(d)) return 0;
+    return Math.round(d);
+  }
+  function distFn(a, b) {
+    if (SF && typeof SF.dist === "function") return SF.dist(a, b);
+    if (!a || !b) return Infinity;
+    const dx = ((a && a.x) || 0) - ((b && b.x) || 0);
+    const dy = ((a && a.y) || 0) - ((b && b.y) || 0);
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
   // Animation & Camera state
   let shipPos = { x: 50, y: 50 };
   let trail = [];
@@ -24,6 +40,7 @@
   let onRepair = null;
   let onRearm = null;
   let onPin = null;
+  let onExit = null;
 
   const ACTIVITY_NAMES = ["Absent", "Minimal", "Few", "Some", "Moderate", "Many", "Abundant", "Swarms"];
   function activityLabel(n) {
@@ -118,12 +135,12 @@
 
   function fuelCostBetween(a, b) {
     if (!a || !b) return 99;
-    return Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 14));
+    return Math.max(1, Math.ceil(distFn(a, b) / 14));
   }
 
   function canJumpFromHere(here, dest, range, fuel) {
     if (!here || !dest || here.id === dest.id) return false;
-    const d = Math.hypot(dest.x - here.x, dest.y - here.y);
+    const d = distFn(here, dest);
     if (d > (range || 0) + 0.01) return false;
     return (fuel | 0) >= fuelCostBetween(here, dest);
   }
@@ -192,8 +209,34 @@
     return map;
   }
 
+  function exitHolo() {
+    const exitBtn = typeof document !== "undefined" && document.getElementById && document.getElementById("btn-exit-holo");
+    if (exitBtn && typeof exitBtn.click === "function") {
+      exitBtn.click();
+    } else if (exitBtn && typeof exitBtn.onclick === "function") {
+      exitBtn.onclick();
+    } else if (typeof onExit === "function") {
+      onExit();
+    }
+    stop();
+  }
+
+  function onKeyDown(e) {
+    if (e && (e.key === "Escape" || e.key === "Esc")) {
+      exitHolo();
+    }
+  }
+
   function start(state, svgs, systems, callbacks) {
     if (!canvas) init();
+    const c = canvas || (typeof document !== "undefined" && document.getElementById && document.getElementById("holo-canvas"));
+    if (c && c.style) {
+      c.style.display = "block";
+      c.style.pointerEvents = "auto";
+    }
+    if (typeof window !== "undefined" && window.addEventListener) {
+      window.addEventListener("keydown", onKeyDown);
+    }
     currentState = state;
     if (systems) currentSystems = systems;
     if (callbacks) {
@@ -202,6 +245,7 @@
       onRepair = callbacks.onRepair || null;
       onRearm = callbacks.onRearm || null;
       onPin = callbacks.onPin || null;
+      onExit = callbacks.onExit || null;
     }
     cacheShipImages(svgs);
     
@@ -220,6 +264,22 @@
     if (animFrame) {
       window.cancelAnimationFrame(animFrame);
       animFrame = null;
+    }
+    const c = canvas || (typeof document !== "undefined" && document.getElementById && document.getElementById("holo-canvas"));
+    if (c && c.style) {
+      c.style.display = "none";
+      c.style.pointerEvents = "none";
+    }
+    const searchWrap = typeof document !== "undefined" && document.getElementById && document.getElementById("holo-search-wrap");
+    if (searchWrap && searchWrap.style) {
+      searchWrap.style.display = "none";
+    }
+    const exitBtn = typeof document !== "undefined" && document.getElementById && document.getElementById("btn-exit-holo");
+    if (exitBtn && exitBtn.style) {
+      exitBtn.style.display = "none";
+    }
+    if (typeof window !== "undefined" && window.removeEventListener) {
+      window.removeEventListener("keydown", onKeyDown);
     }
   }
 
@@ -267,7 +327,7 @@
     let found = null;
     for (const [id, pos] of Object.entries(posMap)) {
       const p = cam.toScreen(pos.x, pos.y);
-      if (Math.hypot(mousePos.x - p.x, mousePos.y - p.y) <= 16) {
+      if (Math.hypot(mousePos.x - p.x, mousePos.y - p.y) <= 18) {
         found = id;
         break;
       }
@@ -299,10 +359,14 @@
     for (const [id, pos] of Object.entries(posMap)) {
       const p = cam.toScreen(pos.x, pos.y);
       if (Math.hypot(mx - p.x, my - p.y) <= 18) {
-        selectedSystemId = (selectedSystemId === id && id !== currentState.system) ? null : id;
+        selectedSystemId = id;
+        if (onPin) onPin(id);
         return;
       }
     }
+
+    // Tap elsewhere (empty sky) exits holo view
+    exitHolo();
   }
 
   function draw() {
@@ -498,7 +562,7 @@
       }
 
       if (!isHere && reach && pos.mods && TF && SM && GOODS && TF.canSeeTradeIntel({
-        dist: targetSys ? Math.hypot(pos.x - targetSys.x, pos.y - targetSys.y) : 99,
+        dist: targetSys ? distFn(pos, targetSys) : 99,
         sectorRadius: sectorR,
       })) {
         const there = {};
@@ -707,7 +771,7 @@
     const RT = globalThis.SkiffRoute;
 
     if (!isHere && current) {
-      dist = Math.hypot(dest.x - current.x, dest.y - current.y);
+      dist = distFn(dest, current);
       inRange = dist <= rangeVal + 0.01;
       cost = Math.max(1, Math.ceil(dist / 14));
       canReach = inRange && (currentState.fuel >= cost);
@@ -717,7 +781,7 @@
           const hopSys = currentSystems.find(function (s) { return s.id === plan.next; }) || getPosMap()[plan.next];
           hop = { id: plan.next, name: (hopSys && hopSys.name) || plan.next, jumps: plan.jumps };
           if (hopSys && current) {
-            hopCost = Math.max(1, Math.ceil(Math.hypot(hopSys.x - current.x, hopSys.y - current.y) / 14));
+            hopCost = Math.max(1, Math.ceil(distFn(hopSys, current) / 14));
             hopFuelOk = currentState.fuel >= hopCost;
           }
         }
@@ -741,7 +805,7 @@
     if (dest.yard) facilities.push("Shipyard");
     if (dest.retire) facilities.push("Retire Dock");
     ctx.fillText(`FACILITIES: ${facilities.length > 0 ? facilities.join(", ") : "Standard Dock"}`, cardX + 16, cardY + 90);
-    ctx.fillText(`DISTANCE  : ${Math.round(dist * 10) / 10} units`, cardX + 16, cardY + 108);
+    ctx.fillText(`DISTANCE  : ${roundDist(dist)} units`, cardX + 16, cardY + 108);
 
     // JUMP Action Button
     if (!isHere) {
@@ -813,6 +877,11 @@
       ctx.font = "italic 13px monospace";
       ctx.fillText("Currently docked here.", cardX + 16, cardY + 144);
     }
+
+    interactiveZones.push({
+      x: cardX, y: cardY, w: cardW, h: cardH,
+      action: () => {}
+    });
   }
 
   function selectSystem(systemId) {

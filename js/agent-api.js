@@ -16,6 +16,17 @@
       resolveEncounter, getEncKind, getEncDest, RETIRE_NET, el, getSystems, inRange, fuelCost
     } = ctx;
 
+    const SF = (typeof globalThis !== "undefined" && globalThis.SkiffFuel) || (function () {
+      try { return require("./fuel.js"); } catch (_) { return null; }
+    })();
+    const roundDistFn = ctx.roundDist || (SF && SF.roundDist) || Math.round;
+    const distFn = ctx.dist || (SF && SF.dist) || function (a, b) {
+      if (!a || !b) return Infinity;
+      const dx = ((a && a.x) || 0) - ((b && b.x) || 0);
+      const dy = ((a && a.y) || 0) - ((b && b.y) || 0);
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
     return {
       VERSION: VERSION,
       getState: function () {
@@ -48,7 +59,7 @@
         const state = getState();
         const from = state.system;
         const list = getSystems().map(function (s) {
-          const dist = Math.hypot((s.x || 0) - ((sys(from) || {}).x || 0), (s.y || 0) - ((sys(from) || {}).y || 0));
+          const dist = distFn(sys(from), s);
           const inJmp = inRange(from, s.id);
           const cost = fuelCost(from, s.id);
           return {
@@ -56,7 +67,7 @@
             name: s.name,
             x: s.x,
             y: s.y,
-            distance: Math.round(dist * 10) / 10,
+            distance: roundDistFn(dist),
             inRange: inJmp,
             fuelCost: cost,
             canJump: inJmp && state.fuel >= cost,

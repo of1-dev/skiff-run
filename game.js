@@ -5,7 +5,7 @@
   "use strict";
 
   const VERSION = "0.9.41";
-  const WORLD = "skiff-run-v1";
+  const WORLD = 160;
   const SAVE_KEY = "skiff-run-save";
   const GOD_KEY = "skiff-run-god";
   const RETIRE_NET = 35000;
@@ -59,7 +59,7 @@
   }
 
   const galaxyState = globalThis.SkiffGalaxyState.setup({
-    VERSION, SAVE_KEY, GOD_KEY, WORLD, SYSTEM_DEFS, SHIPS, GOODS, SF, SM, WP, SK, YE, GOD,
+    VERSION, SAVE_KEY, GOD_KEY, WORLD, SYSTEM_DEFS, SHIPS, GOODS, SF, SM, WP, SK, YE, GOD, TF,
     buildChart,
     getSystems: () => SYSTEMS,
     setSystems: (next) => { SYSTEMS = next; },
@@ -72,10 +72,11 @@
     bestLaneEdge, cargoMarginAt: rawCargoMarginAt, dist, fuelCost, inRange: rawInRange,
     fuelReachDistance: rawFuelReachDistance, canJumpTo: rawCanJumpTo,
     reachableFrom: rawReachableFrom, fresh, rollMarket, peekPrices,
-    bestDealHint, load, save: rawSave,
+    bestDealHint, load, save: rawSave, getSystemList: rawGetSystemList,
   } = galaxyState;
 
   function hull() { return ship(state.shipId) || SHIPS[0]; }
+  function getSystemList() { return rawGetSystemList ? rawGetSystemList(state) : []; }
   function godEnabled() { return rawGodEnabled(state); }
   function yardOffered() { return rawYardOffered(state); }
   function dumpToFit(max) { return rawDumpToFit(state, max); }
@@ -184,7 +185,7 @@
         hullStock, yardOffered, YE, doBuyShip, doAbandonQuest, showTab, render: () => render(), log,
         DOCK_WORK_PAY, doDockWork, CREW_HIRE, doHireCrew, doFireCrew,
         CR, SK, syncGodUi: () => syncGodUi(), sizeMap, drawMap, RETIRE_NET, save,
-        canSeeTrade, cargoMarginAt, renderWaypointChrome
+        canSeeTrade, cargoMarginAt, renderWaypointChrome, getSystemList
       };
       const yardApi = globalThis.SkiffRenderYard ? globalThis.SkiffRenderYard.setup(sharedCtx) : {};
       const targetApi = globalThis.SkiffRenderTarget ? globalThis.SkiffRenderTarget.setup(sharedCtx) : {};

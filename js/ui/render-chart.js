@@ -37,12 +37,16 @@
       return nice * mag;
     }
 
+    const worldSize = (typeof WORLD === "number" && !isNaN(WORLD) && WORLD > 0)
+      ? WORLD
+      : ((typeof globalThis !== "undefined" && globalThis.SkiffChartGen && globalThis.SkiffChartGen.WORLD) || 160);
+
     function chartCamera(mode, here, w, h) {
       const PAD = 0.12;
       let minX, minY, maxX, maxY;
 
       if (mode === "full") {
-        minX = -2; minY = -2; maxX = WORLD + 2; maxY = WORLD + 2;
+        minX = -2; minY = -2; maxX = worldSize + 2; maxY = worldSize + 2;
       } else {
         const pts = [{ x: here.x, y: here.y }];
         if (mode === "local") {
@@ -120,7 +124,7 @@
       const wrap = canvas && canvas.parentElement;
       if (!canvas || !wrap) return;
       const rect = wrap.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min((typeof window !== "undefined" && window.devicePixelRatio) || 1, 2);
       const w = Math.max(200, Math.floor(rect.width));
       const h = Math.max(200, Math.floor(rect.height));
       canvas.width = Math.floor(w * dpr);
@@ -137,7 +141,7 @@
       if (!canvas) return;
       if (!canvas.width) sizeMap();
       const c2d = canvas.getContext("2d");
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min((typeof window !== "undefined" && window.devicePixelRatio) || 1, 2);
       const w = canvas.width / dpr;
       const h = canvas.height / dpr;
       c2d.save();
@@ -216,7 +220,7 @@
         }
         // Reward ring
         if (s.id !== here.id && reach && canSeeTrade(s.id)) {
-          const edge = bestLaneEdge(state.prices, peekPrices(s.id));
+          const edge = bestLaneEdge(state.prices, peekPrices(state, s.id));
           if (edge && edge.edge >= 4) {
             c2d.beginPath();
             c2d.arc(px, py, r + 3, 0, Math.PI * 2);
@@ -273,21 +277,44 @@
     function pickSystemAt(clientX, clientY) {
       const state = st();
       const canvas = el("map");
-      const rect = canvas.getBoundingClientRect();
-      const sx = clientX - rect.left;
-      const sy = clientY - rect.top;
-      const w = rect.width;
-      const h = rect.height;
+      if (!canvas) return null;
+      const rect = (canvas.getBoundingClientRect && canvas.getBoundingClientRect()) || {
+        left: 0,
+        top: 0,
+        width: canvas.width || 720,
+        height: canvas.height || 720,
+      };
+
+      const dpr = Math.min((typeof window !== "undefined" && window.devicePixelRatio) || 1, 2);
+      const drawW = canvas.width ? (canvas.width / dpr) : (rect.width || 720);
+      const drawH = canvas.height ? (canvas.height / dpr) : (rect.height || 720);
+
+      const cssX = clientX - (rect.left || 0);
+      const cssY = clientY - (rect.top || 0);
+
       const here = sys(state.system);
-      const cam = chartCamera(ui.chartMode, here, w, h);
-      const world = cam.toWorld(sx, sy);
+      const cam = chartCamera(ui.chartMode, here, drawW, drawH);
+
       let best = null;
-      const hitPx = ui.chartMode === "full" ? 8 : 14;
-      let bestD = hitPx / cam.scale;
+      let bestDist = Infinity;
+
       SYSTEMS.forEach((s) => {
         if (!chartVisible(s, state.system, ui.chartMode)) return;
-        const d = Math.hypot(s.x - world.x, s.y - world.y);
-        if (d < bestD) { bestD = d; best = s; }
+        const p = cam.toScreen(s.x, s.y);
+        const screenX = (rect.width > 0 && drawW > 0) ? (p.x * rect.width) / drawW : p.x;
+        const screenY = (rect.height > 0 && drawH > 0) ? (p.y * rect.height) / drawH : p.y;
+        const distPx = Math.hypot(cssX - screenX, cssY - screenY);
+
+        const isHere = s.id === state.system;
+        const isSelected = ui.targetId === s.id;
+        const visualR = isHere ? 7 : (isSelected ? 6 : (ui.chartMode === "full" ? 3.5 : 4.5));
+        const visualRScreen = (rect.width > 0 && drawW > 0) ? (visualR * rect.width) / drawW : visualR;
+        const hitRadius = Math.max(visualRScreen + 18, ui.chartMode === "full" ? 22 : 26);
+
+        if (distPx <= hitRadius && distPx < bestDist) {
+          bestDist = distPx;
+          best = s;
+        }
       });
       return best;
     }

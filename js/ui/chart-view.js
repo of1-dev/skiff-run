@@ -48,7 +48,6 @@
             : "Full: entire Ember galaxy (" + ctx.systems().length + " systems). Dim = beyond current fuel reach.";
       }
       ctx.drawMap();
-      ctx.renderTarget();
     }
 
     function renderWaypointChrome() {

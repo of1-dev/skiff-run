@@ -1,13 +1,13 @@
 # SKIFF RUN — Captain’s Notes / How To Play
 
 *A fold-sized pamphlet for the Ember chart.*  
-*Version 0.9.37 · Keep in the glove box.*
+*Version 0.9.41 · Keep in the glove box.*
 
 ---
 
 ## 1. What this is (one screen)
 
-You are a tramp captain with a light freighter, a hold that wants filling, and a chart of **sixty-four** named systems. Buy cheap. Sell dear. Jump. Refuel. Try not to get boarded. When your **net** looks respectable enough, dock at a quiet place and hang up the gloves.
+You are a tramp captain with a light freighter, a hold that wants filling, and a chart of **88 named systems** (88 systems). Buy cheap. Sell dear. Jump. Refuel. Try not to get boarded. When your **net** looks respectable enough, dock at a quiet place and hang up the gloves.
 
 That’s the whole loop. The rest of this pamphlet is manners, shortcuts, and a few things old hands mutter about in the yard.
 
@@ -47,7 +47,7 @@ The **status strip** up top is gospel: system, credits (₩), **fuel**, hold fil
 2. Pick a mode:
    - **Local** — only systems inside your **fuel reach circle** (what you can jump to now). Camera zooms to that neighborhood.
    - **Sector** — a regional window (~48 units). Camera fits the sector; dim dots are beyond current fuel reach.
-   - **Full** — the entire Ember galaxy (all 64 names). Whole map, no neighborhood zoom.
+   - **Full** — the entire Ember galaxy (all 88 names). Whole map, no neighborhood zoom.
 3. Tap a system. Read the target card: fuel cost, dossier, neighbor peeks, and a margin stub if you’re carrying cargo.
 4. Hit **Jump** when you’ve got the fuel.
 

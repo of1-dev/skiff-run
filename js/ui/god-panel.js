@@ -104,6 +104,8 @@
         st.roster = ctx.CR.normalizeRoster(st.roster, ctx.hull().crewMax);
         st.crew = ctx.CR.syncHeadcount(st.roster);
       }
+      const maxH = ctx.hull().hullMax != null ? ctx.hull().hullMax : ctx.hull().maxHull;
+      if (maxH != null && st.hull > maxH) st.hull = maxH;
       ctx.log("Unbowed granted — peak crew aboard. Career unlock still locked." + (r.jettison ? (" Jettisoned " + r.jettison + " cargo.") : ""));
       ctx.save(st);
       ctx.render();
@@ -121,6 +123,8 @@
         st.roster = ctx.CR.normalizeRoster(st.roster, ctx.hull().crewMax);
         st.crew = ctx.CR.syncHeadcount(st.roster);
       }
+      const maxH = ctx.hull().hullMax != null ? ctx.hull().hullMax : ctx.hull().maxHull;
+      if (maxH != null && st.hull > maxH) st.hull = maxH;
       ctx.log("God: Wasp Prime + hands aboard" + (r.jettison ? (" — jettisoned " + r.jettison + " cargo.") : "."));
       ctx.save(st);
       ctx.render();
