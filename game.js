@@ -219,7 +219,8 @@
 
   const godApi = globalThis.SkiffGodPanel.setup({
     getState: () => state, setState: (s) => { state = s; }, getBridgeOn: () => bridgeOn,
-    godEnabled, writeGodFlag, el, log, save, render, bridgeAct, hull, GOD, CR, SHIPS, GOODS
+    godEnabled, writeGodFlag, el, log, save, render, bridgeAct, hull, GOD, CR, SHIPS, GOODS,
+    QK: globalThis.SkiffQuests, systems: () => SYSTEMS
   });
   function syncGodUi() { return godApi.syncGodUi(); }
 
