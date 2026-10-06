@@ -10,22 +10,10 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createRequire } from "node:module";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 
-// Shared quest factory (balance SoT). Lazy + guarded: the bridge seat must mint
-// the bounty through the same factory the Dock Press uses, but a load miss here
-// must never take the whole bridge down at boot.
-let _questMod = null;
-function questMod() {
-  if (_questMod === null) {
-    const req = createRequire(import.meta.url);
-    _questMod = { Quests: req("../js/core/quests.js"), Systems: req("../js/data/systems.js") };
-  }
-  return _questMod;
-}
 const PORT = Number(process.env.SKIFF_BRIDGE_PORT || 8787);
 const HOST = process.env.SKIFF_BRIDGE_HOST || "127.0.0.1";
 const SAVE_PATH = path.join(__dirname, "session", "save.json");
@@ -435,29 +423,6 @@ const server = http.createServer(async (req, res) => {
         const jnote = r.jettison ? ` — jettisoned ${r.jettison} cargo.` : ".";
         st.log = "God: Wasp Prime + hands aboard" + jnote;
         result = { ok: true, jettison: r.jettison, shipId: st.shipId, crew: st.crew, log: st.log };
-      }
-    } else if (op === "god_bounty") {
-      // Deterministic Pirate Lord bounty for the ?bridge=1 seat — no roll, real balance.
-      let q = null;
-      try {
-        const { Quests, Systems } = questMod();
-        const pos = (st.chart && st.chart.pos) || {};
-        const named = Object.keys(pos)
-          .filter((k) => k !== st.system)
-          .map((k) => ({ id: k, name: (Systems.find((s) => s.id === k) || {}).name || k }));
-        q = Quests.createBountyQuest(named, st.system);
-      } catch (e) {
-        result = { ok: false, log: "God: bounty unavailable (" + (e && e.message) + ")." };
-      }
-      if (result === undefined || result === null) {
-        if (!q) {
-          result = { ok: false, log: "God: no other system to post the bounty on." };
-        } else {
-          st.quests = st.quests || [];
-          st.quests.push(q);
-          st.log = `God: Pirate Lord bounty posted — ${q.title} (₩${q.reward.toLocaleString()}).`;
-          result = { ok: true, quest: q, log: st.log };
-        }
       }
     } else if (op === "set_prefs") {
       st.prefs = st.prefs || { autoFuel: true };
