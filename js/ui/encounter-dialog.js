@@ -15,8 +15,8 @@
     let isLocalEval = false;
 
     // Some suites hand us plain objects as element mocks, so hide/show must not
-// assume real DOM attribute methods.
-function hide(el) {
+    // assume real DOM attribute methods.
+    function hide(el) {
       if (!el) return;
       if (typeof el.setAttribute === "function") el.setAttribute("hidden", "");
       else el.hidden = true;
@@ -88,17 +88,92 @@ function hide(el) {
       return parts.length ? parts.join(" · ") : "No status changes";
     }
 
+    function nodes() {
+      return {
+        resultView: ctx.el("enc-result"),
+        resPanel: ctx.el("encounter-result"),
+        promptView: ctx.el("enc-prompt-view"),
+        choiceView: ctx.el("enc-choice-view"),
+      };
+    }
+
+    // index.html nests #enc-result inside #encounter-result. That is one panel.
+    // Hiding and filling both shells is what painted the result twice.
+    function onePanel(n) {
+      return !!(n.resultView && n.resPanel);
+    }
+
+    function concealResult() {
+      const n = nodes();
+      if (onePanel(n)) {
+        hide(n.resPanel);
+        n.resultView.hidden = false;
+      } else if (n.resultView) {
+        n.resultView.hidden = true;
+      } else {
+        hide(n.resPanel);
+      }
+      if (n.choiceView) n.choiceView.hidden = false;
+      if (n.promptView) show(n.promptView);
+    }
+
+    function revealResult() {
+      const n = nodes();
+      if (n.choiceView) n.choiceView.hidden = true;
+      if (onePanel(n)) {
+        if (n.promptView) hide(n.promptView);
+        show(n.resPanel);
+        n.resultView.hidden = false;
+        return;
+      }
+      if (n.resultView) n.resultView.hidden = false;
+      if (n.resPanel && n.promptView) {
+        hide(n.promptView);
+        show(n.resPanel);
+      }
+    }
+
+    function bindDismiss() {
+      const primary = ctx.el("enc-dismiss") || ctx.el("enc-continue") || ctx.el("enc-result-dismiss");
+      const duplicate = ctx.el("enc-result-dismiss");
+      if (primary) primary.onclick = dismissResult;
+      if (duplicate && duplicate !== primary) hide(duplicate);
+    }
+
     function dismissResult() {
-      const resultView = ctx.el("enc-result");
-      if (resultView) resultView.hidden = true;
-      const choiceView = ctx.el("enc-choice-view");
-      if (choiceView) choiceView.hidden = false;
+      concealResult();
       if (dlg && dlg.open) dlg.close();
       if (typeof document !== "undefined" && document.body) {
         document.body.classList.remove("enc-open");
       }
       encKind = null;
       encDest = null;
+    }
+
+    function paintResult(result) {
+      const n = nodes();
+      const summary = (result && result.summary) || {};
+      revealResult();
+      const outcomeEl = ctx.el("enc-result-outcome");
+      const detailsEl = ctx.el("enc-result-details");
+      const titleEl = ctx.el("enc-result-title");
+      const bodyEl = ctx.el("enc-result-body");
+
+      if (onePanel(n)) {
+        if (titleEl) titleEl.textContent = formatOutcome(summary.outcome);
+        if (outcomeEl) outcomeEl.textContent = "";
+        if (bodyEl) bodyEl.textContent = result.logMsg || "";
+        if (detailsEl) detailsEl.textContent = formatDetails(summary);
+      } else if (n.resultView) {
+        if (outcomeEl) outcomeEl.textContent = formatOutcome(summary.outcome);
+        if (detailsEl) detailsEl.textContent = formatDetails(summary);
+      } else if (titleEl) {
+        titleEl.textContent = result.isWin
+          ? "Victory"
+          : (encKind === "corsair" || encKind === "pirate_lord" ? "Defeat" : "Encounter Result");
+        if (bodyEl) bodyEl.textContent = result.logMsg || "";
+      }
+      bindDismiss();
     }
 
     function resolveEncounter(choice) {
@@ -124,13 +199,8 @@ function hide(el) {
       ctx.render();
       if (ctx.getBridgeOn()) ctx.bridgeAct({ op: "save", state: st });
 
-      // Two result panels ship in the tree: the structured one from the
-      // encounter-result batch and the win/lose one from ai-debug-mode. A human
-      // pilot gets whichever the host markup actually provides.
-      const resultView = ctx.el("enc-result");
-      const resPanel = ctx.el("encounter-result");
-      const promptView = ctx.el("enc-prompt-view");
-      const showResult = !isAgent && !!(resultView || (resPanel && promptView));
+      const n = nodes();
+      const showResult = !isAgent && !!(n.resultView || (n.resPanel && n.promptView));
 
       if (!showResult) {
         if (typeof document !== "undefined" && document.body) {
@@ -142,36 +212,7 @@ function hide(el) {
         return;
       }
 
-      const summary = (result && result.summary) || {};
-
-      if (resultView) {
-        const choiceView = ctx.el("enc-choice-view");
-        if (choiceView) choiceView.hidden = true;
-        resultView.hidden = false;
-
-        const outcomeEl = ctx.el("enc-result-outcome");
-        if (outcomeEl) outcomeEl.textContent = formatOutcome(summary.outcome);
-        const detailsEl = ctx.el("enc-result-details");
-        if (detailsEl) detailsEl.textContent = formatDetails(summary);
-
-        const btnDismiss = ctx.el("enc-dismiss") || ctx.el("enc-continue");
-        if (btnDismiss) btnDismiss.onclick = dismissResult;
-      }
-
-      if (resPanel && promptView) {
-        hide(promptView);
-        show(resPanel);
-        const titleEl = ctx.el("enc-result-title");
-        if (titleEl) {
-          titleEl.textContent = result.isWin
-            ? "Victory"
-            : (encKind === "corsair" || encKind === "pirate_lord" ? "Defeat" : "Encounter Result");
-        }
-        const bodyEl = ctx.el("enc-result-body");
-        if (bodyEl) bodyEl.textContent = result.logMsg;
-        const dismissBtn = ctx.el("enc-result-dismiss");
-        if (dismissBtn) dismissBtn.onclick = dismissResult;
-      }
+      paintResult(result);
     }
 
     function openEncounter(kind, dest) {
@@ -180,15 +221,7 @@ function hide(el) {
       encDest = dest || ctx.sys(st.system);
       const armed = Armament.isArmed(st, ctx.hull());
 
-      const choiceView = ctx.el("enc-choice-view");
-      const resultView = ctx.el("enc-result");
-      if (choiceView) choiceView.hidden = false;
-      if (resultView) resultView.hidden = true;
-
-      const promptView = ctx.el("enc-prompt-view");
-      const resPanel = ctx.el("encounter-result");
-      show(promptView, false);
-      hide(resPanel);
+      concealResult();
 
       if (st.pilot === "agent" || isLocalEval) {
         let choice = "b";
@@ -271,8 +304,7 @@ function hide(el) {
     if (btnB) btnB.onclick = function () { resolveEncounter("b"); };
     if (btnDismiss) btnDismiss.onclick = dismissResult;
 
-    const initialResultView = ctx.el("enc-result");
-    if (initialResultView) initialResultView.hidden = true;
+    concealResult();
 
     return {
       maybeEncounter: maybeEncounter,
