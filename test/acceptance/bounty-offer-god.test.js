@@ -240,9 +240,50 @@ describe("ATDD: FIX C — the god button exists and is wired", () => {
     const src = fs.readFileSync(path.join(ROOT, "js/ui/god-panel.js"), "utf8");
     assert.match(src, /wireGod\(\s*"god-bounty"/, "the button must use wireGod like its siblings");
   });
+});
 
-  it("the bridge seat gets the same op so ?bridge=1 does not dead-end", () => {
+describe("ATDD: K3 — god_bounty is gone from the MCP seat; live god ops remain", () => {
+  it("bridge.mjs has no god_bounty handler and no questMod loader", () => {
     const src = fs.readFileSync(path.join(ROOT, "mcp/bridge.mjs"), "utf8");
-    assert.match(src, /op === "god_bounty"/, "the bridge must handle god_bounty");
+    assert.doesNotMatch(src, /god_bounty/, "god_bounty on the HTTP bridge is dead code");
+    assert.doesNotMatch(src, /questMod/, "questMod existed only to serve the dead god_bounty op");
+    assert.doesNotMatch(src, /createBountyQuest/, "bridge must not mint bounties");
+  });
+
+  it("engine runOp treats god_bounty as unknown_op and does not mint", async () => {
+    const { SkiffGame } = await import("../../mcp/engine.mjs");
+    const g = new SkiffGame();
+    g.state.pilot = "agent";
+    g.actorRole = "agent";
+    g.state.quests = [];
+    const r = g.runOp("god_bounty");
+    assert.equal(r.ok, false);
+    assert.equal(r.error, "unknown_op");
+    assert.equal(r.op, "god_bounty");
+    assert.equal(g.state.quests.length, 0, "unknown op must not mint a quest");
+  });
+
+  it("live bridge god ops still exist on the HTTP seat", () => {
+    const src = fs.readFileSync(path.join(ROOT, "mcp/bridge.mjs"), "utf8");
+    for (const op of ["god_credits", "god_fuel", "god_yard", "grant_unbowed", "grant_wasp"]) {
+      assert.match(src, new RegExp("op === \"" + op + "\""), op + " must stay on the live bridge");
+    }
+  });
+
+  it("live engine god ops still grant", async () => {
+    const { SkiffGame } = await import("../../mcp/engine.mjs");
+    const g = new SkiffGame();
+    g.state.pilot = "agent";
+    g.actorRole = "agent";
+    const before = g.state.credits | 0;
+    const c = g.runOp("god_credits", { amount: 50000 });
+    assert.equal(c.ok, true, JSON.stringify(c));
+    assert.equal(g.state.credits, before + 50000);
+    const f = g.runOp("god_fuel");
+    assert.equal(f.ok, true, JSON.stringify(f));
+    assert.equal(g.state.fuel, g.hull().fuelMax);
+    const y = g.runOp("god_yard");
+    assert.equal(y.ok, true, JSON.stringify(y));
+    assert.equal(g.state.godYard, true);
   });
 });
