@@ -1,7 +1,7 @@
 # SKIFF RUN — Captain’s Notes / How To Play
 
 *A fold-sized pamphlet for the Ember chart.*  
-*Version 0.9.41 · Keep in the glove box.*
+*Version 0.10.0 · Keep in the glove box.*
 
 ---
 
