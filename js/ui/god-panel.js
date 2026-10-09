@@ -104,6 +104,8 @@
         st.roster = ctx.CR.normalizeRoster(st.roster, ctx.hull().crewMax);
         st.crew = ctx.CR.syncHeadcount(st.roster);
       }
+      const maxH = ctx.hull().hullMax != null ? ctx.hull().hullMax : ctx.hull().maxHull;
+      if (maxH != null && st.hull > maxH) st.hull = maxH;
       ctx.log("Unbowed granted — peak crew aboard. Career unlock still locked." + (r.jettison ? (" Jettisoned " + r.jettison + " cargo.") : ""));
       ctx.save(st);
       ctx.render();
@@ -121,7 +123,24 @@
         st.roster = ctx.CR.normalizeRoster(st.roster, ctx.hull().crewMax);
         st.crew = ctx.CR.syncHeadcount(st.roster);
       }
+      const maxH = ctx.hull().hullMax != null ? ctx.hull().hullMax : ctx.hull().maxHull;
+      if (maxH != null && st.hull > maxH) st.hull = maxH;
       ctx.log("God: Wasp Prime + hands aboard" + (r.jettison ? (" — jettisoned " + r.jettison + " cargo.") : "."));
+      ctx.save(st);
+      ctx.render();
+    });
+
+    wireGod("god-bounty", function () {
+      if (bridgeOn()) {
+        ctx.bridgeAct({ op: "god_bounty" });
+        return;
+      }
+      const st = state();
+      const q = ctx.QK.createBountyQuest(ctx.systems(), st.system);
+      if (!q) return ctx.log("God: no other system to post the bounty on.");
+      st.quests = (st.quests || []).concat([q]);
+      ctx.setState(st);
+      ctx.log("God: Pirate Lord bounty posted — " + q.title + " (₩" + q.reward.toLocaleString() + ").");
       ctx.save(st);
       ctx.render();
     });

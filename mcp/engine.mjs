@@ -1,9 +1,11 @@
 /** Headless Skiff Run engine — mechanical parity with play UI for MCP / tests. */
-export const VERSION = "0.9.41";
-export const RULESET = "skiff-0.9.41";
+export const VERSION = "0.10.0";
+export const RULESET = "skiff-0.10.0";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const AgentActionLog = require("../js/agent-action-log.js");
+const TradeFog = require("../js/trade-fog.js");
+const Armament = require("../js/core/armament.js");
 const RETIRE_NET = 35000;
 const FUEL_PRICE = 45;
 const CREW_HIRE = 800;
@@ -96,7 +98,7 @@ export const SHIPS = [
   { id: "hold-barge", name: "Hold Barge", cargo: 40, fuelMax: 18, range: 32, weapons: false, crewMax: 3, price: 9000 },
   { id: "ember-cutter", name: "Ember Cutter", cargo: 16, fuelMax: 16, range: 38, weapons: true, crewMax: 2, price: 12000 },
   { id: "wasp-prime", name: "Wasp Prime", cargo: 18, fuelMax: 20, range: 44, weapons: true, crewMax: 3, price: 28000 },
-  { id: "unbowed", name: "Unbowed", cargo: 12, fuelMax: 16, range: 36, weapons: true, crewMax: 3, price: 0, gated: true },
+  { id: "unbowed", name: "Unbowed", cargo: 12, fuelMax: 16, range: 36, weapons: true, crewMax: 3, hullMax: 80, ammoMax: 50, price: 0, gated: true },
 ];
 
 /** Peak Unbowed crew — match Fold js/debug-god.js PEAK_UNBOWED_CREW. */
@@ -305,8 +307,27 @@ export class SkiffGame {
     GOODS.forEach((g) => { this.state.prices[g.id] = this.priceFor(s, g); });
   }
 
+/** In-sector AND visited, else no prices. Reuses the sector radius + visited set. */
+  canSeePrices(id) {
+    const here = this.state && this.state.system;
+    if (id === here) return true;
+    const t = this.sys(id);
+    if (!t) return false;
+    const h = here && this.sys(here);
+    if (!h) return false;
+    if (this.dist(h, t) > TradeFog.SECTOR_RADIUS + 0.01) return false;
+    return !!(this.state.visited && this.state.visited[id]);
+  }
+
+  /**
+   * Market prices for a system, gated like Fold canSeePrices:
+   * current dock, or in-sector AND visited. Else {}.
+   */
   peekPrices(systemId) {
+    // Fogged or unvisited systems leak nothing: an empty map, never prices.
+    if (!this.canSeePrices(systemId)) return {};
     const s = this.sys(systemId);
+    if (!s) return {};
     const out = {};
     GOODS.forEach((g) => { out[g.id] = this.priceFor(s, g); });
     return out;
@@ -408,7 +429,7 @@ export class SkiffGame {
 
   chart(mode = "local") {
     const here = this.state.system;
-    const SECTOR_RADIUS = 48;
+    const SECTOR_RADIUS = TradeFog.SECTOR_RADIUS;
     const nodes = this.systems
       .filter((s) => {
         if (s.id === here) return true;
@@ -420,10 +441,13 @@ export class SkiffGame {
         const reach = s.id === here || this.inRange(here, s.id);
         const peek = this.peekPrices(s.id);
         let bestEdge = null;
-        GOODS.forEach((g) => {
-          const edge = peek[g.id] - this.state.prices[g.id];
-          if (bestEdge == null || edge > bestEdge.edge) bestEdge = { good: g.id, edge };
-        });
+        // No visible price map means no lane edge to advertise.
+        if (Object.keys(peek).length) {
+          GOODS.forEach((g) => {
+            const edge = peek[g.id] - this.state.prices[g.id];
+            if (bestEdge == null || edge > bestEdge.edge) bestEdge = { good: g.id, edge };
+          });
+        }
         return {
           id: s.id,
           name: s.name,
@@ -551,7 +575,7 @@ export class SkiffGame {
       this.pendingEncounter = null;
       return;
     }
-    const armed = h.weapons && this.state.crew > 0;
+    const armed = Armament.isArmed(this.state, h);
     const options =
       kind === "warden" ? [{ id: "a", label: "Pay fine" }, { id: "b", label: "Bluff" }]
       : kind === "trader" ? [{ id: "a", label: "Hail" }, { id: "b", label: "Wave off" }]
@@ -725,6 +749,8 @@ export class SkiffGame {
     }
     this.state.shipId = next.id;
     this.state.fuel = next.fuelMax;
+    if (next.hullMax != null) this.state.hull = next.hullMax;
+    if (next.ammoMax != null) this.state.ammo = next.ammoMax;
     this.state.roster = PEAK_UNBOWED_CREW.map((c) => ({ ...c }));
     this.state.crew = this.state.roster.length;
     const jnote = jettison ? ` Jettisoned ${jettison} cargo to fit hold.` : "";

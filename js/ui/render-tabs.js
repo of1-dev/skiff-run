@@ -51,6 +51,19 @@
       box.scrollTop = box.scrollHeight;
     }
 
+    function renderSystemList() {
+      const box = el("system-list");
+      if (!box) return;
+      const list = typeof ctx.getSystemList === "function" ? ctx.getSystemList() : [];
+      if (!list.length) return;
+      const visitedCount = list.filter(function (s) { return s.visited; }).length;
+      box.innerHTML = '<div style="width:100%;margin-bottom:0.25rem;">' + visitedCount + ' / ' + list.length + ' visited</div>' +
+        list.map(function (s) {
+          return '<span style="' + (s.visited ? "color:var(--ok,#7A9E7E);" : "opacity:0.45;") + '">' +
+            (s.visited ? "● " : "○ ") + esc(s.name) + '</span>';
+        }).join("");
+    }
+
     function renderMarket(state, h) {
       const market = el("market");
       market.innerHTML = "";
@@ -143,10 +156,14 @@
       const s = sys(state.system);
       const h = hull();
       el("sys-name").textContent = s.name;
+      const shipEl = el("status-ship");
+      if (shipEl) shipEl.textContent = h.name;
       el("credits").textContent = "\u20a9" + state.credits.toLocaleString();
       el("fuel").textContent = state.fuel + " / " + h.fuelMax;
       el("cargo").textContent = cargoUsed(state) + " / " + h.cargo;
-      el("hull-val").textContent = (state.hull || 0) + " / " + (h.hullMax || 0);
+      const maxH = (h.hullMax != null ? h.hullMax : h.maxHull) || 0;
+      const curH = Math.min(state.hull != null ? state.hull : maxH, maxH);
+      el("hull-val").textContent = curH + " / " + maxH;
       el("ammo-val").textContent = (state.ammo || 0) + " / " + (h.ammoMax || 0);
       el("net").textContent = "\u20a9" + netWorth(state).toLocaleString();
       el("log").textContent = state.log;
@@ -182,6 +199,7 @@
       renderShipPanel();
       if (typeof renderWaypointChromeFn === "function") renderWaypointChromeFn();
       renderSkillsBox();
+      renderSystemList();
       renderAgentActionLog();
       renderCaptainLog();
       if (typeof syncGodUi === "function") syncGodUi();
@@ -207,7 +225,7 @@
       save(state);
     }
 
-    return { render, renderTarget, renderQuests, renderSkillsBox, renderShipPanel, renderAgentActionLog, renderCaptainLog };
+    return { render, renderTarget, renderQuests, renderSkillsBox, renderShipPanel, renderAgentActionLog, renderCaptainLog, renderSystemList };
   }
 
   return { setup };

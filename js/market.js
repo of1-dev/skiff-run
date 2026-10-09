@@ -19,7 +19,9 @@
   }
 
   function priceFor(system, good) {
-    const m = system.mods[good.id] || 1;
+    // `mods` is absent on partial/system-only fixtures and on any system that
+    // never rolled a market, so treat a missing table as "no modifiers".
+    const m = (system.mods && system.mods[good.id]) || 1;
     const size = system.size == null ? 2 : system.size;
     const sizeMul = (100 - size * 3) / 100;
     const h = hash32(system.id + ":" + good.id);
@@ -198,6 +200,8 @@
   }
 
   function bestLaneEdge(herePrices, therePrices, goods) {
+    // A fogged / unvisited system has no price map. Leak no lane math.
+    if (!therePrices || !Object.keys(therePrices).length) return null;
     let best = null;
     goods.forEach((g) => {
       const edge = therePrices[g.id] - herePrices[g.id];
@@ -207,6 +211,7 @@
   }
 
   function bestDealHint(herePrices, therePrices, goods) {
+    if (!therePrices || !Object.keys(therePrices).length) return "trade fogged (out of sector)";
     const best = bestLaneEdge(herePrices, therePrices, goods);
     if (!best || best.edge < 4) return "flat lane";
     return best.name + " +" + best.edge + "₩";

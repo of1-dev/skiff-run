@@ -77,8 +77,15 @@
         });
         if (qRes.totalPenalty > 0) st.credits = Math.max(0, (st.credits || 0) - qRes.totalPenalty);
       } else {
-        const comp = st.quests.filter(function (q) { return q.dest === st.system; });
-        st.quests = st.quests.filter(function (q) { return q.dest !== st.system; });
+        function isBQ(q) {
+          if (!q) return false;
+          if (q.type === "bounty" || q.isBounty) return true;
+          if (typeof q.id === "string" && q.id.toLowerCase().startsWith("bounty")) return true;
+          if (typeof q.title === "string" && /bounty|pirate\s*lord/i.test(q.title)) return true;
+          return false;
+        }
+        const comp = st.quests.filter(function (q) { return q.dest === st.system && !isBQ(q); });
+        st.quests = st.quests.filter(function (q) { return q.dest !== st.system || isBQ(q); });
         if (comp.length > 0) {
           const sum = comp.reduce(function (s, q) { return s + q.reward; }, 0);
           st.credits = (st.credits || 0) + sum;
@@ -91,7 +98,7 @@
       if (still && still !== dest) {
         view.courseDest = still;
         const plan = ctx.coursePlan(still);
-        view.targetId = (plan && plan.next) ? plan.next : still;
+        view.targetId = still;
         const left = plan && plan.jumps ? plan.jumps : "?";
         ctx.log("Arrived " + ctx.sys(dest).name + " (−" + cost + " fuel). Course still " + (ctx.sys(still) || {}).name + " — " + left + " jumps.");
       } else {
@@ -103,7 +110,23 @@
       ctx.render();
       ctx.tickSkill("pilot", true);
       if (bridgeOn()) ctx.bridgeAct({ op: "save", state: st });
-      ctx.maybeEncounter(dest);
+
+      function checkBounty(q) {
+        if (!q) return false;
+        if (qk && typeof qk.isBountyQuest === "function") return qk.isBountyQuest(q);
+        if (q.type === "bounty" || q.isBounty) return true;
+        if (typeof q.id === "string" && q.id.toLowerCase().startsWith("bounty")) return true;
+        if (typeof q.title === "string" && /bounty|pirate\s*lord/i.test(q.title)) return true;
+        return false;
+      }
+      const hasBountyHere = (st.quests || []).some(function (q) {
+        return q.dest === dest && checkBounty(q);
+      });
+      if (hasBountyHere && typeof ctx.openEncounter === "function") {
+        ctx.openEncounter("pirate_lord", ctx.sys ? ctx.sys(dest) : dest);
+      } else if (typeof ctx.maybeEncounter === "function") {
+        ctx.maybeEncounter(dest);
+      }
     }
 
     function doRefuel() {
@@ -175,6 +198,8 @@
       st.roster = ctx.CR.normalizeRoster(st.roster || [], next.crewMax);
       st.crew = ctx.CR.syncHeadcount(st.roster);
       if (st.fuel > next.fuelMax) st.fuel = next.fuelMax;
+      const nextMaxHull = next.hullMax != null ? next.hullMax : next.maxHull;
+      if (nextMaxHull != null && st.hull > nextMaxHull) st.hull = nextMaxHull;
       let pay = "Paid ₩" + due.toLocaleString();
       if (surplus > 0) pay = "Scrap payout ₩" + surplus.toLocaleString();
       else if (due === 0) pay = "No cash due";

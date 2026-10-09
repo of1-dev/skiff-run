@@ -22,6 +22,9 @@
     range: 36,
     weapons: true,
     crewMax: 3,
+    hullMax: 80,
+    maxHull: 80,
+    ammoMax: 50,
     price: 0,
     gated: true,
   };
@@ -66,6 +69,12 @@
     return godYard ? "full" : stock;
   }
 
+  function clampHull(current, maxHull) {
+    const max = maxHull == null ? Infinity : Math.max(0, maxHull | 0);
+    const cur = current == null ? max : (current | 0);
+    return Math.max(0, Math.min(cur, max));
+  }
+
   function setHull(state, hullId, ships, goodsIds) {
     const h = (ships || []).find((s) => s.id === hullId);
     if (!h) return { ok: false, reason: "unknown_hull" };
@@ -73,6 +82,10 @@
     next.shipId = h.id;
     next.fuel = Math.min(next.fuel | 0, h.fuelMax | 0);
     next.crew = Math.min(next.crew | 0, h.crewMax | 0);
+    const maxH = h.hullMax != null ? h.hullMax : h.maxHull;
+    if (maxH != null && next.hull != null) {
+      next.hull = clampHull(next.hull, maxH);
+    }
     let used = 0;
     const ids = goodsIds || Object.keys(next.cargo);
     ids.forEach((id) => { used += next.cargo[id] | 0; });
@@ -112,7 +125,12 @@
     if (!r.ok) return r;
     const h = (ships || []).find((s) => s.id === hullId);
     const next = applyRoster(r.state, roster, h && h.crewMax);
-    if (h) next.fuel = h.fuelMax | 0;
+    if (h) {
+      next.fuel = h.fuelMax | 0;
+      const maxH = h.hullMax != null ? h.hullMax : h.maxHull;
+      if (maxH != null) next.hull = maxH | 0;
+      if (h.ammoMax != null) next.ammo = h.ammoMax | 0;
+    }
     return { ok: true, state: next, jettison: r.jettison };
   }
 
@@ -134,6 +152,7 @@
     fillFuel,
     unlockYard,
     effectiveStock,
+    clampHull,
     setHull,
     waspHands,
     applyRoster,

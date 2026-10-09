@@ -1,4 +1,4 @@
-# SKIFF RUN 0.9.41
+# SKIFF RUN 0.10.0
 
 Browser trade-run through the Ember chart. Original systems, goods, and ships.
 
@@ -47,7 +47,7 @@ You are a freelance merchant captain in the Ember Reach galaxy. You begin with a
 1. **Never jump on an empty tank**: Fuel costs ₩45/unit. Running dry leaves you stranded or vulnerable to pirates.
 2. **Read the threat colors**: Systems are color-coded by pirate risk (teal = peaceful, yellow = contested, red = high pirate activity).
 3. **Encounters on the lane**:
-   - **Ash Corsairs**: Armed + crewed ships can **Fight** for salvage payouts; unarmed ships must **Dump cargo** or burn fuel to **Flee**.
+   - **Ash Corsairs**: Ships with **weapons mounted and ammo in the bays** can **Fight** for salvage payouts — crew count does not gate it. Unarmed ships, or armed ships out of ammo, must **Dump cargo** or burn fuel to **Flee**.
    - **Ledger Wardens**: Pay routine inspection tariffs or attempt a **Bluff**.
    - **Lane Traders**: Hail for quick in-flight trade deals.
 

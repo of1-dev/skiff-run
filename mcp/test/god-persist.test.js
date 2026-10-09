@@ -14,8 +14,8 @@ const root = path.resolve(__dirname, "..");
 
 describe("ATDD: one version law (god-persist)", () => {
   it("VERSION/RULESET match Fold clock", () => {
-    assert.equal(VERSION, "0.9.41");
-    assert.equal(RULESET, "skiff-0.9.41");
+    assert.equal(VERSION, "0.10.0");
+    assert.equal(RULESET, "skiff-0.10.0");
   });
 });
 

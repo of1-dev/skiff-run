@@ -4,8 +4,8 @@
 (function () {
   "use strict";
 
-  const VERSION = "0.9.41";
-  const WORLD = "skiff-run-v1";
+  const VERSION = "0.10.0";
+  const WORLD = 160;
   const SAVE_KEY = "skiff-run-save";
   const GOD_KEY = "skiff-run-god";
   const RETIRE_NET = 35000;
@@ -59,7 +59,7 @@
   }
 
   const galaxyState = globalThis.SkiffGalaxyState.setup({
-    VERSION, SAVE_KEY, GOD_KEY, WORLD, SYSTEM_DEFS, SHIPS, GOODS, SF, SM, WP, SK, YE, GOD,
+    VERSION, SAVE_KEY, GOD_KEY, WORLD, SYSTEM_DEFS, SHIPS, GOODS, SF, SM, WP, SK, YE, GOD, TF,
     buildChart,
     getSystems: () => SYSTEMS,
     setSystems: (next) => { SYSTEMS = next; },
@@ -72,10 +72,11 @@
     bestLaneEdge, cargoMarginAt: rawCargoMarginAt, dist, fuelCost, inRange: rawInRange,
     fuelReachDistance: rawFuelReachDistance, canJumpTo: rawCanJumpTo,
     reachableFrom: rawReachableFrom, fresh, rollMarket, peekPrices,
-    bestDealHint, load, save: rawSave,
+    bestDealHint, load, save: rawSave, getSystemList: rawGetSystemList,
   } = galaxyState;
 
   function hull() { return ship(state.shipId) || SHIPS[0]; }
+  function getSystemList() { return rawGetSystemList ? rawGetSystemList(state) : []; }
   function godEnabled() { return rawGodEnabled(state); }
   function yardOffered() { return rawYardOffered(state); }
   function dumpToFit(max) { return rawDumpToFit(state, max); }
@@ -123,7 +124,7 @@
     getBridgeOn: () => bridgeOn,
     bridgeAct,
   });
-  const { themeColors, applyTheme, loadTheme, currentPilot, reclaimStick, applyPilot } = themePilot;
+  const { themeColors, applyTheme, loadTheme, applyTextSize, loadTextSize, currentPilot, reclaimStick, applyPilot } = themePilot;
 
   const chartView = globalThis.SkiffChartView.setup({
     el, sys, WP, CF, SECTOR_RADIUS,
@@ -159,7 +160,7 @@
     getState: () => state, getUi: () => ui, getBridgeOn: () => bridgeOn, currentPilot, showTab,
     sys, ship, hull, cargoUsed, hullStock, yardOffered, dumpToFit,
     log, render: () => render(), save, bridgeAct, tickSkill, markVisited, rollMarket,
-    inRange, fuelCost, courseDest, coursePlan, maybeEncounter, priceFor,
+    inRange, fuelCost, courseDest, coursePlan, maybeEncounter, openEncounter, priceFor,
     systems: () => SYSTEMS, GOODS, FUEL_PRICE, YE, CR, SP, SM, SF, QK: globalThis.SkiffQuests
   });
   const { doTravel, doRefuel, doRepair, doRearm, doBuyShip, doDockWork, doHireCrew, doFireCrew, doBuyPress, doAbandonQuest } = actionsApi;
@@ -184,7 +185,7 @@
         hullStock, yardOffered, YE, doBuyShip, doAbandonQuest, showTab, render: () => render(), log,
         DOCK_WORK_PAY, doDockWork, CREW_HIRE, doHireCrew, doFireCrew,
         CR, SK, syncGodUi: () => syncGodUi(), sizeMap, drawMap, RETIRE_NET, save,
-        canSeeTrade, cargoMarginAt, renderWaypointChrome
+        canSeeTrade, cargoMarginAt, renderWaypointChrome, getSystemList
       };
       const yardApi = globalThis.SkiffRenderYard ? globalThis.SkiffRenderYard.setup(sharedCtx) : {};
       const targetApi = globalThis.SkiffRenderTarget ? globalThis.SkiffRenderTarget.setup(sharedCtx) : {};
@@ -218,7 +219,8 @@
 
   const godApi = globalThis.SkiffGodPanel.setup({
     getState: () => state, setState: (s) => { state = s; }, getBridgeOn: () => bridgeOn,
-    godEnabled, writeGodFlag, el, log, save, render, bridgeAct, hull, GOD, CR, SHIPS, GOODS
+    godEnabled, writeGodFlag, el, log, save, render, bridgeAct, hull, GOD, CR, SHIPS, GOODS,
+    QK: globalThis.SkiffQuests, systems: () => SYSTEMS
   });
   function syncGodUi() { return godApi.syncGodUi(); }
 
@@ -234,9 +236,9 @@
   globalThis.SkiffDomWire.setup({
     el, getUi: () => ui, getState: () => state, getBridgeOn: () => bridgeOn, systems: () => SYSTEMS,
     HULL_SVG, WP, sys, netWorth, RETIRE_NET, log, save, render, renderTarget, sizeMap, drawMap, pickSystemAt,
-    showTab, setChartMode, applyTheme, applyPilot, reclaimStick, coursePlan, runChartSearch,
+    showTab, setChartMode, applyTheme, applyTextSize, applyPilot, reclaimStick, coursePlan, runChartSearch,
     doRefuel, doRepair, doRearm, doSellAll, doFillCheap, doSellExpensive, doTravel, resetGame,
-    syncPrefsUi, bridgeAct
+    syncPrefsUi, bridgeAct, doBuy, doSell
   });
 
   function logAgentAct(op, res) {
@@ -272,11 +274,17 @@
     getSystems: () => SYSTEMS, inRange, fuelCost
   });
   globalThis.SkiffAPI = api;
-  if (globalThis.SkiffWebMCP && typeof globalThis.SkiffWebMCP.init === "function") {
-    globalThis.SkiffWebMCP.init(api);
+  if (globalThis.SkiffWebMCP && typeof globalThis.SkiffWebMCP.init === "function") globalThis.SkiffWebMCP.init(api);
+  if (globalThis.SkiffAiDebug && typeof globalThis.SkiffAiDebug.init === "function") {
+    globalThis.SkiffAiDebug.init({
+      VERSION, getState: () => state, setState: (st) => { state = st; },
+      getSystems: () => SYSTEMS, sys, ship, hull, save, render, log, el,
+      openEncounter, markVisited, rollMarket, ui, bridgeOn: () => bridgeOn, bridgeAct
+    });
   }
 
   loadTheme();
+  loadTextSize();
   applyPilot(state.pilot || "human", false);
   syncGodUi();
   showTab("dock");

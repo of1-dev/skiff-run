@@ -2,8 +2,8 @@
   "name": "skiff-run",
   "private": true,
   "scripts": {
-    "test": "node --test test/acceptance/*.test.js",
-    "test:acceptance": "node --test test/acceptance/*.test.js",
+    "test": "node --test $(git ls-files 'test/acceptance/*.test.js')",
+    "test:acceptance": "node --test $(git ls-files 'test/acceptance/*.test.js')",
     "lint": "eslint .",
     "chart-shots": "bash scripts/chart-shots.sh"
   },

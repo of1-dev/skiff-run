@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="style.css?v=0.9.41" />
 </head>
 <body>
-  <canvas id="holo-canvas" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: #0C0A09;"></canvas>
+  <canvas id="holo-canvas" style="display: none; pointer-events: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: #0C0A09;"></canvas>
   <div id="holo-search-wrap" style="display: none; position: fixed; top: 20px; right: 180px; z-index: 10000;">
     <form id="holo-find-form" class="chart-find" autocomplete="off" style="margin: 0; display: flex; gap: 6px;">
       <input id="holo-search" type="search" placeholder="Find a dock to pin…" enterkeyhint="search" style="background: rgba(28, 25, 23, 0.92); color: #E7E0D6; border: 1px solid #44403C; padding: 8px 12px; border-radius: 4px; font-family: monospace; width: 200px;" />
@@ -29,18 +29,68 @@
       </div>
       <div class="status-strip" aria-label="Status">
         <div><label>Sys</label><span id="sys-name">—</span></div>
-        <div><label>₩</label><span id="credits">—</span></div>
-        <div><label>Fuel</label><span id="fuel">—</span></div>
-        <div><label>Hold</label><span id="cargo">—</span></div>
-        <div><label>Hull</label><span id="hull-val">—</span></div>
-        <div><label>Ammo</label><span id="ammo-val">—</span></div>
-        <div><label>Net</label><span id="net">—</span></div>
+        <div data-kind="ship"><label>Ship</label><span id="status-ship" class="status-ship">—</span></div>
+        <div data-kind="credits"><label>₩</label><span id="credits">—</span></div>
+        <div data-kind="fuel"><label>Fuel</label><span id="fuel">—</span></div>
+        <div data-kind="cargo"><label>Hold</label><span id="cargo">—</span></div>
+        <div data-kind="hull"><label>Hull</label><span id="hull-val">—</span></div>
+        <div data-kind="ammo"><label>Ammo</label><span id="ammo-val">—</span></div>
+        <div data-kind="net"><label>Net</label><span id="net">—</span></div>
       </div>
       <div id="top-agent-ticker" class="top-agent-ticker" hidden aria-live="polite">
         <span class="ticker-badge">AGENT</span>
         <span id="top-agent-ticker-text" class="ticker-text">Agent stand-by • Ready for orders</span>
       </div>
     </header>
+
+    <details id="ai-debug-panel" class="ai-debug-panel card-block" hidden open>
+      <summary class="ai-debug-summary">AI DEBUG MODE</summary>
+      <div class="ai-debug-content">
+        <div class="ai-debug-row">
+          <label>Encounter:</label>
+          <div class="ai-debug-actions">
+            <button type="button" id="debug-force-corsair" class="btn ember">Corsair ambush</button>
+            <button type="button" id="debug-force-warden" class="btn ghost">Ledger warden</button>
+            <button type="button" id="debug-force-trader" class="btn ghost">Lane trader</button>
+          </div>
+        </div>
+        <div class="ai-debug-row">
+          <label for="debug-force-outcome">Outcome:</label>
+          <select id="debug-force-outcome" class="ai-debug-select">
+            <option value="random">Random</option>
+            <option value="win">Win</option>
+            <option value="lose">Lose</option>
+          </select>
+        </div>
+        <div class="ai-debug-row">
+          <label for="debug-teleport-input">Teleport:</label>
+          <div class="ai-debug-group">
+            <input type="text" id="debug-teleport-input" placeholder="System name or ID…" />
+            <button type="button" id="debug-teleport-btn" class="btn ghost">Jump</button>
+          </div>
+        </div>
+        <div class="ai-debug-row">
+          <label>State:</label>
+          <div class="ai-debug-state-grid">
+            <div><label for="debug-state-credits">₩</label><input type="number" id="debug-state-credits" /></div>
+            <div><label for="debug-state-fuel">Fuel</label><input type="number" id="debug-state-fuel" /></div>
+            <div><label for="debug-state-hull">Hull</label><input type="number" id="debug-state-hull" /></div>
+            <div><label for="debug-state-ammo">Ammo</label><input type="number" id="debug-state-ammo" /></div>
+            <button type="button" id="debug-apply-state" class="btn">Apply</button>
+          </div>
+        </div>
+        <div class="ai-debug-row">
+          <label for="debug-seed-input">RNG Seed:</label>
+          <div class="ai-debug-group">
+            <input type="number" id="debug-seed-input" placeholder="Seed number…" />
+            <button type="button" id="debug-apply-seed" class="btn ghost">Apply</button>
+          </div>
+        </div>
+        <div class="ai-debug-row">
+          <button type="button" id="debug-copy-state" class="btn ghost">Copy state JSON</button>
+        </div>
+      </div>
+    </details>
 
     <main class="panels">
       <section id="tab-dock" class="panel active" data-tab="dock">
@@ -135,6 +185,8 @@
         <div class="theme-packs" style="margin-bottom: 16px;">
           <p class="hint" id="quest-tracker-hint">No active quests. Check the local Dock Press for news, rumors, and bounties.</p>
         </div>
+        <h3 class="sub">Visited Systems</h3>
+        <div id="system-list" class="skills-box hint"></div>
         <h3 class="sub">Pilot</h3>
         <div class="theme-packs">
           <div class="seg" role="group" aria-label="Who has the stick">
@@ -163,6 +215,16 @@
           <p class="hint" id="theme-hint">Cobalt is the default hull console look.</p>
         </div>
 
+        <h3 class="sub">Text Size</h3>
+        <div class="theme-packs">
+          <div class="seg" role="group" aria-label="Text size">
+            <button type="button" class="seg-btn active" data-text-size-pick="normal">Normal</button>
+            <button type="button" class="seg-btn" data-text-size-pick="large">Large</button>
+            <button type="button" class="seg-btn" data-text-size-pick="xl">XL</button>
+          </div>
+          <p class="hint" id="text-size-hint">Normal — standard Bast HUD scale.</p>
+        </div>
+
         <h3 class="sub">Renderer</h3>
         <div class="theme-packs">
           <div class="seg" role="group" aria-label="Graphics Engine">
@@ -187,6 +249,7 @@
             <button type="button" id="god-yard" class="btn ghost">Unlock yard</button>
             <button type="button" id="god-unbowed" class="btn ember">Set Unbowed + peak crew</button>
             <button type="button" id="god-wasp" class="btn ghost">Set Wasp Prime</button>
+            <button type="button" id="god-bounty" class="btn ember">Offer Pirate Lord bounty</button>
           </div>
         </div>
         <h3 class="sub">Credits</h3>
@@ -204,11 +267,30 @@
   </div>
 
   <dialog id="encounter">
-    <h3 id="enc-title">Encounter</h3>
-    <p id="enc-body"></p>
-    <div class="enc-actions">
-      <button type="button" id="enc-a" class="btn">A</button>
-      <button type="button" id="enc-b" class="btn ghost">B</button>
+    <!-- enc-prompt-view / enc-choice-view and encounter-result / enc-result
+         arrived from two slices. They are nested rather than duplicated so every
+         id resolves exactly once and the choice buttons bind a single time. -->
+    <div id="enc-prompt-view">
+      <div id="enc-choice-view">
+        <h3 id="enc-title">Encounter</h3>
+        <p id="enc-body"></p>
+        <div class="enc-actions">
+          <button type="button" id="enc-a" class="btn">A</button>
+          <button type="button" id="enc-b" class="btn ghost">B</button>
+        </div>
+      </div>
+    </div>
+    <div id="encounter-result" class="encounter-result enc-result result-panel" hidden>
+      <div id="enc-result" class="enc-result">
+        <h3 id="enc-result-title">Encounter Result</h3>
+        <p id="enc-result-outcome" class="enc-result-outcome"></p>
+        <p id="enc-result-body"></p>
+        <p id="enc-result-details" class="enc-result-details hint"></p>
+        <div class="enc-actions">
+          <button type="button" id="enc-dismiss" class="btn">Continue</button>
+          <button type="button" id="enc-result-dismiss" class="btn">Continue</button>
+        </div>
+      </div>
     </div>
   </dialog>
   <script src="js/data/ships.js?v=0.9.41"></script>
@@ -217,6 +299,7 @@
   <script src="js/data/hull-art.js?v=0.9.41"></script>
   <script src="js/yard-economy.js?v=0.9.41"></script>
   <script src="js/core/chart-gen.js?v=0.9.41"></script>
+  <script src="js/core/armament.js?v=0.9.41"></script>
   <script src="js/core/combat.js?v=0.9.41"></script>
   <script src="js/fuel.js?v=0.9.41"></script>
   <script src="js/market.js?v=0.9.41"></script>
@@ -249,6 +332,8 @@
   <script src="js/ui/theme-pilot.js?v=0.9.41"></script>
   <script src="js/ui/chart-view.js?v=0.9.41"></script>
   <script src="js/ui/dom-wire.js?v=0.9.41"></script>
+  <script src="js/pure-logic.js?v=0.9.41"></script>
+  <script src="js/ai-debug.js?v=0.9.41"></script>
   <script src="game.js?v=0.9.41"></script>
   <script src="js/webmcp.js?v=0.9.41"></script>
 </body>

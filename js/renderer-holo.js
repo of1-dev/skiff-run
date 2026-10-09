@@ -11,6 +11,22 @@
   let shipImg = null;
   let currentShipId = null;
 
+  const SF = (typeof globalThis !== "undefined" && globalThis.SkiffFuel) || (function () {
+    try { return require("./fuel.js"); } catch (_) { return null; }
+  })();
+  function roundDist(d) {
+    if (SF && typeof SF.roundDist === "function") return SF.roundDist(d);
+    if (d == null || Number.isNaN(d) || !Number.isFinite(d)) return 0;
+    return Math.round(d);
+  }
+  function distFn(a, b) {
+    if (SF && typeof SF.dist === "function") return SF.dist(a, b);
+    if (!a || !b) return Infinity;
+    const dx = ((a && a.x) || 0) - ((b && b.x) || 0);
+    const dy = ((a && a.y) || 0) - ((b && b.y) || 0);
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
   // Animation & Camera state
   let shipPos = { x: 50, y: 50 };
   let trail = [];
@@ -24,6 +40,9 @@
   let onRepair = null;
   let onRearm = null;
   let onPin = null;
+  let onExit = null;
+  let onBuy = null;
+  let onSell = null;
 
   const ACTIVITY_NAMES = ["Absent", "Minimal", "Few", "Some", "Moderate", "Many", "Abundant", "Swarms"];
   function activityLabel(n) {
@@ -118,12 +137,12 @@
 
   function fuelCostBetween(a, b) {
     if (!a || !b) return 99;
-    return Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 14));
+    return Math.max(1, Math.ceil(distFn(a, b) / 14));
   }
 
   function canJumpFromHere(here, dest, range, fuel) {
     if (!here || !dest || here.id === dest.id) return false;
-    const d = Math.hypot(dest.x - here.x, dest.y - here.y);
+    const d = distFn(here, dest);
     if (d > (range || 0) + 0.01) return false;
     return (fuel | 0) >= fuelCostBetween(here, dest);
   }
@@ -134,18 +153,53 @@
     });
   }
 
+  function getShips() {
+    let ships = (globalThis.SkiffShips && Array.isArray(globalThis.SkiffShips)) ? globalThis.SkiffShips : null;
+    if (!ships && typeof require === "function") {
+      try { ships = require("./data/ships.js"); } catch {}
+    }
+    return ships || [];
+  }
+
+  function getGoods() {
+    let goods = (globalThis.SkiffGoods && Array.isArray(globalThis.SkiffGoods)) ? globalThis.SkiffGoods : null;
+    if (!goods && typeof require === "function") {
+      try { goods = require("./data/goods.js"); } catch {}
+    }
+    if (goods && Array.isArray(goods) && goods.length) return goods;
+    if (currentState && currentState.prices) {
+      return Object.keys(currentState.prices).map(id => ({ id, name: id.charAt(0).toUpperCase() + id.slice(1), base: 40 }));
+    }
+    return [
+      { id: "ore", name: "Basalt Ore", base: 40 },
+      { id: "grain", name: "Dry Grain", base: 28 },
+      { id: "optics", name: "Lens Optics", base: 95 },
+      { id: "meds", name: "Field Meds", base: 110 },
+      { id: "spice", name: "Rack Spice", base: 70 },
+      { id: "scrap", name: "Hull Scrap", base: 22 },
+    ];
+  }
+
+  function getMarket() {
+    let market = globalThis.SkiffMarket;
+    if (!market && typeof require === "function") {
+      try { market = require("./market.js"); } catch {}
+    }
+    return market;
+  }
+
   function getShipRange() {
     if (!currentState || !currentState.shipId) return 28;
-    const ships = (globalThis.SkiffShips && Array.isArray(globalThis.SkiffShips)) ? globalThis.SkiffShips : [];
+    const ships = getShips();
     const s = ships.find(x => x.id === currentState.shipId);
     return s ? s.range : 28;
   }
 
   function getHullMaxes() {
-    if (!currentState || !currentState.shipId) return { fuelMax: 14, hullMax: 40, ammoMax: 0 };
-    const ships = (globalThis.SkiffShips && Array.isArray(globalThis.SkiffShips)) ? globalThis.SkiffShips : [];
+    if (!currentState || !currentState.shipId) return { fuelMax: 14, hullMax: 40, ammoMax: 0, cargo: 20 };
+    const ships = getShips();
     const s = ships.find(x => x.id === currentState.shipId);
-    return s || { fuelMax: 14, hullMax: 40, ammoMax: 0 };
+    return s || { fuelMax: 14, hullMax: 40, ammoMax: 0, cargo: 20 };
   }
 
   function init() {
@@ -192,8 +246,34 @@
     return map;
   }
 
+  function exitHolo() {
+    const exitBtn = typeof document !== "undefined" && document.getElementById && document.getElementById("btn-exit-holo");
+    if (exitBtn && typeof exitBtn.click === "function") {
+      exitBtn.click();
+    } else if (exitBtn && typeof exitBtn.onclick === "function") {
+      exitBtn.onclick();
+    } else if (typeof onExit === "function") {
+      onExit();
+    }
+    stop();
+  }
+
+  function onKeyDown(e) {
+    if (e && (e.key === "Escape" || e.key === "Esc")) {
+      exitHolo();
+    }
+  }
+
   function start(state, svgs, systems, callbacks) {
     if (!canvas) init();
+    const c = canvas || (typeof document !== "undefined" && document.getElementById && document.getElementById("holo-canvas"));
+    if (c && c.style) {
+      c.style.display = "block";
+      c.style.pointerEvents = "auto";
+    }
+    if (typeof window !== "undefined" && window.addEventListener) {
+      window.addEventListener("keydown", onKeyDown);
+    }
     currentState = state;
     if (systems) currentSystems = systems;
     if (callbacks) {
@@ -202,6 +282,9 @@
       onRepair = callbacks.onRepair || null;
       onRearm = callbacks.onRearm || null;
       onPin = callbacks.onPin || null;
+      onExit = callbacks.onExit || null;
+      onBuy = callbacks.onBuy || null;
+      onSell = callbacks.onSell || null;
     }
     cacheShipImages(svgs);
     
@@ -218,8 +301,28 @@
 
   function stop() {
     if (animFrame) {
-      window.cancelAnimationFrame(animFrame);
+      if (typeof window !== "undefined" && typeof window.cancelAnimationFrame === "function") {
+        window.cancelAnimationFrame(animFrame);
+      } else if (typeof globalThis !== "undefined" && typeof globalThis.cancelAnimationFrame === "function") {
+        globalThis.cancelAnimationFrame(animFrame);
+      }
       animFrame = null;
+    }
+    const c = canvas || (typeof document !== "undefined" && document.getElementById && document.getElementById("holo-canvas"));
+    if (c && c.style) {
+      c.style.display = "none";
+      c.style.pointerEvents = "none";
+    }
+    const searchWrap = typeof document !== "undefined" && document.getElementById && document.getElementById("holo-search-wrap");
+    if (searchWrap && searchWrap.style) {
+      searchWrap.style.display = "none";
+    }
+    const exitBtn = typeof document !== "undefined" && document.getElementById && document.getElementById("btn-exit-holo");
+    if (exitBtn && exitBtn.style) {
+      exitBtn.style.display = "none";
+    }
+    if (typeof window !== "undefined" && window.removeEventListener) {
+      window.removeEventListener("keydown", onKeyDown);
     }
   }
 
@@ -229,7 +332,11 @@
   }
 
   function renderLoop() {
-    animFrame = window.requestAnimationFrame(renderLoop);
+    if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+      animFrame = window.requestAnimationFrame(renderLoop);
+    } else if (typeof globalThis !== "undefined" && typeof globalThis.requestAnimationFrame === "function") {
+      animFrame = globalThis.requestAnimationFrame(renderLoop);
+    }
     draw();
   }
 
@@ -267,7 +374,7 @@
     let found = null;
     for (const [id, pos] of Object.entries(posMap)) {
       const p = cam.toScreen(pos.x, pos.y);
-      if (Math.hypot(mousePos.x - p.x, mousePos.y - p.y) <= 16) {
+      if (Math.hypot(mousePos.x - p.x, mousePos.y - p.y) <= 18) {
         found = id;
         break;
       }
@@ -299,10 +406,14 @@
     for (const [id, pos] of Object.entries(posMap)) {
       const p = cam.toScreen(pos.x, pos.y);
       if (Math.hypot(mx - p.x, my - p.y) <= 18) {
-        selectedSystemId = (selectedSystemId === id && id !== currentState.system) ? null : id;
+        selectedSystemId = id;
+        if (onPin) onPin(id);
         return;
       }
     }
+
+    // Tap elsewhere (empty sky) exits holo view
+    exitHolo();
   }
 
   function draw() {
@@ -498,7 +609,7 @@
       }
 
       if (!isHere && reach && pos.mods && TF && SM && GOODS && TF.canSeeTradeIntel({
-        dist: targetSys ? Math.hypot(pos.x - targetSys.x, pos.y - targetSys.y) : 99,
+        dist: targetSys ? distFn(pos, targetSys) : 99,
         sectorRadius: sectorR,
       })) {
         const there = {};
@@ -591,6 +702,9 @@
 
     // HUD: Bottom Control Bar (Quick Refuel, Repair, Rearm)
     drawHudActions();
+
+    // HUD: Compact Trade Panel for Docked System Market
+    drawTradePanel();
 
     // HUD: Selected System Detail Card & Direct Jump Button
     if (selectedSystemId && posMap[selectedSystemId]) {
@@ -707,7 +821,7 @@
     const RT = globalThis.SkiffRoute;
 
     if (!isHere && current) {
-      dist = Math.hypot(dest.x - current.x, dest.y - current.y);
+      dist = distFn(dest, current);
       inRange = dist <= rangeVal + 0.01;
       cost = Math.max(1, Math.ceil(dist / 14));
       canReach = inRange && (currentState.fuel >= cost);
@@ -717,7 +831,7 @@
           const hopSys = currentSystems.find(function (s) { return s.id === plan.next; }) || getPosMap()[plan.next];
           hop = { id: plan.next, name: (hopSys && hopSys.name) || plan.next, jumps: plan.jumps };
           if (hopSys && current) {
-            hopCost = Math.max(1, Math.ceil(Math.hypot(hopSys.x - current.x, hopSys.y - current.y) / 14));
+            hopCost = Math.max(1, Math.ceil(distFn(hopSys, current) / 14));
             hopFuelOk = currentState.fuel >= hopCost;
           }
         }
@@ -741,7 +855,7 @@
     if (dest.yard) facilities.push("Shipyard");
     if (dest.retire) facilities.push("Retire Dock");
     ctx.fillText(`FACILITIES: ${facilities.length > 0 ? facilities.join(", ") : "Standard Dock"}`, cardX + 16, cardY + 90);
-    ctx.fillText(`DISTANCE  : ${Math.round(dist * 10) / 10} units`, cardX + 16, cardY + 108);
+    ctx.fillText(`DISTANCE  : ${roundDist(dist)} units`, cardX + 16, cardY + 108);
 
     // JUMP Action Button
     if (!isHere) {
@@ -813,6 +927,217 @@
       ctx.font = "italic 13px monospace";
       ctx.fillText("Currently docked here.", cardX + 16, cardY + 144);
     }
+
+    interactiveZones.push({
+      x: cardX, y: cardY, w: cardW, h: cardH,
+      action: () => {}
+    });
+  }
+
+  function buy(goodId, qty) {
+    const q = qty != null ? qty : 1;
+    if (typeof onBuy === "function") {
+      return onBuy(goodId, q);
+    }
+    const SM = getMarket();
+    if (!SM || !currentState) return;
+    const maxCargo = (getHullMaxes() && getHullMaxes().cargo) || 20;
+    const curSys = (currentSystems && currentSystems.find(s => s.id === currentState.system)) || null;
+    let prices = currentState.prices;
+    if (!prices || prices[goodId] == null) {
+      prices = Object.assign({}, prices);
+      const g = getGoods().find(x => x.id === goodId);
+      if (g) {
+        prices[goodId] = (curSys && SM && typeof SM.priceFor === "function") ? SM.priceFor(curSys, g) : g.base;
+      }
+    }
+    const r = SM.applyBuy({
+      cargo: currentState.cargo || {},
+      credits: currentState.credits || 0,
+      prices: prices,
+      goods: getGoods(),
+      holdMax: maxCargo,
+      id: goodId,
+      qty: q,
+    });
+    if (r && r.ok) {
+      currentState.credits = r.credits;
+      if (currentState.cargo && typeof currentState.cargo === "object") {
+        Object.assign(currentState.cargo, r.cargo);
+      } else {
+        currentState.cargo = r.cargo;
+      }
+    }
+    return r;
+  }
+
+  function sell(goodId, qty) {
+    const q = qty != null ? qty : 1;
+    if (typeof onSell === "function") {
+      return onSell(goodId, q);
+    }
+    const SM = getMarket();
+    if (!SM || !currentState) return;
+    const curSys = (currentSystems && currentSystems.find(s => s.id === currentState.system)) || null;
+    let prices = currentState.prices;
+    if (!prices || prices[goodId] == null) {
+      prices = Object.assign({}, prices);
+      const g = getGoods().find(x => x.id === goodId);
+      if (g) {
+        prices[goodId] = (curSys && SM && typeof SM.priceFor === "function") ? SM.priceFor(curSys, g) : g.base;
+      }
+    }
+    const r = SM.applySell({
+      cargo: currentState.cargo || {},
+      credits: currentState.credits || 0,
+      prices: prices,
+      goods: getGoods(),
+      id: goodId,
+      qty: q,
+    });
+    if (r && r.ok) {
+      currentState.credits = r.credits;
+      if (currentState.cargo && typeof currentState.cargo === "object") {
+        Object.assign(currentState.cargo, r.cargo);
+      } else {
+        currentState.cargo = r.cargo;
+      }
+    }
+    return r;
+  }
+
+  function trade(action, goodId, qty) {
+    if (action === "buy") return buy(goodId, qty);
+    if (action === "sell") return sell(goodId, qty);
+  }
+
+  function drawTradePanel() {
+    if (!ctx || !currentState) return;
+    const goods = getGoods();
+    if (!goods || !goods.length) return;
+    const SM = getMarket();
+    const maxes = getHullMaxes();
+    const maxCargo = (maxes && maxes.cargo) || 20;
+    const cargo = currentState.cargo || {};
+    const used = SM && typeof SM.cargoUsed === "function" ? SM.cargoUsed(cargo) : Object.values(cargo).reduce((a, b) => a + b, 0);
+    const credits = currentState.credits || 0;
+
+    const panelW = 280;
+    const panelH = 34 + goods.length * 26 + 8;
+    let panelX = canvas ? canvas.width - panelW - 24 : 496;
+    let panelY = 72;
+
+    if (canvas && canvas.width < 720) {
+      panelX = 24;
+      panelY = (currentState.quests && currentState.quests.length ? 144 : 126);
+    }
+
+    ctx.fillStyle = "rgba(12, 10, 9, 0.92)";
+    ctx.strokeStyle = hud().signal;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(panelX, panelY, panelW, panelH, 6) : ctx.rect(panelX, panelY, panelW, panelH);
+    ctx.fill();
+    ctx.stroke();
+
+    const curSys = (currentSystems && currentSystems.find(s => s.id === currentState.system)) || null;
+    const sysName = String((curSys && (curSys.name || curSys.id)) || currentState.system || "LOCAL");
+
+    ctx.fillStyle = hud().signal;
+    ctx.font = "bold 13px monospace";
+    ctx.fillText(`MARKET · ${sysName.toUpperCase()}`, panelX + 12, panelY + 22);
+
+    const holdFull = used >= maxCargo;
+    ctx.fillStyle = holdFull ? hud().warn : hud().mute;
+    ctx.font = "11px monospace";
+    ctx.textAlign = "right";
+    ctx.fillText(`HOLD: ${used}/${maxCargo}`, panelX + panelW - 12, panelY + 22);
+    ctx.textAlign = "start";
+
+    ctx.strokeStyle = "rgba(68, 64, 60, 0.45)";
+    ctx.beginPath();
+    ctx.moveTo(panelX + 10, panelY + 30);
+    ctx.lineTo(panelX + panelW - 10, panelY + 30);
+    ctx.stroke();
+
+    for (let i = 0; i < goods.length; i++) {
+      const g = goods[i];
+      const rowY = panelY + 34 + i * 26;
+      const p = (currentState.prices && currentState.prices[g.id] != null)
+        ? currentState.prices[g.id]
+        : (curSys && SM && typeof SM.priceFor === "function" ? SM.priceFor(curSys, g) : g.base);
+      const have = cargo[g.id] || 0;
+
+      let cueTone = "fair";
+      if (SM && typeof SM.galaxyAveragePrice === "function" && typeof SM.marketCue === "function" && currentSystems && currentSystems.length) {
+        const avg = SM.galaxyAveragePrice(currentSystems, g);
+        const cue = SM.marketCue(p, avg, have);
+        if (cue && cue.tone) cueTone = cue.tone;
+      }
+
+      ctx.fillStyle = hud().text;
+      ctx.font = "bold 12px monospace";
+      const shortName = g.name.length > 10 ? g.name.replace(/^(Basalt|Dry|Lens|Field|Rack|Hull)\s+/, "") : g.name;
+      ctx.fillText(shortName, panelX + 12, rowY + 17);
+
+      ctx.fillStyle = cueTone === "buy" ? hud().ok : (cueTone === "avoid" ? hud().warn : hud().text);
+      ctx.font = "12px monospace";
+      ctx.fillText(`₩${p}`, panelX + 88, rowY + 17);
+
+      ctx.fillStyle = hud().mute;
+      ctx.font = "11px monospace";
+      ctx.fillText(`(${have})`, panelX + 138, rowY + 17);
+
+      const btnW = 38;
+      const btnH = 20;
+      const btnY = rowY + 3;
+      const buyX = panelX + panelW - 90;
+      const sellX = panelX + panelW - 48;
+
+      const canBuy = credits >= p && used < maxCargo;
+      const canSell = have > 0;
+
+      ctx.fillStyle = canBuy ? "rgba(41, 37, 36, 0.95)" : "rgba(28, 25, 23, 0.4)";
+      ctx.strokeStyle = canBuy ? hud().signal : "rgba(68, 64, 60, 0.4)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(buyX, btnY, btnW, btnH, 3) : ctx.rect(buyX, btnY, btnW, btnH);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = canBuy ? hud().tabActive || hud().text : hud().mute;
+      ctx.font = "bold 10px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("BUY", buyX + btnW / 2, btnY + 14);
+
+      if (canBuy) {
+        interactiveZones.push({
+          x: buyX, y: btnY, w: btnW, h: btnH,
+          action: () => { buy(g.id, 1); }
+        });
+      }
+
+      ctx.fillStyle = canSell ? "rgba(41, 37, 36, 0.95)" : "rgba(28, 25, 23, 0.4)";
+      ctx.strokeStyle = canSell ? hud().signal : "rgba(68, 64, 60, 0.4)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(sellX, btnY, btnW, btnH, 3) : ctx.rect(sellX, btnY, btnW, btnH);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = canSell ? hud().tabActive || hud().text : hud().mute;
+      ctx.font = "bold 10px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("SELL", sellX + btnW / 2, btnY + 14);
+      ctx.textAlign = "start";
+
+      if (canSell) {
+        interactiveZones.push({
+          x: sellX, y: btnY, w: btnW, h: btnH,
+          action: () => { sell(g.id, 1); }
+        });
+      }
+    }
   }
 
   function selectSystem(systemId) {
@@ -822,5 +1147,20 @@
     }
   }
 
-  return { start, stop, update, selectSystem, engageJumpButton, project, linksFromHere, canJumpFromHere, riskFill };
+  return {
+    start,
+    stop,
+    update,
+    selectSystem,
+    engageJumpButton,
+    project,
+    linksFromHere,
+    canJumpFromHere,
+    riskFill,
+    buy,
+    sell,
+    tradeBuy: buy,
+    tradeSell: sell,
+    trade,
+  };
 });

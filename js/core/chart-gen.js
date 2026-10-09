@@ -25,7 +25,8 @@
   }
 
   function buildChart(seed) {
-    seed = (seed >>> 0) || (Math.floor(Math.random() * 0xffffffff) || 1);
+    const rawSeed = (typeof seed === "object" && seed !== null) ? seed.seed : seed;
+    seed = (rawSeed >>> 0) || (Math.floor(Math.random() * 0xffffffff) || 1);
     const rand = mulberry32(seed);
     const minD = 10;
     const pad = 6;

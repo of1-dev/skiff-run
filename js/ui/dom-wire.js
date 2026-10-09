@@ -20,6 +20,20 @@
     if (el("btn-fill-cheap")) el("btn-fill-cheap").onclick = ctx.doFillCheap;
     if (el("btn-sell-expensive")) el("btn-sell-expensive").onclick = ctx.doSellExpensive;
 
+    function travelRoute(targetId) {
+      const st = ctx.getState();
+      const goal = targetId || ui.targetId;
+      if (!goal || goal === st.system) return;
+      while (st.system !== goal) {
+        const prev = st.system;
+        ctx.doTravel(goal);
+        if (st.system === prev) break;
+        if (typeof document !== "undefined" && document.body && document.body.classList && document.body.classList.contains("enc-open")) break;
+        const encDlg = typeof el === "function" ? el("encounter") : null;
+        if (encDlg && encDlg.open) break;
+      }
+    }
+
     if (el("btn-warp")) {
       el("btn-warp").onclick = function () {
         ctx.reclaimStick();
@@ -28,7 +42,7 @@
           ctx.log("Pick a dock on the chart, then Jump.");
           return;
         }
-        ctx.doTravel(ui.targetId);
+        travelRoute(ui.targetId);
       };
     }
 
@@ -55,18 +69,28 @@
         if (holoOn && globalThis.SkiffHoloRenderer) {
           const exit = document.getElementById("btn-exit-holo");
           if (exit) exit.click();
+          else globalThis.SkiffHoloRenderer.stop();
         }
         ctx.showTab(b.dataset.tab);
       };
     });
 
     document.querySelectorAll("[data-goto]").forEach(function (b) {
-      b.onclick = function () { ctx.showTab(b.dataset.goto); };
+      b.onclick = function () {
+        const holoOn = document.getElementById("holo-canvas") &&
+          document.getElementById("holo-canvas").style.display === "block";
+        if (holoOn && globalThis.SkiffHoloRenderer) {
+          const exit = document.getElementById("btn-exit-holo");
+          if (exit) exit.click();
+          else globalThis.SkiffHoloRenderer.stop();
+        }
+        ctx.showTab(b.dataset.goto);
+      };
     });
 
-    if (el("mode-local")) el("mode-local").onclick = function () { ctx.setChartMode("local"); };
-    if (el("mode-sector")) el("mode-sector").onclick = function () { ctx.setChartMode("sector"); };
-    if (el("mode-full")) el("mode-full").onclick = function () { ctx.setChartMode("full"); };
+    if (el("mode-local")) el("mode-local").onclick = function () { ctx.setChartMode("local"); if (ctx.render) ctx.render(); };
+    if (el("mode-sector")) el("mode-sector").onclick = function () { ctx.setChartMode("sector"); if (ctx.render) ctx.render(); };
+    if (el("mode-full")) el("mode-full").onclick = function () { ctx.setChartMode("full"); if (ctx.render) ctx.render(); };
 
     const findForm = el("chart-find-form");
     if (findForm) {
@@ -77,18 +101,31 @@
     }
 
     if (el("map")) {
-      el("map").addEventListener("pointerdown", function (e) {
+      const mapEl = el("map");
+      let lastPointerDown = { x: -9999, y: -9999, time: 0 };
+      function onMapClick(e) {
+        const now = Date.now();
+        if (e.type === "click" && now - lastPointerDown.time < 350 && Math.hypot(e.clientX - lastPointerDown.x, e.clientY - lastPointerDown.y) < 25) {
+          return;
+        }
+        if (e.type === "pointerdown") {
+          lastPointerDown = { x: e.clientX, y: e.clientY, time: now };
+        }
         const s = ctx.pickSystemAt(e.clientX, e.clientY);
         if (!s) return;
         const st = ctx.getState();
         if (s.id === st.system) {
           ui.targetId = null;
+          ui.courseDest = null;
         } else {
+          if (ui.courseDest && ui.courseDest !== s.id) ui.courseDest = null;
           ui.targetId = s.id;
         }
         ctx.drawMap();
         ctx.renderTarget();
-      });
+      }
+      mapEl.addEventListener("pointerdown", onMapClick);
+      mapEl.addEventListener("click", onMapClick);
     }
 
     window.addEventListener("resize", function () {
@@ -101,6 +138,10 @@
       b.onclick = function () { ctx.applyTheme(b.dataset.themePick, true); };
     });
 
+    document.querySelectorAll("[data-text-size-pick]").forEach(function (b) {
+      b.onclick = function () { if (ctx.applyTextSize) ctx.applyTextSize(b.dataset.textSizePick, true); };
+    });
+
     document.querySelectorAll("[data-pilot-pick]").forEach(function (b) {
       b.onclick = function () { ctx.applyPilot(b.dataset.pilotPick, true); };
     });
@@ -111,16 +152,24 @@
           btn.classList.toggle("active", btn === b);
         });
         if (b.dataset.rendererPick === "holo") {
-          document.getElementById("holo-canvas").style.display = "block";
-          document.getElementById("holo-search-wrap").style.display = "block";
-          document.getElementById("btn-exit-holo").style.display = "block";
+          const hc = document.getElementById("holo-canvas");
+          if (hc) {
+            hc.style.display = "block";
+            hc.style.pointerEvents = "auto";
+          }
+          const hs = document.getElementById("holo-search-wrap");
+          if (hs) hs.style.display = "block";
+          const he = document.getElementById("btn-exit-holo");
+          if (he) he.style.display = "block";
           if (globalThis.SkiffHoloRenderer) {
             const st = ctx.getState();
             globalThis.SkiffHoloRenderer.start(st, ctx.HULL_SVG, ctx.systems(), {
-              onTravel: ctx.doTravel,
+              onTravel: travelRoute,
               onRefuel: ctx.doRefuel,
               onRepair: ctx.doRepair,
               onRearm: ctx.doRearm,
+              onBuy: ctx.doBuy,
+              onSell: ctx.doSell,
               onPin: function (id) {
                 if (!id || id === st.system) return ctx.log("That's your current dock.");
                 ui.targetId = id;
@@ -136,12 +185,23 @@
                 ctx.save(st);
                 ctx.render();
               },
+              onExit: function () {
+                const classicBtn = document.querySelector('[data-renderer-pick="classic"]');
+                if (classicBtn) classicBtn.click();
+                else globalThis.SkiffHoloRenderer.stop();
+              },
             });
           }
         } else {
-          document.getElementById("holo-canvas").style.display = "none";
-          document.getElementById("holo-search-wrap").style.display = "none";
-          document.getElementById("btn-exit-holo").style.display = "none";
+          const hc = document.getElementById("holo-canvas");
+          if (hc) {
+            hc.style.display = "none";
+            hc.style.pointerEvents = "none";
+          }
+          const hs = document.getElementById("holo-search-wrap");
+          if (hs) hs.style.display = "none";
+          const he = document.getElementById("btn-exit-holo");
+          if (he) he.style.display = "none";
           if (globalThis.SkiffHoloRenderer) globalThis.SkiffHoloRenderer.stop();
         }
       };
@@ -161,8 +221,21 @@
       exitHolo.onclick = function () {
         const classicBtn = document.querySelector('[data-renderer-pick="classic"]');
         if (classicBtn) classicBtn.click();
+        else if (globalThis.SkiffHoloRenderer) globalThis.SkiffHoloRenderer.stop();
       };
     }
+
+    window.addEventListener("keydown", function (e) {
+      if (e && (e.key === "Escape" || e.key === "Esc")) {
+        const hc = document.getElementById("holo-canvas");
+        const holoOn = hc && hc.style.display === "block";
+        if (holoOn) {
+          const exit = document.getElementById("btn-exit-holo");
+          if (exit) exit.click();
+          else if (globalThis.SkiffHoloRenderer) globalThis.SkiffHoloRenderer.stop();
+        }
+      }
+    });
 
     const takeStick = el("btn-take-stick");
     if (takeStick) takeStick.onclick = function () { ctx.applyPilot("human", true); };

@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
+
 const PORT = Number(process.env.SKIFF_BRIDGE_PORT || 8787);
 const HOST = process.env.SKIFF_BRIDGE_HOST || "127.0.0.1";
 const SAVE_PATH = path.join(__dirname, "session", "save.json");
