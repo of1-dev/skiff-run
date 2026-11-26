@@ -60,13 +60,13 @@ To avoid merge collisions, AGY and Grok work on independent git worktrees with s
 
 ### 3.1 Worktree Setup
 1. **AGY Worktree**:
-   - Location: `/var/home/andrew/.gemini/antigravity-cli/worktrees/skiff-run/clean_bridge_boot`
+   - Location: `~/.gemini/antigravity-cli/worktrees/skiff-run/clean_bridge_boot`
    - Branch: `feat/modular-orchestrator-agy`
 2. **Grok Worktree**:
-   - Location: `/var/home/andrew/sites/skiff-run-grok`
+   - Location: `~/sites/skiff-run-grok`
    - Branch: `feat/modular-actions-grok`
 3. **Canonical Repo**:
-   - `/var/home/andrew/sites/skiff-run` (tracks `main`)
+   - `~/sites/skiff-run` (tracks `main`)
 
 ### 3.2 Division of Responsibilities
 

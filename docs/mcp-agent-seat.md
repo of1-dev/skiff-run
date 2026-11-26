@@ -79,7 +79,7 @@ cd mcp && npm install && npm start
 ```bash
 cd mcp && npm run autopilot
 # Or run with arguments:
-# npm run autopilot -- --url http://100.83.8.84:8787 --interval 3000
+# npm run autopilot -- --url http://<tailnet-ip>:8787 --interval 3000
 ```
 
 Stdio MCP command for connectors:
